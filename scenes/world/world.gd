@@ -5,18 +5,24 @@ extends Control
 ## Displays the room list (REST /world/rooms or local SOLARIS.MAP fallback),
 ## a room detail panel with description text, and a mini-map canvas showing
 ## room positions in the Solaris VII travel-map coordinate space.
+## After entering a room, polls /world/presence every 5 s to show occupants.
 
 var _world_client: WorldClient
+var _travel_client: WorldTravelClient
 var _rooms: Array = []
 var _selected_id: int = -1
+var _current_room_id: int = -1
 
-@onready var _status_label: Label      = $MainVBox/Header/StatusLabel
-@onready var _user_label: Label        = $MainVBox/Header/UserLabel
-@onready var _room_list: VBoxContainer = $MainVBox/ContentHBox/RoomPanel/RoomVBox/RoomScroll/RoomList
-@onready var _room_name: Label         = $MainVBox/ContentHBox/DetailPanel/RoomName
-@onready var _room_desc: Label         = $MainVBox/ContentHBox/DetailPanel/RoomDesc
-@onready var _map_canvas: SolarisMap   = $MainVBox/ContentHBox/DetailPanel/MapCanvas
-@onready var _enter_button: Button     = $MainVBox/ContentHBox/DetailPanel/ActionBar/EnterButton
+@onready var _status_label: Label        = $MainVBox/Header/StatusLabel
+@onready var _user_label: Label          = $MainVBox/Header/UserLabel
+@onready var _room_list: VBoxContainer   = $MainVBox/ContentHBox/RoomPanel/RoomVBox/RoomScroll/RoomList
+@onready var _room_name: Label           = $MainVBox/ContentHBox/DetailPanel/RoomName
+@onready var _room_desc: Label           = $MainVBox/ContentHBox/DetailPanel/RoomDesc
+@onready var _presence_panel: VBoxContainer = $MainVBox/ContentHBox/DetailPanel/PresencePanel
+@onready var _presence_list: VBoxContainer  = $MainVBox/ContentHBox/DetailPanel/PresencePanel/PresenceList
+@onready var _map_canvas: SolarisMap     = $MainVBox/ContentHBox/DetailPanel/MapCanvas
+@onready var _enter_button: Button       = $MainVBox/ContentHBox/DetailPanel/ActionBar/EnterButton
+@onready var _poll_timer: Timer          = $PollTimer
 
 
 func _ready() -> void:
@@ -24,6 +30,12 @@ func _ready() -> void:
 	add_child(_world_client)
 	_world_client.rooms_loaded.connect(_on_rooms_loaded)
 	_world_client.rooms_failed.connect(_on_rooms_failed)
+
+	_travel_client = WorldTravelClient.new()
+	add_child(_travel_client)
+	_travel_client.traveled.connect(_on_traveled)
+	_travel_client.travel_failed.connect(_on_travel_failed)
+	_travel_client.presence_updated.connect(_on_presence_updated)
 
 	var char_name: String = AuthSession.character.get("display_name", "")
 	if not AuthSession.username.is_empty() and not char_name.is_empty():
@@ -129,12 +141,81 @@ func _on_room_selected(room_id: int) -> void:
 			var desc := str(room.get("description", ""))
 			_room_desc.text = desc if not desc.is_empty() else "(No description)"
 			_map_canvas.set_selected(room_id)
+			_update_enter_button()
 			return
 
 
+func _update_enter_button() -> void:
+	if _selected_id < 0:
+		_enter_button.text = "Enter Room"
+		_enter_button.disabled = true
+	elif _selected_id == _current_room_id:
+		_enter_button.text = "Already Here"
+		_enter_button.disabled = true
+	else:
+		_enter_button.text = "Enter Room"
+		_enter_button.disabled = ServerBridge.game_api_url.is_empty()
+
+
 func _on_enter_pressed() -> void:
-	pass  # Travel: M4 Phase 2
+	if _selected_id < 0 or ServerBridge.game_api_url.is_empty():
+		return
+
+	_enter_button.disabled = true
+	_set_status("Traveling\u2026")
+	_travel_client.travel(
+		ServerBridge.game_api_url,
+		AuthSession.username,
+		_selected_id,
+	)
+
+
+func _on_traveled(room: Dictionary) -> void:
+	_current_room_id = _selected_id
+	_update_enter_button()
+
+	var room_name := str(room.get("name", "Room %d" % _current_room_id))
+	_set_status("In: %s" % room_name)
+
+	_presence_panel.visible = true
+	_poll_timer.start()
+	_travel_client.fetch_presence(ServerBridge.game_api_url)
+
+
+func _on_travel_failed(reason: String) -> void:
+	_set_status("Travel failed: %s" % reason)
+	_update_enter_button()
+
+
+func _on_poll_timer_timeout() -> void:
+	if not ServerBridge.game_api_url.is_empty():
+		_travel_client.fetch_presence(ServerBridge.game_api_url)
+
+
+func _on_presence_updated(rooms: Array) -> void:
+	for child in _presence_list.get_children():
+		child.queue_free()
+
+	for room_entry in rooms:
+		if int(room_entry.get("roomId", -1)) == _current_room_id:
+			var occupants: Array = room_entry.get("occupants", [])
+			if occupants.is_empty():
+				var lbl := Label.new()
+				lbl.text = "(empty)"
+				_presence_list.add_child(lbl)
+			else:
+				for name_str in occupants:
+					var lbl := Label.new()
+					lbl.text = str(name_str)
+					_presence_list.add_child(lbl)
+			return
+
+	# No entry for current room means it's empty server-side
+	var lbl := Label.new()
+	lbl.text = "(empty)"
+	_presence_list.add_child(lbl)
 
 
 func _on_back_pressed() -> void:
+	_poll_timer.stop()
 	get_tree().change_scene_to_file("res://scenes/main/main.tscn")
