@@ -1,0 +1,101 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main_script"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.055, 0.062, 0.078, 1)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -170.0
+offset_right = 280.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+text = "Multiplayer BattleTech: Solaris"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+text = "Godot 4 client scaffold"
+horizontal_alignment = 1
+
+[node name="ConfigGrid" type="GridContainer" parent="Panel/Margin/Content"]
+layout_mode = 2
+columns = 2
+
+[node name="ServerLabel" type="Label" parent="Panel/Margin/Content/ConfigGrid"]
+layout_mode = 2
+text = "Server"
+
+[node name="ServerValue" type="Label" parent="Panel/Margin/Content/ConfigGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "http://127.0.0.1:3000"
+
+[node name="WebSocketLabel" type="Label" parent="Panel/Margin/Content/ConfigGrid"]
+layout_mode = 2
+text = "WebSocket"
+
+[node name="WebSocketValue" type="Label" parent="Panel/Margin/Content/ConfigGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "ws://127.0.0.1:3000/ws"
+
+[node name="ButtonRow" type="HBoxContainer" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="WorldButton" type="Button" parent="Panel/Margin/Content/ButtonRow"]
+layout_mode = 2
+text = "World"
+
+[node name="CombatButton" type="Button" parent="Panel/Margin/Content/ButtonRow"]
+layout_mode = 2
+text = "Combat"
+
+[node name="StatusLabel" type="Label" parent="Panel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Checking server..."
+horizontal_alignment = 1
+modulate = Color(0.7, 0.7, 0.7, 1)
+
+[connection signal="pressed" from="Panel/Margin/Content/ButtonRow/WorldButton" to="." method="_on_world_pressed"]
+[connection signal="pressed" from="Panel/Margin/Content/ButtonRow/CombatButton" to="." method="_on_combat_pressed"]
