@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "profile": "local-dev",
+  "server": {
+    "base_url": "http://127.0.0.1:3000",
+    "websocket_url": "ws://127.0.0.1:3000/ws"
+  },
+  "assets": {
+    "retail_path": "C:/Games/MPBT",
+    "extracted_path": "C:/MPBT/assets"
+  },
+  "diagnostics": {
+    "enabled": true,
+    "log_network": true
+  }
+}

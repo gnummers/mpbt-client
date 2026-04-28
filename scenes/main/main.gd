@@ -1,7 +1,8 @@
 extends Control
 
-const WORLD_SCENE := "res://scenes/world/world.tscn"
-const COMBAT_SCENE := "res://scenes/combat/combat.tscn"
+const WORLD_SCENE         := "res://scenes/world/world.tscn"
+const COMBAT_SCENE        := "res://scenes/combat/combat.tscn"
+const ASSET_BROWSER_SCENE := "res://scenes/assets/asset_browser.tscn"
 
 @onready var server_value: Label = %ServerValue
 @onready var websocket_value: Label = %WebSocketValue
@@ -43,3 +44,7 @@ func _on_world_pressed() -> void:
 
 func _on_combat_pressed() -> void:
 	get_tree().change_scene_to_file(COMBAT_SCENE)
+
+
+func _on_assets_pressed() -> void:
+	get_tree().change_scene_to_file(ASSET_BROWSER_SCENE)

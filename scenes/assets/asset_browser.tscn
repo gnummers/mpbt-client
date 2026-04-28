@@ -1,0 +1,109 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/assets/asset_browser.gd" id="1_ab_script"]
+
+[node name="AssetBrowser" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ab_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.055, 0.062, 0.078, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="HeaderLabel" type="Label" parent="Margin/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Asset Browser"
+
+[node name="BackButton" type="Button" parent="Margin/Layout/Header"]
+layout_mode = 2
+text = "← Back"
+
+[node name="Content" type="HSplitContainer" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 220
+
+[node name="LeftPanel" type="VBoxContainer" parent="Margin/Layout/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 0)
+theme_override_constants/separation = 6
+
+[node name="PathLabel" type="Label" parent="Margin/Layout/Content/LeftPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+modulate = Color(0.6, 0.6, 0.6, 1)
+text = ""
+
+[node name="CategoryOption" type="OptionButton" parent="Margin/Layout/Content/LeftPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="FileList" type="ItemList" parent="Margin/Layout/Content/LeftPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RightPanel" type="VBoxContainer" parent="Margin/Layout/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ImageView" type="TextureRect" parent="Margin/Layout/Content/RightPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+visible = false
+
+[node name="MapView" type="RichTextLabel" parent="Margin/Layout/Content/RightPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_active = true
+visible = false
+
+[node name="InfoLabel" type="Label" parent="Margin/Layout/Content/RightPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Select a file to preview"
+horizontal_alignment = 1
+modulate = Color(0.6, 0.6, 0.6, 1)
+
+[connection signal="pressed" from="Margin/Layout/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="item_selected" from="Margin/Layout/Content/LeftPanel/CategoryOption" to="." method="_on_category_selected"]
+[connection signal="item_selected" from="Margin/Layout/Content/LeftPanel/FileList" to="." method="_on_file_selected"]
