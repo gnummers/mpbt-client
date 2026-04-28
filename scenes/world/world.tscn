@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scenes/world/world.gd" id="1_world_script"]
+[ext_resource type="Script" path="res://scripts/world/solaris_map.gd" id="2_map_script"]
 
 [node name="World" type="Control"]
 layout_mode = 3
@@ -20,39 +21,101 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.047, 0.058, 0.066, 1)
 
-[node name="Content" type="VBoxContainer" parent="."]
+[node name="MainVBox" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -120.0
-offset_right = 260.0
-offset_bottom = 120.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 0
 
-[node name="Title" type="Label" parent="Content"]
+[node name="Header" type="HBoxContainer" parent="MainVBox"]
 layout_mode = 2
-text = "Solaris World Shell"
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 40)
+theme_override_constants/separation = 8
 
-[node name="Status" type="Label" parent="Content"]
+[node name="TitleLabel" type="Label" parent="MainVBox/Header"]
 layout_mode = 2
+text = "SOLARIS VII"
+vertical_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = ""
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Body" type="Label" parent="Content"]
+[node name="UserLabel" type="Label" parent="MainVBox/Header"]
 layout_mode = 2
-text = "Placeholder for login, character, map, room, presence, chat, and ComStar surfaces."
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="BackButton" type="Button" parent="MainVBox/Header"]
+layout_mode = 2
+text = "\u2190 Menu"
+
+[node name="ContentHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="RoomPanel" type="PanelContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="RoomVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/RoomPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RoomPanelTitle" type="Label" parent="MainVBox/ContentHBox/RoomPanel/RoomVBox"]
+layout_mode = 2
+text = "Rooms"
 horizontal_alignment = 1
-autowrap_mode = 3
 
-[node name="BackButton" type="Button" parent="Content"]
+[node name="RoomScroll" type="ScrollContainer" parent="MainVBox/ContentHBox/RoomPanel/RoomVBox"]
 layout_mode = 2
-text = "Back"
+size_flags_vertical = 3
 
-[connection signal="pressed" from="Content/BackButton" to="." method="_on_back_pressed"]
+[node name="RoomList" type="VBoxContainer" parent="MainVBox/ContentHBox/RoomPanel/RoomVBox/RoomScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailPanel" type="VBoxContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RoomName" type="Label" parent="MainVBox/ContentHBox/DetailPanel"]
+layout_mode = 2
+text = "Select a room"
+horizontal_alignment = 1
+
+[node name="RoomDesc" type="Label" parent="MainVBox/ContentHBox/DetailPanel"]
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="MapCanvas" type="Control" parent="MainVBox/ContentHBox/DetailPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 200)
+script = ExtResource("2_map_script")
+
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/DetailPanel"]
+layout_mode = 2
+
+[node name="HSpacer" type="Control" parent="MainVBox/ContentHBox/DetailPanel/ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnterButton" type="Button" parent="MainVBox/ContentHBox/DetailPanel/ActionBar"]
+layout_mode = 2
+text = "Enter Room"
+disabled = true
+
+[connection signal="pressed" from="MainVBox/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailPanel/ActionBar/EnterButton" to="." method="_on_enter_pressed"]
