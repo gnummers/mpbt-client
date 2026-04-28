@@ -3,6 +3,7 @@ extends Control
 const WORLD_SCENE         := "res://scenes/world/world.tscn"
 const COMBAT_SCENE        := "res://scenes/combat/combat.tscn"
 const ASSET_BROWSER_SCENE := "res://scenes/assets/asset_browser.tscn"
+const LOGIN_SCENE         := "res://scenes/login/login.tscn"
 
 @onready var server_value: Label = %ServerValue
 @onready var websocket_value: Label = %WebSocketValue
@@ -39,7 +40,10 @@ func _on_server_unavailable(reason: String) -> void:
 
 
 func _on_world_pressed() -> void:
-	get_tree().change_scene_to_file(WORLD_SCENE)
+	if AuthSession.is_logged_in:
+		get_tree().change_scene_to_file(WORLD_SCENE)
+	else:
+		get_tree().change_scene_to_file(LOGIN_SCENE)
 
 
 func _on_combat_pressed() -> void:

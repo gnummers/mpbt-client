@@ -19,6 +19,9 @@ var is_online: bool = false
 ## Resolved NestJS REST API base URL, e.g. "http://host:3001"
 var api_url: String = ""
 
+## Resolved mpbt-server game REST API base URL, e.g. "http://host:3002"
+var game_api_url: String = ""
+
 ## Resolved ARIES game server address, e.g. "host:2000"
 var game_server: String = ""
 
@@ -44,6 +47,7 @@ func check_config() -> void:
 	if err != OK:
 		is_online = false
 		api_url = ""
+		game_api_url = ""
 		game_server = ""
 		web_version = ""
 		server_unavailable.emit("request failed (err %d)" % err)
@@ -58,6 +62,7 @@ func _on_request_completed(
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
 		is_online = false
 		api_url = ""
+		game_api_url = ""
 		game_server = ""
 		web_version = ""
 		server_unavailable.emit(_error_reason(result, response_code))
@@ -67,6 +72,7 @@ func _on_request_completed(
 	if typeof(parsed) != TYPE_DICTIONARY or not parsed.has("gameServer"):
 		is_online = false
 		api_url = ""
+		game_api_url = ""
 		game_server = ""
 		web_version = ""
 		server_unavailable.emit("unexpected response")
@@ -74,6 +80,7 @@ func _on_request_completed(
 
 	is_online = true
 	api_url = str(parsed.get("apiUrl", ""))
+	game_api_url = str(parsed.get("gameApiUrl", ""))
 	game_server = str(parsed.get("gameServer", ""))
 	web_version = str(parsed.get("version", ""))
 	server_available.emit(parsed)

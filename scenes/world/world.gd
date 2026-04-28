@@ -17,8 +17,8 @@ func _ready() -> void:
 
 	_set_status("Connecting\u2026")
 
-	if ServerBridge.is_online and not ServerBridge.api_url.is_empty():
-		_world_client.fetch_rooms(ServerBridge.api_url)
+	if ServerBridge.is_online and not ServerBridge.game_api_url.is_empty():
+		_world_client.fetch_rooms(ServerBridge.game_api_url)
 	else:
 		ServerBridge.server_available.connect(_on_server_available, CONNECT_ONE_SHOT)
 		ServerBridge.server_unavailable.connect(_on_server_unavailable, CONNECT_ONE_SHOT)
@@ -30,7 +30,7 @@ func _set_status(text: String) -> void:
 
 
 func _on_server_available(_info: Dictionary) -> void:
-	_world_client.fetch_rooms(ServerBridge.api_url)
+	_world_client.fetch_rooms(ServerBridge.game_api_url)
 
 
 func _on_server_unavailable(_reason: String) -> void:

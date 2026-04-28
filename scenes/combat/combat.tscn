@@ -1,0 +1,57 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/combat/combat.gd" id="1_combat_script"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_arena"]
+size = Vector2(32, 32)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.24, 0.29, 0.23, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_mech"]
+size = Vector3(1.8, 3.2, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mech"]
+albedo_color = Color(0.58, 0.47, 0.26, 1)
+roughness = 0.8
+
+[sub_resource type="Environment" id="Environment_default"]
+background_mode = 1
+background_color = Color(0.05, 0.06, 0.075, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.62, 0.68, 0.74, 1)
+ambient_light_energy = 0.55
+
+[node name="Combat" type="Node3D"]
+script = ExtResource("1_combat_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_default")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.785398, -0.523599, 0)
+light_energy = 2.0
+
+[node name="ArenaGround" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_arena")
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+
+[node name="PlaceholderMech" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+mesh = SubResource("BoxMesh_mech")
+surface_material_override/0 = SubResource("StandardMaterial3D_mech")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 8, 12)
+current = true
+fov = 55.0
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Status" type="Label" parent="Hud"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 520.0
+offset_bottom = 72.0
+text = "Combat placeholder - Esc returns to menu"

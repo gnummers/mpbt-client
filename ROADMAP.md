@@ -2,20 +2,39 @@
 
 ## Vision
 
-Build a modern, cross-platform client for **Multiplayer BattleTech: Solaris** that feels as close as practical to the retail **v1.29 client released in 1999**, while supporting modern resolutions, current operating systems, accessible setup, and quality-of-life improvements.
+Build a modern, cross-platform **Godot 4** client for **Multiplayer BattleTech: Solaris** that feels as close as practical to the retail **v1.29 client released in 1999**, while supporting modern resolutions, current operating systems, accessible setup, and quality-of-life improvements.
 
-The client should preserve the game’s identity: Solaris world navigation, ComStar/social surfaces, mech management, arena ready rooms, indexed-color UI art, cockpit/HUD language, combat pacing, and the late-1990s BattleTech feel. Modernization should improve presentation and usability without turning the project into a different game.
+The client should preserve the game’s identity: Solaris world navigation, ComStar/social surfaces, mech selection, arena ready rooms, indexed-color UI art, cockpit/HUD language, combat pacing, and the late-1990s BattleTech feel. Modernization should improve presentation and usability without turning the project into a different game.
 
 ## Primary Recommendation
 
-Use a **TypeScript web-first client** with:
+Use **Godot 4** as the main client engine.
 
-- **PixiJS** for 2D GPU rendering, UI composition, map/world screens, HUDs, sprites, and palette-aware asset presentation.
-- **Tauri 2** for native packaging on Windows, macOS, Linux, Android, and iOS.
-- **Three.js or a native/WASM renderer module** only where combat/3D fidelity needs it.
-- A clean **REST + WebSocket API** for the new client, while `mpbt-server` keeps ARIES compatibility for the original retail client.
+Godot is the best fit for this project because the main gameplay is a 3D combat scene, but the project also needs a small-team-friendly, open, highly hackable engine for reverse-engineered assets and custom networking.
 
-This aligns with the existing `mpbt-server` codebase, which is TypeScript and already contains protocol, world, combat, map, mech, and asset-parsing knowledge.
+Recommended stack:
+
+- **Godot 4.x** for the application, 3D combat scene, UI scenes, input, audio, packaging, and tooling.
+- **GDScript** for most client gameplay/UI code.
+- **C# or GDExtension** for performance-sensitive systems, shared model code, binary asset importers, or protocol tooling when GDScript becomes awkward.
+- **REST + WebSocket API** for the modern client.
+- `mpbt-server` retains the **retail v1.29 ARIES adapter** for the original 1999 client.
+
+This replaces the earlier TypeScript/PixiJS/Tauri-first plan. Browser-first rendering is no longer the recommended direction for the primary modern client.
+
+## Why Godot 4
+
+Godot gives us:
+
+- A real 3D engine for arena combat.
+- Native desktop builds without a browser runtime.
+- Good iteration speed for a small project.
+- Open-source MIT licensing.
+- Enough control to build custom importers for retail MPBT assets.
+- A lower operational burden than Unreal Engine.
+- A friendlier contributor story than a large Unreal/C++ project.
+
+Unreal Engine remains a reasonable alternative if the project later decides to prioritize highest-end visual fidelity, marketplace assets, cinematic tooling, or a larger production pipeline. For the first modern MPBT client, Godot 4 is the practical choice.
 
 ## Fidelity Target
 
@@ -41,17 +60,17 @@ Exact behavior for the following assets may become important:
 - `terrain/TER###.DAT`
 - `terrain/TER###.PAL`
 
-These may affect authentic arena rendering, mech/object geometry, animation timing, terrain rasterization, collision expectations, visibility, or combat feel. Do not treat the current PNG extraction as the final word for combat fidelity.
+These may affect authentic arena rendering, mech/object geometry, animation timing, terrain rasterization, collision expectations, visibility, or combat feel. Do not treat current PNG extraction or screenshots as the final word for combat fidelity.
 
 ## Architecture
 
-### Client Shell
+### Client Runtime
 
-- TypeScript application.
-- PixiJS render surface.
-- Tauri wrapper for native distribution.
-- Browser-compatible development mode for fast iteration.
-- Shared asset manifest and configuration format.
+- Godot 4 project.
+- Desktop-first target: Windows, Linux, macOS.
+- Scene-based UI for login, world, ComStar, mech selection, ready rooms, and combat.
+- 3D combat scene as a first-class part of the client, not a late add-on.
+- Local settings file for server URL, asset path, rendering mode, scaling mode, and diagnostics.
 
 ### Server API
 
@@ -59,14 +78,14 @@ The modern client should not speak ARIES directly as its primary protocol.
 
 Use:
 
-- REST/HTTPS for auth, account, launcher metadata, character profile, mech inventory, rankings, articles, and static configuration.
+- REST/HTTPS for auth, account, launcher metadata, character profile, mech selection, rankings, articles, and static configuration.
 - WebSocket for world presence, chat, room travel, menus, ready-room state, combat input, combat snapshots, and match events.
 
 Keep ARIES in `mpbt-server` as the compatibility protocol for `MPBTWIN.EXE`.
 
 ### Shared Logic
 
-Prefer sharing or porting existing TypeScript logic from `mpbt-server` for:
+Prefer sharing, porting, or generating data from existing `mpbt-server` logic for:
 
 - `.MEC` parsing and derived mech stats.
 - `MPBT.MSG` string-table handling.
@@ -78,41 +97,46 @@ Avoid duplicating server truth in a divergent client-only model.
 
 ## Rendering Plan
 
-### Phase 1: 2D Retail-Style Shell
+### Phase 1: Godot Retail-Style Shell
 
-Use PixiJS to reproduce:
+Use Godot scenes and controls to reproduce:
 
 - Login/account flow.
 - Character profile.
 - Solaris map and Inner Sphere map.
 - World room screens.
 - ComStar/social panels.
-- Mech selection and mech bay.
+- Mech selection.
 - Arena ready room.
 - Combat HUD shell using extracted retail assets.
 
-Use the original 640x480 layout as the canonical coordinate space, then scale and adapt it for modern resolutions.
+Use the original 640x480 layout as a canonical reference coordinate space, then scale and adapt it for modern resolutions.
 
-### Phase 2: Combat MVP
+### Phase 2: 3D Combat MVP
 
-Start with a pragmatic combat renderer:
+Build combat as an actual Godot 3D scene:
 
 - Fixed-step simulation timing.
-- Retail-inspired cockpit/HUD composition.
 - Server-authoritative player/actor state.
+- Mech placeholders or imported low-fidelity meshes.
+- Terrain placeholder or imported arena terrain.
 - Movement, heading, torso/leg orientation, speed, heat, armor/internal state, weapon fire, projectile/effect events.
-- Conservative 2D/2.5D representation if exact terrain/model rendering is not ready.
+- Retail-inspired cockpit/HUD composition.
 
-### Phase 3: Fidelity Renderer
+This phase should prove playability before perfect asset fidelity.
 
-If fidelity demands it, introduce a replaceable renderer core:
+### Phase 3: Retail Asset Fidelity
 
-- C++ or Rust module compiled to WASM for web/Tauri.
-- Native build option for desktop if needed.
-- Exact or near-exact loaders for `3dobj.bin`, `keyframe.bin`, terrain `.BIN/.DAT/.PAL`, animation files, and indexed palettes.
-- Software rasterization or GPU translation that preserves retail visual behavior.
+Implement replaceable Godot import/runtime layers for:
 
-The TypeScript client should call this through a narrow interface so the rest of the UI/client code does not depend on renderer internals.
+- `3dobj.bin`
+- `keyframe.bin`
+- terrain `.BIN/.DAT/.PAL`
+- indexed palettes
+- animation/keyframe data
+- original UI and HUD asset containers
+
+If exact behavior requires native code, use C# or GDExtension behind narrow interfaces.
 
 ## Asset Strategy
 
@@ -160,19 +184,22 @@ Modernization should focus on friction reduction without compromising the Solari
 
 ## Milestones
 
-### M0: Project Scaffold
+### M0: Godot Project Scaffold
 
-- Choose package manager and app framework.
-- Add TypeScript, PixiJS, Tauri, linting, formatting, test runner.
-- Add asset manifest format.
-- Add local config for connecting to `mpbt-server`.
+- Create Godot 4 project. **Done**
+- Add directory layout for scenes, scripts, assets, addons, docs, and tests. **Done**
+- Add project settings for desktop targets. **Initial version done**
+- Add local config for connecting to `mpbt-server`. **Done**
+- Add placeholder main menu, world scene, and combat scene. **Done**
+- Validate the scaffold in the Godot editor and fix any generated import metadata issues.
+- Add the first REST/WebSocket health/version check.
 
-### M1: Asset Browser
+### M1: Local Asset Browser
 
-- Load extracted PNG assets from local licensed asset directory.
-- Render palettes and transparency correctly.
-- Browse UI, icons, scenes, maps, combat HUD, sounds, and music metadata.
-- Validate scaling modes.
+- Load extracted local retail assets from a user-provided asset directory.
+- Render UI art, icons, maps, combat HUD pieces, sounds, and music metadata.
+- Validate scaling modes and palette assumptions.
+- Do not redistribute proprietary assets.
 
 ### M2: Modern API Contract
 
@@ -197,13 +224,12 @@ Modernization should focus on friction reduction without compromising the Solari
 - ComStar message read/send/reply.
 - Travel and room transitions.
 
-### M5: Mech Management
+### M5: Mech Selection and Viewer
 
-- Mech inventory.
 - Mech selection.
-- Mech status.
 - Mech details from `.MEC` and `MPBT.MSG`.
-- Ammo/weapon/loadout display as server support allows.
+- Weapon/loadout display as server support allows.
+- Avoid blocking on dormant 1999 mech-management economics such as buy-ammo/repair/name-mech unless new evidence shows GameStorm used them.
 
 ### M6: Arena Ready Room
 
@@ -213,25 +239,25 @@ Modernization should focus on friction reduction without compromising the Solari
 - Match launch.
 - Multi-player staging.
 
-### M7: Combat MVP
+### M7: 3D Combat MVP
 
-- Render cockpit/HUD.
+- Render Godot 3D arena scene.
 - Consume combat snapshots.
 - Send movement/input commands.
-- Show remote actors.
+- Show local and remote actors.
 - Show weapon fire, damage, heat, ammo, and match end.
 - Keep timing fixed and measured against retail-client observations.
 
 ### M8: Retail Fidelity Pass
 
 - Investigate exact terrain/model/keyframe behavior.
-- Decide whether to implement a native/WASM renderer core.
+- Implement or improve Godot importers for original binary assets.
 - Compare side-by-side with retail v1.29 captures.
 - Tune camera, movement, weapon effects, fall/recovery timing, and HUD behavior.
 
 ### M9: Packaging and Distribution
 
-- Desktop packaging with Tauri.
+- Desktop exports for Windows, Linux, and macOS.
 - App signing strategy.
 - Asset-location onboarding.
 - Settings migration.
@@ -250,13 +276,13 @@ Modernization should focus on friction reduction without compromising the Solari
 - Do not replace `mpbt-server` retail-client compatibility.
 - Do not make AI-upscaled art the only available presentation.
 - Do not hardcode gameplay behavior in the client when the server should own it.
+- Do not build a browser-first client as the primary path unless Godot is later abandoned.
 
 ## Open Questions
 
 - How much of `3dobj.bin` and `keyframe.bin` is required for authentic combat visuals?
 - Are terrain `.BIN/.DAT/.PAL` files only visual, or do they encode gameplay-relevant collision/height/visibility behavior?
-- What is the minimum acceptable combat renderer for an MVP?
-- Should the first client release prioritize world/social/mech management before full combat?
+- What is the minimum acceptable placeholder 3D combat renderer for an MVP?
+- Should the first client release prioritize world/social/mech selection before full combat?
 - Which v1.29 UI surfaces should be faithfully reproduced, and which can be redesigned?
 - What asset enhancement policy preserves the retail look while making modern resolutions attractive?
-

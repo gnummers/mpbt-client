@@ -1,12 +1,13 @@
 # MPBT Client
 
-Modern cross-platform client for **Multiplayer BattleTech: Solaris**, designed to work alongside `mpbt-server` while preserving compatibility with the original retail **MPBT v1.29 client from 1999**.
+Modern **Godot 4** client for **Multiplayer BattleTech: Solaris**, designed to work alongside `mpbt-server` while preserving compatibility with the original retail **MPBT v1.29 client from 1999**.
 
-This repository is currently in the planning/scaffold stage. See [ROADMAP.md](ROADMAP.md) for the product and technical roadmap, and [PLAN.md](PLAN.md) for the client/server compatibility strategy.
+This repository is currently in the early Godot scaffold stage. See [ROADMAP.md](ROADMAP.md) for the product and technical roadmap, and [PLAN.md](PLAN.md) for the client/server compatibility strategy.
 
 ## Goals
 
-- Build a modern client for Windows, macOS, Linux, and eventually mobile.
+- Build a modern Godot 4 client for Windows, Linux, macOS, and eventually mobile/tablet feasibility.
+- Treat 3D combat as a first-class scene, not a browser-rendered add-on.
 - Preserve the feel and semantics of the retail v1.29 client wherever known.
 - Support modern resolutions, better setup, improved windowing, input remapping, diagnostics, and other quality-of-life improvements.
 - Reuse the original licensed game assets locally without redistributing proprietary Kesmai/EA files.
@@ -20,7 +21,7 @@ This repository is currently in the planning/scaffold stage. See [ROADMAP.md](RO
 - Characters
 - Solaris rooms and travel
 - ComStar messages
-- Mech inventory
+- Mech selection and combat loadouts
 - Arena ready rooms
 - Combat state
 - Rankings and persistence
@@ -33,26 +34,69 @@ core game/server logic
   -> modern mpbt-client REST/WebSocket adapter
 ```
 
-The original v1.29 client should continue to use ARIES and retail command builders. The modern client should use a clean REST/WebSocket API and should not depend on low-level retail packet details such as `Cmd43`, `Cmd57`, base-85 frames, or ARIES transport quirks.
+The original v1.29 client should continue to use ARIES and retail command builders. The modern Godot client should use a clean REST/WebSocket API and should not depend on low-level retail packet details such as `Cmd43`, `Cmd57`, base-85 frames, or ARIES transport quirks.
 
-## Recommended Stack
+## Chosen Stack
 
-- **TypeScript** for the application code.
-- **PixiJS** for 2D GPU rendering, UI, maps, sprites, and cockpit/HUD surfaces.
-- **Tauri 2** for native desktop packaging and future mobile feasibility.
+- **Godot 4.x** for the application, 3D combat, UI scenes, input, audio, packaging, and tooling.
+- **GDScript** for most client gameplay and UI code.
+- **C# or GDExtension** where useful for performance-sensitive code, binary asset importers, or shared model/protocol tooling.
 - **REST + WebSocket** API for communication with `mpbt-server`.
-- **Three.js or a native/WASM renderer core** only if exact combat/3D fidelity requires it.
+- **Local retail asset importers** for user-provided licensed assets.
 
-This stack aligns with the existing TypeScript `mpbt-server` codebase and keeps asset parsing, game-state schemas, and protocol-adapter work easier to share.
+This supersedes the earlier TypeScript/PixiJS/Tauri-first recommendation. A browser-first client is no longer the primary path.
+
+## Project Layout
+
+The initial Godot 4 scaffold is organized around a small set of stable folders:
+
+```text
+addons/                  Godot editor/runtime plugins.
+assets/                  Safe placeholders and ignored local retail asset outputs.
+config/                  Default and local client configuration.
+docs/                    Implementation notes.
+scenes/main/             Startup/menu scene.
+scenes/world/            Solaris world shell.
+scenes/combat/           3D combat scene.
+scripts/config/          Client configuration loader.
+scripts/net/             Future REST/WebSocket code.
+scripts/ui/              Future shared UI helpers.
+tests/                   Future automated tests.
+```
+
+See [docs/DIRECTORY_LAYOUT.md](docs/DIRECTORY_LAYOUT.md) for the full layout.
+
+## Local Configuration
+
+The client loads connection settings from:
+
+1. `config/default_client.json`
+2. `config/local.json`
+3. `user://mpbt-client.json`
+
+`config/local.json` is ignored by git. Start from [config/local.example.json](config/local.example.json) when pointing the client at a local `mpbt-server`.
+
+Minimal connection fields:
+
+```json
+{
+  "server": {
+    "base_url": "http://127.0.0.1:3000",
+    "websocket_url": "ws://127.0.0.1:3000/ws"
+  }
+}
+```
+
+See [docs/CONFIG.md](docs/CONFIG.md) for the full current format.
 
 ## Fidelity Strategy
 
-The target is not a literal Win32/DirectDraw clone. The target is a modern client that feels close to the retail v1.29 experience while being practical to maintain.
+The target is not a literal Win32/DirectDraw clone. The target is a modern 3D client that feels close to the retail v1.29 experience while being practical to maintain.
 
 The retail client remains the compatibility oracle for:
 
 - World flow
-- Mech bay behavior
+- Mech selection behavior
 - Arena staging
 - Combat pacing
 - SCentEx/ranking semantics
@@ -62,20 +106,20 @@ Modern UI may improve presentation and usability, but it should not redefine the
 
 ## Rendering Strategy
 
-Use the original 640x480 retail layout as the canonical coordinate system, then scale and adapt it for modern displays.
+Use the original 640x480 retail layout as a reference coordinate system for UI/HUD composition, then scale and adapt it for modern displays.
 
-Initial rendering should focus on:
+Initial Godot scenes should focus on:
 
 - Login/account flow
 - Character profile
 - Solaris and Inner Sphere maps
 - World room screens
 - ComStar/social panels
-- Mech selection and mech bay
+- Mech selection
 - Arena ready room
-- Combat HUD shell
+- 3D combat scene with retail-inspired cockpit/HUD
 
-Combat can start with a pragmatic 2D/2.5D renderer. If exact fidelity demands it, introduce a replaceable C++ or Rust renderer module compiled to WASM/native.
+Combat should start with a pragmatic Godot 3D MVP using placeholder or imported meshes and terrain. Exact fidelity can improve as original asset formats are decoded.
 
 Exact behavior for these assets may become important:
 
@@ -101,15 +145,15 @@ AI upscaling is acceptable for large scenes, map backgrounds, terrain textures, 
 
 ## Initial Milestones
 
-1. Project scaffold: TypeScript, PixiJS, Tauri, lint/test/build tooling.
-2. Asset browser: load extracted local assets and validate scaling/palette behavior.
-3. API contract: define REST/WebSocket schemas with `mpbt-server`.
+1. Godot project scaffold.
+2. Local asset browser/import validation.
+3. REST/WebSocket API contract with `mpbt-server`.
 4. Account and character flow.
 5. Solaris world shell: map, rooms, presence, chat, ComStar, travel.
-6. Mech management.
+6. Mech selection and viewer.
 7. Arena ready room.
-8. Combat MVP.
-9. Retail fidelity pass.
+8. 3D combat MVP.
+9. Retail fidelity pass for original model/terrain/keyframe behavior.
 10. Packaging and distribution.
 
 ## Non-Goals
@@ -119,10 +163,16 @@ AI upscaling is acceptable for large scenes, map backgrounds, terrain textures, 
 - Do not redistribute proprietary assets.
 - Do not make AI-upscaled assets mandatory.
 - Do not hardcode gameplay behavior in the client when the server should own it.
+- Do not build a browser-first client as the primary implementation path unless Godot is later abandoned.
 
 ## Current Status
 
-Planning repository. No runnable client scaffold has been created yet.
+Initial Godot 4 scaffold is present:
 
-The next practical step is to scaffold the TypeScript/PixiJS/Tauri application and define a minimal local configuration format for connecting to a development `mpbt-server`.
+- `project.godot`
+- placeholder main, world, and combat scenes
+- committed default/example connection config
+- ignored local config override path
+- documented directory layout
 
+The next practical step is to add the first REST/WebSocket client module and a health/version check against a development `mpbt-server`.

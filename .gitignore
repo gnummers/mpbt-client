@@ -1,0 +1,16 @@
+.godot/
+.import/
+*.translation
+export_presets.cfg
+logs/
+
+# Developer-local connection overrides.
+config/local.json
+
+# Proprietary retail assets must stay local and untracked.
+assets/original/**
+assets/scaled/**
+assets/enhanced/**
+!assets/original/.gitkeep
+!assets/scaled/.gitkeep
+!assets/enhanced/.gitkeep
