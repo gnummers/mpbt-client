@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/world/world.gd" id="1_world_script"]
+
+[node name="World" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_world_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.058, 0.066, 1)
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -120.0
+offset_right = 260.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Content"]
+layout_mode = 2
+text = "Solaris World Shell"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="Content"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="Body" type="Label" parent="Content"]
+layout_mode = 2
+text = "Placeholder for login, character, map, room, presence, chat, and ComStar surfaces."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BackButton" type="Button" parent="Content"]
+layout_mode = 2
+text = "Back"
+
+[connection signal="pressed" from="Content/BackButton" to="." method="_on_back_pressed"]
