@@ -1,0 +1,113 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/arena/ready_room.gd" id="1_ready_room"]
+
+[node name="ReadyRoom" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ready_room")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.058, 0.066, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="MainVBox/Header"]
+layout_mode = 2
+text = "← Back"
+
+[node name="Title" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Arena Ready Room"
+theme_override_font_sizes/font_size = 18
+
+[node name="MechLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 2
+
+[node name="ContentHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="QueuePanel" type="PanelContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 0)
+
+[node name="QueueVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/QueuePanel"]
+layout_mode = 2
+
+[node name="QueueTitle" type="Label" parent="MainVBox/ContentHBox/QueuePanel/QueueVBox"]
+layout_mode = 2
+text = "Staging Queue"
+theme_override_font_sizes/font_size = 14
+
+[node name="SlotList" type="VBoxContainer" parent="MainVBox/ContentHBox/QueuePanel/QueueVBox"]
+layout_mode = 2
+
+[node name="ActionPanel" type="PanelContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ActionMargin" type="MarginContainer" parent="MainVBox/ContentHBox/ActionPanel"]
+layout_mode = 2
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_right = 16
+
+[node name="ActionVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/ActionPanel/ActionMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StatusLabel" type="Label" parent="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Loading..."
+
+[node name="JoinButton" type="Button" parent="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox"]
+layout_mode = 2
+text = "Join Queue"
+
+[node name="ReadyButton" type="Button" parent="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox"]
+layout_mode = 2
+visible = false
+text = "Ready"
+
+[node name="LeaveButton" type="Button" parent="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox"]
+layout_mode = 2
+visible = false
+text = "Leave Queue"
+
+[node name="PollTimer" type="Timer" parent="."]
+wait_time = 5.0
+one_shot = false
+
+[connection signal="pressed" from="MainVBox/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox/JoinButton" to="." method="_on_join_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox/ReadyButton" to="." method="_on_ready_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox/LeaveButton" to="." method="_on_leave_pressed"]
+[connection signal="timeout" from="PollTimer" to="." method="_on_poll_timer_timeout"]

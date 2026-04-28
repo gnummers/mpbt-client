@@ -34,6 +34,10 @@ var username: String = ""
 ## Active character dict; empty if no character exists yet.
 var character: Dictionary = {}
 
+## Pending match context set by the arena ready room before scene transition.
+## Keys: arenaId (String), mode ("solo"|"pvp"), slots (Array).
+var pending_match: Dictionary = {}
+
 var _cookie: String = ""
 var _busy: bool = false
 var _api_url: String = ""

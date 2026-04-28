@@ -14,6 +14,8 @@ signal presence_updated(rooms: Array)
 signal ws_connected
 signal ws_disconnected
 signal room_chat_received(room_id: int, username: String, text: String)
+signal arena_queue_updated(slots: Array)
+signal arena_match_launched(data: Dictionary)
 
 const _RECONNECT_DELAY := 5.0
 
@@ -87,3 +89,7 @@ func _handle_message(text: String) -> void:
 			var username := str(data.get("username", ""))
 			var msg_text := str(data.get("text", ""))
 			room_chat_received.emit(room_id, username, msg_text)
+		"arena_queue_update":
+			arena_queue_updated.emit(data.get("slots", []))
+		"arena_match_launch":
+			arena_match_launched.emit(data)
