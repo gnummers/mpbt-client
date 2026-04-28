@@ -4,6 +4,7 @@ const WORLD_SCENE         := "res://scenes/world/world.tscn"
 const COMBAT_SCENE        := "res://scenes/combat/combat.tscn"
 const ASSET_BROWSER_SCENE := "res://scenes/assets/asset_browser.tscn"
 const LOGIN_SCENE         := "res://scenes/login/login.tscn"
+const MECH_SELECT_SCENE   := "res://scenes/mech/mech_select.tscn"
 
 @onready var server_value: Label = %ServerValue
 @onready var websocket_value: Label = %WebSocketValue
@@ -52,3 +53,13 @@ func _on_combat_pressed() -> void:
 
 func _on_assets_pressed() -> void:
 	get_tree().change_scene_to_file(ASSET_BROWSER_SCENE)
+
+
+func _on_mech_bay_pressed() -> void:
+	if not AuthSession.is_logged_in:
+		get_tree().change_scene_to_file(LOGIN_SCENE)
+	elif AuthSession.character.is_empty():
+		status_label.text = "Create a character first to access the Mech Bay"
+		status_label.modulate = Color(1.0, 0.8, 0.3)
+	else:
+		get_tree().change_scene_to_file(MECH_SELECT_SCENE)

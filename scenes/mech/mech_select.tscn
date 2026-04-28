@@ -1,0 +1,155 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/mech/mech_select.gd" id="1_mech_select"]
+
+[node name="MechSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mech_select")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.058, 0.066, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="MainVBox/Header"]
+layout_mode = 2
+text = "\u2190 Menu"
+
+[node name="TitleLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MECH BAY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CurrentMechLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+text = "Current: none"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ContentHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ListPanel" type="PanelContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="ListVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/ListPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="FilterRow" type="HBoxContainer" parent="MainVBox/ContentHBox/ListPanel/ListVBox"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="AllBtn" type="Button" parent="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "All"
+
+[node name="LightBtn" type="Button" parent="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Lt"
+
+[node name="MedBtn" type="Button" parent="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Med"
+
+[node name="HvyBtn" type="Button" parent="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Hvy"
+
+[node name="AstBtn" type="Button" parent="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Ast"
+
+[node name="MechList" type="ItemList" parent="MainVBox/ContentHBox/ListPanel/ListVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DetailPanel" type="PanelContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailMargin" type="MarginContainer" parent="MainVBox/ContentHBox/DetailPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="DetailVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DesigLabel" type="Label" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = "Select a mech from the list"
+
+[node name="NameLabel" type="Label" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = ""
+modulate = Color(0.7, 0.7, 0.7, 1)
+
+[node name="InfoLabel" type="Label" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = ""
+
+[node name="WeapLabel" type="Label" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = ""
+autowrap_mode = 1
+
+[node name="Spacer" type="Control" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StatusLabel" type="Label" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+modulate = Color(0.7, 0.7, 0.7, 1)
+
+[node name="SelectButton" type="Button" parent="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = "Select This Mech"
+disabled = true
+
+[connection signal="pressed" from="MainVBox/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow/AllBtn" to="." method="_on_filter_all"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow/LightBtn" to="." method="_on_filter_light"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow/MedBtn" to="." method="_on_filter_medium"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow/HvyBtn" to="." method="_on_filter_heavy"]
+[connection signal="pressed" from="MainVBox/ContentHBox/ListPanel/ListVBox/FilterRow/AstBtn" to="." method="_on_filter_assault"]
+[connection signal="item_selected" from="MainVBox/ContentHBox/ListPanel/ListVBox/MechList" to="." method="_on_item_selected"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/SelectButton" to="." method="_on_select_pressed"]

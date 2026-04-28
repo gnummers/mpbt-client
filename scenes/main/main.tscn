@@ -94,6 +94,10 @@ text = "Combat"
 layout_mode = 2
 text = "Assets"
 
+[node name="MechBayButton" type="Button" parent="Panel/Margin/Content/ButtonRow"]
+layout_mode = 2
+text = "Mech Bay"
+
 [node name="StatusLabel" type="Label" parent="Panel/Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -104,3 +108,4 @@ modulate = Color(0.7, 0.7, 0.7, 1)
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/WorldButton" to="." method="_on_world_pressed"]
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/CombatButton" to="." method="_on_combat_pressed"]
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/AssetsButton" to="." method="_on_assets_pressed"]
+[connection signal="pressed" from="Panel/Margin/Content/ButtonRow/MechBayButton" to="." method="_on_mech_bay_pressed"]
