@@ -20,6 +20,7 @@ config/icon="res://assets/icons/icon.svg"
 ClientConfig="*res://scripts/config/client_config.gd"
 ServerBridge="*res://scripts/net/server_bridge.gd"
 AuthSession="*res://scripts/net/auth_session.gd"
+WSClient="*res://scripts/net/ws_client.gd"
 
 [display]
 

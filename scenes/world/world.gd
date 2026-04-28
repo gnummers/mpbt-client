@@ -5,7 +5,12 @@ extends Control
 ## Displays the room list (REST /world/rooms or local SOLARIS.MAP fallback),
 ## a room detail panel with description text, and a mini-map canvas showing
 ## room positions in the Solaris VII travel-map coordinate space.
-## After entering a room, polls /world/presence every 5 s to show occupants.
+##
+## Presence updates arrive via WebSocket push (WSClient autoload).  When the
+## WebSocket is unavailable the scene falls back to polling /world/presence
+## every 5 s via WorldTravelClient (REST).  The poll timer stops automatically
+## when the WebSocket reconnects and resumes if it drops while the player is
+## in a room.
 
 var _world_client: WorldClient
 var _travel_client: WorldTravelClient
@@ -36,6 +41,10 @@ func _ready() -> void:
 	_travel_client.traveled.connect(_on_traveled)
 	_travel_client.travel_failed.connect(_on_travel_failed)
 	_travel_client.presence_updated.connect(_on_presence_updated)
+
+	WSClient.presence_updated.connect(_on_presence_updated)
+	WSClient.ws_connected.connect(_on_ws_connected)
+	WSClient.ws_disconnected.connect(_on_ws_disconnected)
 
 	var char_name: String = AuthSession.character.get("display_name", "")
 	if not AuthSession.username.is_empty() and not char_name.is_empty():
@@ -178,8 +187,12 @@ func _on_traveled(room: Dictionary) -> void:
 	_set_status("In: %s" % room_name)
 
 	_presence_panel.visible = true
-	_poll_timer.start()
-	_travel_client.fetch_presence(ServerBridge.game_api_url)
+	if WSClient.is_ws_connected:
+		# Server will have already broadcast presence_update via WebSocket.
+		pass
+	else:
+		_poll_timer.start()
+		_travel_client.fetch_presence(ServerBridge.game_api_url)
 
 
 func _on_travel_failed(reason: String) -> void:
@@ -187,7 +200,23 @@ func _on_travel_failed(reason: String) -> void:
 	_update_enter_button()
 
 
+func _on_ws_connected() -> void:
+	# Real-time push is available; stop any REST fallback polling.
+	_poll_timer.stop()
+
+
+func _on_ws_disconnected() -> void:
+	# WebSocket dropped; fall back to REST polling if the player is in a room.
+	if _current_room_id >= 0:
+		_poll_timer.start()
+		if not ServerBridge.game_api_url.is_empty():
+			_travel_client.fetch_presence(ServerBridge.game_api_url)
+
+
 func _on_poll_timer_timeout() -> void:
+	if WSClient.is_ws_connected:
+		_poll_timer.stop()
+		return
 	if not ServerBridge.game_api_url.is_empty():
 		_travel_client.fetch_presence(ServerBridge.game_api_url)
 
