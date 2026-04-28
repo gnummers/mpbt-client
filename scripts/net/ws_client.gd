@@ -13,6 +13,7 @@ extends Node
 signal presence_updated(rooms: Array)
 signal ws_connected
 signal ws_disconnected
+signal room_chat_received(room_id: int, username: String, text: String)
 
 const _RECONNECT_DELAY := 5.0
 
@@ -81,3 +82,8 @@ func _handle_message(text: String) -> void:
 	match str(data.get("type", "")):
 		"presence_update":
 			presence_updated.emit(data.get("rooms", []))
+		"room_chat":
+			var room_id := int(data.get("roomId", -1))
+			var username := str(data.get("username", ""))
+			var msg_text := str(data.get("text", ""))
+			room_chat_received.emit(room_id, username, msg_text)

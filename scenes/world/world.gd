@@ -25,6 +25,11 @@ var _current_room_id: int = -1
 @onready var _room_desc: Label           = $MainVBox/ContentHBox/DetailPanel/RoomDesc
 @onready var _presence_panel: VBoxContainer = $MainVBox/ContentHBox/DetailPanel/PresencePanel
 @onready var _presence_list: VBoxContainer  = $MainVBox/ContentHBox/DetailPanel/PresencePanel/PresenceList
+@onready var _chat_panel: VBoxContainer     = $MainVBox/ContentHBox/DetailPanel/ChatPanel
+@onready var _chat_scroll: ScrollContainer  = $MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatScroll
+@onready var _chat_log: VBoxContainer       = $MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatScroll/ChatLog
+@onready var _chat_input: LineEdit          = $MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatHBox/ChatInput
+@onready var _send_button: Button           = $MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatHBox/SendButton
 @onready var _map_canvas: SolarisMap     = $MainVBox/ContentHBox/DetailPanel/MapCanvas
 @onready var _enter_button: Button       = $MainVBox/ContentHBox/DetailPanel/ActionBar/EnterButton
 @onready var _poll_timer: Timer          = $PollTimer
@@ -41,10 +46,13 @@ func _ready() -> void:
 	_travel_client.traveled.connect(_on_traveled)
 	_travel_client.travel_failed.connect(_on_travel_failed)
 	_travel_client.presence_updated.connect(_on_presence_updated)
+	_travel_client.chat_sent.connect(_on_chat_sent)
+	_travel_client.chat_failed.connect(_on_chat_failed)
 
 	WSClient.presence_updated.connect(_on_presence_updated)
 	WSClient.ws_connected.connect(_on_ws_connected)
 	WSClient.ws_disconnected.connect(_on_ws_disconnected)
+	WSClient.room_chat_received.connect(_on_room_chat_received)
 
 	var char_name: String = AuthSession.character.get("display_name", "")
 	if not AuthSession.username.is_empty() and not char_name.is_empty():
@@ -187,6 +195,10 @@ func _on_traveled(room: Dictionary) -> void:
 	_set_status("In: %s" % room_name)
 
 	_presence_panel.visible = true
+	_chat_panel.visible = true
+	_send_button.disabled = false
+	_clear_chat_log()
+
 	if WSClient.is_ws_connected:
 		# Server will have already broadcast presence_update via WebSocket.
 		pass
@@ -247,4 +259,52 @@ func _on_presence_updated(rooms: Array) -> void:
 
 func _on_back_pressed() -> void:
 	_poll_timer.stop()
+	_send_button.disabled = true
 	get_tree().change_scene_to_file("res://scenes/main/main.tscn")
+
+
+## ── Chat ──────────────────────────────────────────────────────────────────────
+
+func _on_send_pressed() -> void:
+	_submit_chat()
+
+
+func _on_chat_submitted(_text: String) -> void:
+	_submit_chat()
+
+
+func _submit_chat() -> void:
+	var text := _chat_input.text.strip_edges()
+	if text.is_empty() or _current_room_id < 0 or ServerBridge.game_api_url.is_empty():
+		return
+	_send_button.disabled = true
+	_chat_input.editable = false
+	_travel_client.send_chat(ServerBridge.game_api_url, AuthSession.username, _current_room_id, text)
+
+
+func _on_chat_sent() -> void:
+	_chat_input.clear()
+	_chat_input.editable = true
+	_send_button.disabled = false
+
+
+func _on_chat_failed(reason: String) -> void:
+	_set_status("Chat failed: %s" % reason)
+	_chat_input.editable = true
+	_send_button.disabled = false
+
+
+func _on_room_chat_received(room_id: int, username: String, text: String) -> void:
+	if room_id != _current_room_id:
+		return
+	var lbl := Label.new()
+	lbl.text = "[%s] %s" % [username, text]
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_chat_log.add_child(lbl)
+	await get_tree().process_frame
+	_chat_scroll.scroll_vertical = 999999
+
+
+func _clear_chat_log() -> void:
+	for child in _chat_log.get_children():
+		child.queue_free()

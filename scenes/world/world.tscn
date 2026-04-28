@@ -112,6 +112,40 @@ text = "In this room:"
 layout_mode = 2
 theme_override_constants/separation = 2
 
+[node name="ChatPanel" type="VBoxContainer" parent="MainVBox/ContentHBox/DetailPanel"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 4
+
+[node name="ChatHeader" type="Label" parent="MainVBox/ContentHBox/DetailPanel/ChatPanel"]
+layout_mode = 2
+text = "Room chat:"
+
+[node name="ChatScroll" type="ScrollContainer" parent="MainVBox/ContentHBox/DetailPanel/ChatPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 100)
+
+[node name="ChatLog" type="VBoxContainer" parent="MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="ChatHBox" type="HBoxContainer" parent="MainVBox/ContentHBox/DetailPanel/ChatPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ChatInput" type="LineEdit" parent="MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Say something\u2026"
+max_length = 200
+
+[node name="SendButton" type="Button" parent="MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatHBox"]
+layout_mode = 2
+text = "Send"
+disabled = true
+
 [node name="MapCanvas" type="Control" parent="MainVBox/ContentHBox/DetailPanel"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -136,4 +170,6 @@ autostart = false
 
 [connection signal="pressed" from="MainVBox/Header/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="MainVBox/ContentHBox/DetailPanel/ActionBar/EnterButton" to="." method="_on_enter_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatHBox/SendButton" to="." method="_on_send_pressed"]
+[connection signal="text_submitted" from="MainVBox/ContentHBox/DetailPanel/ChatPanel/ChatHBox/ChatInput" to="." method="_on_chat_submitted"]
 [connection signal="timeout" from="PollTimer" to="." method="_on_poll_timer_timeout"]
