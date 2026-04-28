@@ -97,25 +97,54 @@ func _show_map(path: String) -> void:
 
 	var rooms: Array = result.get("rooms", [])
 	var lines := PackedStringArray()
-	lines.append("[b]%s[/b]   %d rooms   (next_offset 0x%x)" % [
+	lines.append("[b]%s[/b]   %d rooms   (picture record at 0x%x)" % [
 		path.get_file(), rooms.size(), result.get("next_offset", 0),
 	])
 	lines.append("")
+
+	# Group by district.
+	var by_district: Dictionary = {}
 	for r in rooms:
-		var cx := (int(r["x1"]) + int(r["x2"])) / 2
-		var cy := (int(r["y1"]) + int(r["y2"])) / 2
-		var name_str: String = r.get("name", "")
-		var desc_str: String = r.get("description", "")
-		lines.append("[b]%d[/b]  %s" % [r["room_id"], name_str])
-		if desc_str.is_empty():
-			lines.append("    [color=gray]map (%d, %d)[/color]" % [cx, cy])
-		else:
-			lines.append("    [color=gray]%s  · map (%d, %d)[/color]" % [desc_str, cx, cy])
+		var dn: String = r.get("district_name", "Unknown")
+		if not by_district.has(dn):
+			by_district[dn] = []
+		by_district[dn].append(r)
+
+	for dist_name in MapParser.DISTRICTS:
+		if not by_district.has(dist_name):
+			continue
+		var dist_rooms: Array = by_district[dist_name]
+		# find sector room for terrain
+		var terrain := ""
+		for r in dist_rooms:
+			if r.get("is_sector", false):
+				terrain = MapParser.terrain_from_description(r.get("description", ""))
+				break
+		var header := "[b]%s[/b]" % dist_name
+		if terrain.length() > 0:
+			header += "  [color=gray](%s)[/color]" % terrain
+		lines.append(header)
+		for r in dist_rooms:
+			if r.get("is_sector", false):
+				continue
+			var cx := (int(r.get("x1", 0)) + int(r.get("x2", 0))) / 2
+			var cy := (int(r.get("y1", 0)) + int(r.get("y2", 0))) / 2
+			lines.append("  [b]%s[/b]  [color=gray]map (%d, %d)  label %d×%d[/color]" % [
+				r.get("name", ""), cx, cy,
+				r.get("label_w", 0), r.get("label_h", 0),
+			])
+			var desc: String = r.get("description", "")
+			if desc.length() > 0:
+				lines.append("    [color=#888888]%s[/color]" % desc)
+		lines.append("")
 
 	map_view.text = "\n".join(lines)
 	map_view.visible = true
 	image_view.visible = false
-	info_label.text = "%s — %d rooms" % [path.get_file(), rooms.size()]
+	info_label.text = "%s — %d rooms across %d districts" % [
+		path.get_file(), rooms.size(),
+		by_district.size(),
+	]
 	info_label.modulate = Color(0.8, 0.8, 0.8, 1)
 
 
