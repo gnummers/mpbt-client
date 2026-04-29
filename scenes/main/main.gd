@@ -7,6 +7,7 @@ const LOGIN_SCENE         := "res://scenes/login/login.tscn"
 const MECH_SELECT_SCENE   := "res://scenes/mech/mech_select.tscn"
 const ARENA_SCENE         := "res://scenes/arena/ready_room.tscn"
 const STANDINGS_SCENE     := "res://scenes/standings/standings.tscn"
+const SETTINGS_SCENE      := "res://scenes/settings/settings.tscn"
 
 @onready var server_value: Label = %ServerValue
 @onready var websocket_value: Label = %WebSocketValue
@@ -28,6 +29,8 @@ func _ready() -> void:
 		})
 	else:
 		ServerBridge.check_config()
+
+	_check_first_run()
 
 
 func _on_server_available(info: Dictionary) -> void:
@@ -82,3 +85,13 @@ func _on_arena_pressed() -> void:
 
 func _on_standings_pressed() -> void:
 	get_tree().change_scene_to_file(STANDINGS_SCENE)
+
+
+func _on_settings_pressed() -> void:
+	get_tree().change_scene_to_file(SETTINGS_SCENE)
+
+
+func _check_first_run() -> void:
+	if not FileAccess.file_exists("user://mpbt-client.json"):
+		status_label.text = "First run — configure your server and asset paths in Settings"
+		status_label.modulate = Color(0.9, 0.75, 0.25)

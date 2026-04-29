@@ -53,6 +53,19 @@ func check_config() -> void:
 		server_unavailable.emit("request failed (err %d)" % err)
 
 
+## Clears all cached state and cancels any in-flight request.
+## Call this before check_config() to force a fresh discovery (e.g. after
+## the user changes the server URL in settings).
+func reset() -> void:
+	is_online = false
+	api_url = ""
+	game_api_url = ""
+	game_server = ""
+	web_version = ""
+	if _http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		_http.cancel_request()
+
+
 func _on_request_completed(
 	result: int,
 	response_code: int,

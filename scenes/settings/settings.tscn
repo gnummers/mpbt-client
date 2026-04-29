@@ -1,0 +1,213 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/settings/settings.gd" id="1_settings"]
+
+[node name="Settings" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_settings")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.058, 0.066, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="MainVBox/Header"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 0)
+text = "← Menu"
+
+[node name="TitleLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SETTINGS"
+horizontal_alignment = 0
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="UserPathLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="HSep" type="HSeparator" parent="MainVBox"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Fields" type="VBoxContainer" parent="MainVBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+offset_right = 1280.0
+offset_bottom = 620.0
+
+[node name="ServerSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+text = "— Server —"
+theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
+
+[node name="ServerUrlRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ServerUrlLabel" type="Label" parent="MainVBox/Scroll/Fields/ServerUrlRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Web API URL"
+vertical_alignment = 1
+
+[node name="ServerUrlEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/ServerUrlRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "http://127.0.0.1:3000"
+
+[node name="WsUrlRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WsUrlLabel" type="Label" parent="MainVBox/Scroll/Fields/WsUrlRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "WebSocket URL"
+vertical_alignment = 1
+
+[node name="WsUrlEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/WsUrlRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "ws://127.0.0.1:3002/ws"
+
+[node name="AssetsSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+text = "— Assets —"
+theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
+
+[node name="RetailRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RetailLabel" type="Label" parent="MainVBox/Scroll/Fields/RetailRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Retail install path"
+vertical_alignment = 1
+
+[node name="RetailEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/RetailRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "C:/Games/MPBT"
+
+[node name="RetailBrowse" type="Button" parent="MainVBox/Scroll/Fields/RetailRow"]
+layout_mode = 2
+text = "Browse…"
+
+[node name="ExtractedRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ExtractedLabel" type="Label" parent="MainVBox/Scroll/Fields/ExtractedRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+text = "Extracted assets"
+vertical_alignment = 1
+
+[node name="ExtractedEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/ExtractedRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "C:/MPBT/assets"
+
+[node name="ExtractedBrowse" type="Button" parent="MainVBox/Scroll/Fields/ExtractedRow"]
+layout_mode = 2
+text = "Browse…"
+
+[node name="DiagSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+text = "— Diagnostics —"
+theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
+
+[node name="DiagRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+
+[node name="DiagCheck" type="CheckBox" parent="MainVBox/Scroll/Fields/DiagRow"]
+layout_mode = 2
+text = "Enable diagnostics logging"
+
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+theme_override_constants/separation = 12
+
+[node name="StatusLabel" type="Label" parent="MainVBox/ActionBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="SaveButton" type="Button" parent="MainVBox/ActionBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 0)
+text = "Save"
+
+[node name="CancelButton" type="Button" parent="MainVBox/ActionBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 0)
+text = "Cancel"
+
+[node name="RetailDialog" type="FileDialog" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+title = "Select Retail Install Folder"
+file_mode = 2
+access = 2
+
+[node name="ExtractedDialog" type="FileDialog" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+title = "Select Extracted Assets Folder"
+file_mode = 2
+access = 2
+
+[connection signal="pressed" from="MainVBox/Header/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MainVBox/ActionBar/SaveButton" to="." method="_on_save_pressed"]
+[connection signal="pressed" from="MainVBox/ActionBar/CancelButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MainVBox/Scroll/Fields/RetailRow/RetailBrowse" to="." method="_on_retail_browse_pressed"]
+[connection signal="pressed" from="MainVBox/Scroll/Fields/ExtractedRow/ExtractedBrowse" to="." method="_on_extracted_browse_pressed"]
+[connection signal="dir_selected" from="RetailDialog" to="." method="_on_retail_dir_selected"]
+[connection signal="dir_selected" from="ExtractedDialog" to="." method="_on_extracted_dir_selected"]

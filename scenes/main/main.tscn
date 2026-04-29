@@ -106,6 +106,10 @@ text = "Arena"
 layout_mode = 2
 text = "Standings"
 
+[node name="SettingsButton" type="Button" parent="Panel/Margin/Content/ButtonRow"]
+layout_mode = 2
+text = "Settings"
+
 [node name="StatusLabel" type="Label" parent="Panel/Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -119,4 +123,5 @@ modulate = Color(0.7, 0.7, 0.7, 1)
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/MechBayButton" to="." method="_on_mech_bay_pressed"]
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/ArenaButton" to="." method="_on_arena_pressed"]
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/StandingsButton" to="." method="_on_standings_pressed"]
+[connection signal="pressed" from="Panel/Margin/Content/ButtonRow/SettingsButton" to="." method="_on_settings_pressed"]
 

@@ -167,12 +167,16 @@ AI upscaling is acceptable for large scenes, map backgrounds, terrain textures, 
 
 ## Current Status
 
-Initial Godot 4 scaffold is present:
+Milestones M0–M8 are complete. The client includes:
 
-- `project.godot`
-- placeholder main, world, and combat scenes
-- committed default/example connection config
-- ignored local config override path
-- documented directory layout
+- Login, registration, and character creation flow
+- Solaris world shell: room navigation, presence roster, room chat, minimap
+- Mech Bay: mech selection from `.MEC` catalogue
+- Arena ready room: multi-player staging and match launch
+- 3D combat scene: WASD+mouse, live snapshot sync, HUD, match results
+- Solaris VII standings leaderboard
+- In-app Settings screen (server URL, asset paths, first-run onboarding)
+- Export presets for Windows, Linux, and macOS
 
-The next practical step is to add the first REST/WebSocket client module and a health/version check against a development `mpbt-server`.
+M9 (Packaging and Distribution) is in progress. See [docs/PACKAGING.md](docs/PACKAGING.md)
+for export instructions, code signing, and the release checklist.

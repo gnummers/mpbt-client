@@ -109,3 +109,19 @@ func _handle_message(text: String) -> void:
 func send_message(data: Dictionary) -> void:
 	if _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
 		_ws.send_text(JSON.stringify(data))
+
+
+## Closes the current WebSocket connection and reconnects using the
+## updated ServerBridge URL.  Call this after the user changes server
+## settings so the live connection switches to the new endpoint.
+func reconnect() -> void:
+	_ws.close()
+	_ws = WebSocketPeer.new()
+	is_ws_connected = false
+	_ws_url = ""
+	_reconnect_timer = 0.0
+
+	if ServerBridge.is_online and not ServerBridge.game_api_url.is_empty():
+		_connect_ws()
+	elif not ServerBridge.server_available.is_connected(_on_server_available):
+		ServerBridge.server_available.connect(_on_server_available, CONNECT_ONE_SHOT)
