@@ -14,12 +14,14 @@ extends Control
 
 var _world_client: WorldClient
 var _travel_client: WorldTravelClient
+var _cbills_http: HTTPRequest
 var _rooms: Array = []
 var _selected_id: int = -1
 var _current_room_id: int = -1
 
 @onready var _status_label: Label        = $MainVBox/Header/StatusLabel
 @onready var _user_label: Label          = $MainVBox/Header/UserLabel
+@onready var _cbills_label: Label        = $MainVBox/Header/CbillsLabel
 @onready var _room_list: VBoxContainer   = $MainVBox/ContentHBox/RoomPanel/RoomVBox/RoomScroll/RoomList
 @onready var _room_name: Label           = $MainVBox/ContentHBox/DetailPanel/RoomName
 @onready var _room_desc: Label           = $MainVBox/ContentHBox/DetailPanel/RoomDesc
@@ -49,6 +51,11 @@ func _ready() -> void:
 	_travel_client.chat_sent.connect(_on_chat_sent)
 	_travel_client.chat_failed.connect(_on_chat_failed)
 
+	_cbills_http = HTTPRequest.new()
+	_cbills_http.timeout = 8.0
+	add_child(_cbills_http)
+	_cbills_http.request_completed.connect(_on_cbills_fetched)
+
 	WSClient.presence_updated.connect(_on_presence_updated)
 	WSClient.ws_connected.connect(_on_ws_connected)
 	WSClient.ws_disconnected.connect(_on_ws_disconnected)
@@ -64,6 +71,7 @@ func _ready() -> void:
 
 	if ServerBridge.is_online and not ServerBridge.game_api_url.is_empty():
 		_world_client.fetch_rooms(ServerBridge.game_api_url)
+		_fetch_cbills()
 	else:
 		ServerBridge.server_available.connect(_on_server_available, CONNECT_ONE_SHOT)
 		ServerBridge.server_unavailable.connect(_on_server_unavailable, CONNECT_ONE_SHOT)
@@ -76,10 +84,47 @@ func _set_status(text: String) -> void:
 
 func _on_server_available(_info: Dictionary) -> void:
 	_world_client.fetch_rooms(ServerBridge.game_api_url)
+	_fetch_cbills()
 
 
 func _on_server_unavailable(_reason: String) -> void:
 	_try_local_fallback()
+
+
+func _fetch_cbills() -> void:
+	var display_name := AuthSession.character.get("display_name", "") as String
+	if display_name.is_empty() or ServerBridge.game_api_url.is_empty():
+		return
+	var headers := PackedStringArray(["X-Username: " + display_name])
+	_cbills_http.request(ServerBridge.game_api_url + "/world/character", headers)
+
+
+func _on_cbills_fetched(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_cbills_label.text = "C —"
+		return
+	var parsed = JSON.parse_string(body.get_string_from_utf8())
+	if typeof(parsed) != TYPE_DICTIONARY or not parsed.get("ok", false):
+		_cbills_label.text = "C —"
+		return
+	var cbills: int = int(parsed.get("cbills", 0))
+	AuthSession.character["cbills"] = cbills
+	_cbills_label.text = "C %s" % _comma_format(cbills)
+
+
+func _comma_format(n: int) -> String:
+	var s := str(abs(n))
+	var result := ""
+	for i in s.length():
+		if i > 0 and (s.length() - i) % 3 == 0:
+			result += ","
+		result += s[i]
+	return ("-" if n < 0 else "") + result
 
 
 func _on_rooms_loaded(rooms: Array) -> void:

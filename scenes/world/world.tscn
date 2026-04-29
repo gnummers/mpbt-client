@@ -53,6 +53,13 @@ text = ""
 horizontal_alignment = 2
 vertical_alignment = 1
 
+[node name="CbillsLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 13
+
 [node name="BackButton" type="Button" parent="MainVBox/Header"]
 layout_mode = 2
 text = "\u2190 Menu"

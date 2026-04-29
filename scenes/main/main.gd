@@ -6,6 +6,7 @@ const ASSET_BROWSER_SCENE := "res://scenes/assets/asset_browser.tscn"
 const LOGIN_SCENE         := "res://scenes/login/login.tscn"
 const MECH_SELECT_SCENE   := "res://scenes/mech/mech_select.tscn"
 const ARENA_SCENE         := "res://scenes/arena/ready_room.tscn"
+const STANDINGS_SCENE     := "res://scenes/standings/standings.tscn"
 
 @onready var server_value: Label = %ServerValue
 @onready var websocket_value: Label = %WebSocketValue
@@ -77,3 +78,7 @@ func _on_arena_pressed() -> void:
 		status_label.modulate = Color(1.0, 0.8, 0.3)
 	else:
 		get_tree().change_scene_to_file(ARENA_SCENE)
+
+
+func _on_standings_pressed() -> void:
+	get_tree().change_scene_to_file(STANDINGS_SCENE)
