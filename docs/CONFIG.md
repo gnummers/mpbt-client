@@ -33,3 +33,21 @@ Later files override earlier files by key. `config/local.json` is ignored by git
 - `assets.retail_path` — path to a licensed retail MPBT installation root (for raw `.MEC`, terrain, and binary parsers).
 - `assets.extracted_path` — path to a pre-organized extracted asset directory with `ui/`, `combat/`, `icons/`, `maps/`, `misc/`, and `scenes/` subdirectories (used by the in-game asset browser).
 - Both asset paths may be left blank; features that depend on them will show a configuration prompt.
+
+## Local Retail Setup
+
+For a local v1.29 install at `C:/MPBT`, keep the paths in ignored
+`config/local.json`:
+
+```json
+{
+  "assets": {
+    "retail_path": "C:/MPBT",
+    "extracted_path": "C:/MPBT/assets"
+  }
+}
+```
+
+Do not commit extracted retail files. The repo ignores the common proprietary
+asset output folders under `assets/` in case local extraction is pointed at the
+project directory.

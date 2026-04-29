@@ -3,6 +3,42 @@ extends Node
 const DEFAULT_CONFIG_PATH := "res://config/default_client.json"
 const LOCAL_CONFIG_PATH := "res://config/local.json"
 const USER_CONFIG_PATH := "user://mpbt-client.json"
+const DEFAULT_KEY_BINDINGS := {
+	"move_forward": [KEY_W, KEY_KP_8],
+	"move_backward": [KEY_S, KEY_KP_2],
+	"move_left": [KEY_A],
+	"move_right": [KEY_D],
+	"turn_left": [KEY_Q, KEY_KP_4],
+	"turn_right": [KEY_E, KEY_KP_6],
+	"stop_movement": [KEY_KP_5],
+	"fire": [KEY_SPACE],
+	"jump_jet": [KEY_J, KEY_HOME],
+	"stand_up": [KEY_F12],
+	"target_cycle": [KEY_ENTER, KEY_KP_ENTER],
+	"hud_target_detail": [KEY_T],
+	"hud_target_brief": [KEY_Y],
+	"hud_self_detail": [KEY_U],
+	"radar_range": [KEY_R],
+	"radar_zoom_in": [KEY_INSERT],
+	"radar_zoom_out": [KEY_DELETE],
+	"tic_cycle_current": [KEY_O, KEY_KP_0],
+	"tic_select_a": [KEY_P],
+	"tic_select_b": [KEY_BRACKETLEFT],
+	"tic_select_c": [KEY_BRACKETRIGHT],
+	"tic_toggle_a": [KEY_L],
+	"tic_toggle_b": [KEY_SEMICOLON],
+	"tic_toggle_c": [KEY_APOSTROPHE],
+	"tic_fire_a": [KEY_NUMLOCK],
+	"tic_fire_b": [KEY_KP_DIVIDE],
+	"tic_fire_c": [KEY_KP_MULTIPLY],
+	"weapon_prev": [KEY_KP_SUBTRACT],
+	"weapon_next": [KEY_KP_ADD],
+	"ui_chat": [KEY_F8],
+	"ui_team_chat": [KEY_F7],
+}
+const DEFAULT_MOUSE_BINDINGS := {
+	"fire": [MOUSE_BUTTON_LEFT],
+}
 
 var data: Dictionary = {}
 
@@ -16,6 +52,7 @@ func load_config() -> void:
 	data = _merge_dicts(data, _read_json(LOCAL_CONFIG_PATH))
 	data = _merge_dicts(data, _read_json(USER_CONFIG_PATH))
 	apply_display_settings()
+	ensure_input_actions()
 	apply_input_remapping()
 
 
@@ -121,6 +158,53 @@ func apply_input_remapping() -> void:
 		var ev := InputEventKey.new()
 		ev.physical_keycode = new_keycode
 		InputMap.action_add_event(action, ev)
+
+
+func ensure_input_actions() -> void:
+	for action in DEFAULT_KEY_BINDINGS.keys():
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		for keycode_v in DEFAULT_KEY_BINDINGS[action]:
+			_ensure_key_binding(action, int(keycode_v))
+	if not saved_controls().has("ui_chat"):
+		_remove_key_binding("ui_chat", KEY_T)
+		_remove_key_binding("ui_chat", KEY_C)
+
+	for action in DEFAULT_MOUSE_BINDINGS.keys():
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		for button_v in DEFAULT_MOUSE_BINDINGS[action]:
+			_ensure_mouse_binding(action, int(button_v))
+
+
+func _ensure_key_binding(action: String, keycode: int) -> void:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey:
+			var key_ev := ev as InputEventKey
+			if key_ev.keycode == keycode or key_ev.physical_keycode == keycode:
+				return
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	InputMap.action_add_event(action, event)
+
+
+func _ensure_mouse_binding(action: String, button_index: int) -> void:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == button_index:
+			return
+	var event := InputEventMouseButton.new()
+	event.button_index = button_index
+	InputMap.action_add_event(action, event)
+
+
+func _remove_key_binding(action: String, keycode: int) -> void:
+	var events := InputMap.action_get_events(action).duplicate()
+	for ev in events:
+		if not (ev is InputEventKey):
+			continue
+		var key_ev := ev as InputEventKey
+		if key_ev.keycode == keycode or key_ev.physical_keycode == keycode:
+			InputMap.action_erase_event(action, ev)
 
 
 func master_volume_db() -> float:

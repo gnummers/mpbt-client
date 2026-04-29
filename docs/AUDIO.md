@@ -28,8 +28,8 @@ in the in-game Settings screen.  Changes are live-previewed and reverted on Canc
 
 ## Tracks and Clips
 
-| Zone   | Track name | Path                          |
-|--------|------------|-------------------------------|
+| Zone   | Track name | Bundled fallback path |
+|--------|------------|-----------------------|
 | Menus  | `menu`     | `res://assets/audio/bgm/menu.ogg` |
 | World  | `world`    | `res://assets/audio/bgm/world.ogg` |
 | Arena  | `arena`    | `res://assets/audio/bgm/arena.ogg` |
@@ -37,14 +37,33 @@ in the in-game Settings screen.  Changes are live-previewed and reverted on Canc
 
 SFX clips live under `res://assets/audio/sfx/<name>.ogg`.
 
-If a file is absent the call is a no-op — silence is the fallback until assets are
-provided.
+If a bundled file is absent, the configured `assets.extracted_path` is searched for
+OGG/WAV/MP3 files under:
+
+- BGM: `audio/bgm/`, `audio/music/`, `music/`, `bgm/`
+- SFX: `audio/sfx/`, `audio/sounds/`, `sfx/`, `sounds/`
+
+The resolver prefers files whose base name matches the requested track or clip.
+If nothing is found the call is a no-op.
+
+Current SFX hooks:
+
+| Event | Clip name |
+|-------|-----------|
+| UI button click | `ui_click` |
+| UI button hover | `ui_hover` |
+| Combat weapon fire | `weapon_fire` |
+| Combat hit | `weapon_hit` |
+| Match victory | `victory` |
+| Match defeat | `defeat` |
 
 ## Providing Retail Assets
 
 The client does **not** ship audio assets (they are proprietary Kesmai/EA content).
-To hear music and sounds, extract your retail MPBT installation and place OGG-encoded
-files in `assets/audio/bgm/` and `assets/audio/sfx/`.
+To hear music and sounds, extract your retail MPBT installation, convert the audio
+to OGG/WAV/MP3 where needed, and place it in the configured extracted asset path.
+Project-local `assets/audio/bgm/` and `assets/audio/sfx/` remain supported for
+open-licensed placeholders or private local testing files.
 
 ### Encoding note
 

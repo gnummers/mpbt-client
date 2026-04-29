@@ -42,6 +42,7 @@ var _current_room_id: int = -1
 
 func _ready() -> void:
 	AudioManager.play_bgm("world")
+	_apply_retail_map_art()
 	_world_client = WorldClient.new()
 	add_child(_world_client)
 	_world_client.rooms_loaded.connect(_on_rooms_loaded)
@@ -181,16 +182,31 @@ func _try_local_fallback() -> void:
 func _normalize_local_rooms(raw_rooms: Array) -> Array:
 	var out: Array = []
 	for r in raw_rooms:
+		var x := float(r.get("x", 0))
+		var y := float(r.get("y", 0))
+		var label_w := float(r.get("label_w", 0))
+		var label_h := float(r.get("label_h", 0))
 		out.append({
 			"roomId":      int(r.get("room_id", 0)),
 			"name":        str(r.get("name", "")),
 			"flags":       int(r.get("flags", 0)),
-			"centreX":     float(r.get("x", 0)),
-			"centreY":     float(r.get("y", 0)),
+			"centreX":     x + (label_w * 0.5),
+			"centreY":     y + (label_h * 0.5),
 			"sceneIndex":  -1,
 			"description": str(r.get("description", "")),
 		})
 	return out
+
+
+func _apply_retail_map_art() -> void:
+	var extracted := ClientConfig.asset_extracted_path()
+	var map_path := AssetRegistry.find_image(extracted, ["Maps"], [
+		"solaris_background",
+		"solaris",
+	])
+	var texture := AssetRegistry.load_image_texture(map_path)
+	if texture != null:
+		_map_canvas.set_background_texture(texture)
 
 
 func _populate_room_list() -> void:

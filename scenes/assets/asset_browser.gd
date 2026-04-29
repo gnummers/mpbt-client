@@ -1,6 +1,7 @@
 extends Control
 
 const MAIN_SCENE := "res://scenes/main/main.tscn"
+const CATEGORY_ORDER := ["UI", "Combat", "Icons", "Maps", "Scenes"]
 
 @onready var path_label: Label       = %PathLabel
 @onready var category_option: OptionButton = %CategoryOption
@@ -28,19 +29,29 @@ func _ready() -> void:
 		return
 
 	path_label.text = asset_path
-	for cat_name in _registry.get("categories", {}).keys():
+	var cats: Dictionary = _registry.get("categories", {})
+	for cat_name: String in CATEGORY_ORDER:
+		if cats.has(cat_name):
+			category_option.add_item(cat_name)
+	for cat_name_variant in cats.keys():
+		var cat_name := str(cat_name_variant)
+		if cat_name in CATEGORY_ORDER:
+			continue
 		category_option.add_item(cat_name)
 
 	if category_option.item_count > 0:
+		category_option.select(0)
 		_load_category(0)
 
 
 func _load_category(idx: int) -> void:
 	var cats: Dictionary = _registry.get("categories", {})
-	var cat_names := cats.keys()
-	if idx >= cat_names.size():
+	if idx < 0 or idx >= category_option.item_count:
 		return
-	_current_files = cats[cat_names[idx]]
+	var cat_name := category_option.get_item_text(idx)
+	if not cats.has(cat_name):
+		return
+	_current_files = cats[cat_name]
 	file_list.clear()
 	for fpath: String in _current_files:
 		file_list.add_item(fpath.get_file())

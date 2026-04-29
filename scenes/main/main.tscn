@@ -20,6 +20,19 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.055, 0.062, 0.078, 1)
 
+[node name="BackgroundArt" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(0.65, 0.65, 0.65, 1)
+
 [node name="Panel" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
@@ -28,9 +41,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -280.0
-offset_top = -170.0
+offset_top = -210.0
 offset_right = 280.0
-offset_bottom = 170.0
+offset_bottom = 210.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -44,6 +57,15 @@ theme_override_constants/margin_bottom = 24
 [node name="Content" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
+
+[node name="TitleArt" type="TextureRect" parent="Panel/Margin/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(0, 96)
+size_flags_horizontal = 3
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Title" type="Label" parent="Panel/Margin/Content"]
 layout_mode = 2
@@ -124,4 +146,3 @@ modulate = Color(0.7, 0.7, 0.7, 1)
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/ArenaButton" to="." method="_on_arena_pressed"]
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/StandingsButton" to="." method="_on_standings_pressed"]
 [connection signal="pressed" from="Panel/Margin/Content/ButtonRow/SettingsButton" to="." method="_on_settings_pressed"]
-

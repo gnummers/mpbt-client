@@ -22,6 +22,7 @@ var _all_mechs: Array = []
 var _filtered_mechs: Array = []
 var _selected_mech: Dictionary = {}
 var _current_filter: String = "all"
+var _using_local_roster: bool = false
 
 
 func _ready() -> void:
@@ -38,7 +39,7 @@ func _ready() -> void:
 	_status_label.text = "Loading mechs..."
 
 	if ServerBridge.game_api_url.is_empty():
-		_status_label.text = "Game server not available"
+		_load_local_roster("Game server not available")
 		return
 	_mech_client.fetch_mechs(ServerBridge.game_api_url)
 
@@ -62,6 +63,7 @@ func _find_type_string(mech_id: int) -> String:
 
 func _on_mechs_loaded(mechs: Array) -> void:
 	_all_mechs = mechs
+	_using_local_roster = false
 	_apply_filter()
 	_update_current_label()
 	# Pre-select the player's current mech if one is set.
@@ -73,7 +75,25 @@ func _on_mechs_loaded(mechs: Array) -> void:
 
 
 func _on_mechs_failed(reason: String) -> void:
-	_status_label.text = "Failed to load mechs: " + reason
+	_load_local_roster("Failed to load server mechs: " + reason)
+
+
+func _load_local_roster(prefix: String) -> void:
+	var result := MecParser.load_roster(ClientConfig.retail_asset_path())
+	if not result.get("ok", false):
+		_status_label.text = "%s; local retail roster unavailable: %s" % [
+			prefix,
+			result.get("error", "unknown"),
+		]
+		return
+	_all_mechs = result.get("mechs", [])
+	_using_local_roster = true
+	_apply_filter()
+	_update_current_label()
+	var cur_id = AuthSession.character.get("mech_id", null)
+	if cur_id != null:
+		_try_preselect(int(cur_id))
+	_status_label.text = "%s; loaded %d local retail mechs" % [prefix, _all_mechs.size()]
 
 
 func _apply_filter() -> void:
@@ -121,13 +141,25 @@ func _show_mech(m: Dictionary) -> void:
 	var speed   = m.get("maxSpeedKph", null)
 	var armor   = m.get("armor", null)
 	var jump    = m.get("jumpMeters", null)
+	var jump_jets := int(m.get("jumpJetCount", 0))
+	var heat_sinks := int(m.get("heatSinks", 0))
+	var armor_values: Array = m.get("armorLikeMaxValues", [])
 
 	var lines: Array[String] = []
 	lines.append("Class:    " + wc)
 	lines.append("Tonnage:  " + ("%d t" % int(tonnage) if tonnage != null else "--"))
 	lines.append("Speed:    " + ("%d kph" % int(speed) if speed != null else "--"))
 	lines.append("Armor:    " + (str(armor).capitalize() if armor != null else "--"))
-	lines.append("Jump:     " + ("%d m" % int(jump) if jump != null else "--"))
+	if jump != null:
+		lines.append("Jump:     %d m" % int(jump))
+	elif jump_jets > 0:
+		lines.append("Jump:     %d jets" % jump_jets)
+	else:
+		lines.append("Jump:     --")
+	if heat_sinks > 0:
+		lines.append("Heat:     %d sinks" % heat_sinks)
+	if not armor_values.is_empty():
+		lines.append("Armor Max: " + _compact_int_array(armor_values))
 	_info_label.text = "\n".join(PackedStringArray(lines))
 
 	var armament: Array = m.get("armament", [])
@@ -183,6 +215,15 @@ func _on_select_pressed() -> void:
 	if _selected_mech.is_empty():
 		return
 	var mech_id: int = int(_selected_mech.get("id", -1))
+	var type_string := str(_selected_mech.get("typeString", ""))
+	if _using_local_roster or ServerBridge.game_api_url.is_empty():
+		AuthSession.character["mech_id"] = mech_id
+		AuthSession.character["mech_type"] = type_string
+		_update_current_label()
+		_status_label.text = "Selected locally: %s" % type_string
+		_select_button.text = "Already Selected"
+		_select_button.disabled = true
+		return
 	var username: String = str(AuthSession.character.get("display_name", ""))
 	if username.is_empty():
 		_status_label.text = "Not authenticated"
@@ -194,6 +235,7 @@ func _on_select_pressed() -> void:
 
 func _on_mech_selected(mech_id: int, type_string: String) -> void:
 	AuthSession.character["mech_id"] = mech_id
+	AuthSession.character["mech_type"] = type_string
 	_update_current_label()
 	_status_label.text = "Selected: " + type_string
 	_select_button.text = "Already Selected"
@@ -203,3 +245,10 @@ func _on_mech_selected(mech_id: int, type_string: String) -> void:
 func _on_mech_failed(reason: String) -> void:
 	_status_label.text = "Selection failed: " + reason
 	_select_button.disabled = false
+
+
+func _compact_int_array(values: Array) -> String:
+	var parts := PackedStringArray()
+	for value in values:
+		parts.append(str(int(value)))
+	return "/".join(parts)

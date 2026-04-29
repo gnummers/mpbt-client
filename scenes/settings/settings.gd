@@ -16,10 +16,63 @@ const WINDOW_MODES  := ["windowed", "borderless", "fullscreen"]
 const WINDOW_LABELS := ["Windowed", "Borderless Fullscreen", "Exclusive Fullscreen"]
 const UI_SCALES       := [1.0, 1.25, 1.5]
 const UI_SCALE_LABELS := ["100% (default)", "125%", "150%"]
-const CONTROL_ACTIONS   := ["move_forward", "move_backward", "move_left", "move_right",
-							"turn_left", "turn_right", "fire", "ui_chat"]
-const CONTROL_ROW_NAMES := ["ForwardRow", "BackwardRow", "LeftRow", "RightRow",
-							"TurnLeftRow", "TurnRightRow", "FireRow", "ChatRow"]
+const CONTROL_ACTIONS := [
+	"move_forward", "move_backward", "stop_movement",
+	"move_left", "move_right", "turn_left", "turn_right",
+	"fire", "weapon_prev", "weapon_next",
+	"jump_jet", "stand_up", "target_cycle",
+	"hud_target_detail", "hud_target_brief", "hud_self_detail",
+	"radar_range", "radar_zoom_in", "radar_zoom_out",
+	"tic_cycle_current", "tic_select_a", "tic_select_b", "tic_select_c",
+	"tic_toggle_a", "tic_toggle_b", "tic_toggle_c",
+	"tic_fire_a", "tic_fire_b", "tic_fire_c",
+	"ui_chat", "ui_team_chat",
+]
+const CONTROL_LABELS := {
+	"move_forward": "Forward / Throttle +",
+	"move_backward": "Reverse / Throttle -",
+	"stop_movement": "Stop Movement",
+	"move_left": "Alt Turn Left",
+	"move_right": "Alt Turn Right",
+	"turn_left": "Turn Left",
+	"turn_right": "Turn Right",
+	"fire": "Fire Weapon",
+	"weapon_prev": "Prev Weapon",
+	"weapon_next": "Next Weapon",
+	"jump_jet": "Jump Jets",
+	"stand_up": "Stand Up",
+	"target_cycle": "Cycle Target",
+	"hud_target_detail": "Target Detail",
+	"hud_target_brief": "Target Brief",
+	"hud_self_detail": "Self Detail",
+	"radar_range": "Radar Cycle",
+	"radar_zoom_in": "Radar Zoom In",
+	"radar_zoom_out": "Radar Zoom Out",
+	"tic_cycle_current": "Cycle TIC",
+	"tic_select_a": "Select TIC A",
+	"tic_select_b": "Select TIC B",
+	"tic_select_c": "Select TIC C",
+	"tic_toggle_a": "Toggle TIC A",
+	"tic_toggle_b": "Toggle TIC B",
+	"tic_toggle_c": "Toggle TIC C",
+	"tic_fire_a": "Fire TIC A",
+	"tic_fire_b": "Fire TIC B",
+	"tic_fire_c": "Fire TIC C",
+	"ui_chat": "Combat All Chat",
+	"ui_team_chat": "Combat Team Chat",
+}
+const EXISTING_CONTROL_ROWS := {
+	"move_forward": "ForwardRow",
+	"move_backward": "BackwardRow",
+	"move_left": "LeftRow",
+	"move_right": "RightRow",
+	"turn_left": "TurnLeftRow",
+	"turn_right": "TurnRightRow",
+	"fire": "FireRow",
+	"jump_jet": "JumpRow",
+	"radar_range": "RadarRow",
+	"ui_chat": "ChatRow",
+}
 
 @onready var _server_url_edit:    LineEdit      = $MainVBox/Scroll/Fields/ServerUrlRow/ServerUrlEdit
 @onready var _ws_url_edit:        LineEdit      = $MainVBox/Scroll/Fields/WsUrlRow/WsUrlEdit
@@ -100,15 +153,59 @@ func _ready() -> void:
 
 func _setup_control_rows() -> void:
 	var fields: VBoxContainer = $MainVBox/Scroll/Fields
-	for i in CONTROL_ACTIONS.size():
-		var action: String    = CONTROL_ACTIONS[i]
-		var row_name: String  = CONTROL_ROW_NAMES[i]
-		var row: HBoxContainer = fields.get_node(row_name) as HBoxContainer
-		var key_lbl:    Label  = row.get_node("KeyLabel")  as Label
+	var audio_label := fields.get_node("AudioSectionLabel")
+	for action in CONTROL_ACTIONS:
+		var row: HBoxContainer = _ensure_control_row(fields, audio_label, action)
+		var key_lbl: Label = row.get_node("KeyLabel") as Label
 		var rebind_btn: Button = row.get_node("RebindBtn") as Button
 		key_lbl.text = _key_label_for_action(action)
 		_key_labels[action] = key_lbl
-		rebind_btn.pressed.connect(_on_rebind_pressed.bind(action))
+		if not rebind_btn.pressed.is_connected(_on_rebind_pressed.bind(action)):
+			rebind_btn.pressed.connect(_on_rebind_pressed.bind(action))
+
+
+func _ensure_control_row(fields: VBoxContainer, audio_label: Node, action: String) -> HBoxContainer:
+	var row_name := str(EXISTING_CONTROL_ROWS.get(action, ""))
+	var row: HBoxContainer = null
+	if not row_name.is_empty() and fields.has_node(row_name):
+		row = fields.get_node(row_name) as HBoxContainer
+	else:
+		row = _build_control_row(action)
+		var insert_index := audio_label.get_index()
+		fields.add_child(row)
+		fields.move_child(row, insert_index)
+
+	var action_label_text := str(CONTROL_LABELS.get(action, action.capitalize()))
+	var action_label := row.get_child(0) as Label
+	action_label.text = action_label_text
+	return row
+
+
+func _build_control_row(action: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.name = "%sRow" % action.to_pascal_case()
+	row.add_theme_constant_override("separation", 8)
+
+	var action_label := Label.new()
+	action_label.custom_minimum_size = Vector2(140, 0)
+	action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	action_label.text = str(CONTROL_LABELS.get(action, action))
+	row.add_child(action_label)
+
+	var key_label := Label.new()
+	key_label.name = "KeyLabel"
+	key_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	key_label.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0, 1.0))
+	row.add_child(key_label)
+
+	var rebind_btn := Button.new()
+	rebind_btn.name = "RebindBtn"
+	rebind_btn.custom_minimum_size = Vector2(80, 0)
+	rebind_btn.text = "Rebind"
+	row.add_child(rebind_btn)
+
+	return row
 
 
 func _input(event: InputEvent) -> void:

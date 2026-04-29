@@ -12,10 +12,13 @@ const SETTINGS_SCENE      := "res://scenes/settings/settings.tscn"
 @onready var server_value: Label = %ServerValue
 @onready var websocket_value: Label = %WebSocketValue
 @onready var status_label: Label = %StatusLabel
+@onready var background_art: TextureRect = %BackgroundArt
+@onready var title_art: TextureRect = %TitleArt
 
 
 func _ready() -> void:
 	AudioManager.play_bgm("menu")
+	_apply_retail_art()
 	server_value.text = ClientConfig.server_base_url()
 	websocket_value.text = ClientConfig.server_websocket_url()
 
@@ -96,3 +99,34 @@ func _check_first_run() -> void:
 	if not FileAccess.file_exists("user://mpbt-client.json"):
 		status_label.text = "First run — configure your server and asset paths in Settings"
 		status_label.modulate = Color(0.9, 0.75, 0.25)
+
+
+func _apply_retail_art() -> void:
+	var extracted := ClientConfig.asset_extracted_path()
+	if extracted.is_empty():
+		return
+
+	var bg_path := AssetRegistry.find_image(extracted, ["UI", "Scenes"], [
+		"menu",
+		"main",
+		"title",
+		"splash",
+		"opening",
+		"background",
+	])
+	var bg_texture := AssetRegistry.load_image_texture(bg_path)
+	if bg_texture != null:
+		background_art.texture = bg_texture
+		background_art.visible = true
+
+	var title_path := AssetRegistry.find_image(extracted, ["UI"], [
+		"logo",
+		"title",
+		"mpbt",
+		"battle",
+		"solaris",
+	])
+	var title_texture := AssetRegistry.load_image_texture(title_path)
+	if title_texture != null:
+		title_art.texture = title_texture
+		title_art.visible = true

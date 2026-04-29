@@ -359,6 +359,48 @@ layout_mode = 2
 custom_minimum_size = Vector2(80, 0)
 text = "Rebind"
 
+[node name="JumpRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="JumpActionLabel" type="Label" parent="MainVBox/Scroll/Fields/JumpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "Jump Jets"
+vertical_alignment = 1
+
+[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/JumpRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
+
+[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/JumpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "Rebind"
+
+[node name="RadarRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RadarActionLabel" type="Label" parent="MainVBox/Scroll/Fields/RadarRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "Radar Range"
+vertical_alignment = 1
+
+[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/RadarRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
+
+[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/RadarRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "Rebind"
+
 [node name="ChatRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8

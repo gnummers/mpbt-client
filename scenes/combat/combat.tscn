@@ -1,6 +1,7 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scenes/combat/combat.gd" id="1_combat_script"]
+[ext_resource type="Script" path="res://scripts/ui/combat_radar.gd" id="2_radar_script"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_1"]
 sky_top_color = Color(0.04, 0.06, 0.1, 1)
@@ -100,7 +101,71 @@ far = 800.0
 
 [node name="RemoteMechs" type="Node3D" parent="."]
 
+[node name="Effects" type="Node3D" parent="."]
+
 [node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Radar" type="Control" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -174.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = 174.0
+grow_horizontal = 0
+script = ExtResource("2_radar_script")
+
+[node name="TargetInfo" type="Panel" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 300.0
+offset_bottom = 96.0
+
+[node name="TargetBox" type="VBoxContainer" parent="HUD/TargetInfo"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+
+[node name="TargetName" type="Label" parent="HUD/TargetInfo/TargetBox"]
+text = "NO TARGET"
+vertical_alignment = 1
+
+[node name="TargetRange" type="Label" parent="HUD/TargetInfo/TargetBox"]
+text = "RNG --"
+vertical_alignment = 1
+
+[node name="TargetStatus" type="Label" parent="HUD/TargetInfo/TargetBox"]
+text = "RADAR 300"
+vertical_alignment = 1
+
+[node name="ReadoutPanel" type="Panel" parent="HUD"]
+offset_left = 16.0
+offset_top = 104.0
+offset_right = 360.0
+offset_bottom = 236.0
+
+[node name="ReadoutVBox" type="VBoxContainer" parent="HUD/ReadoutPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+theme_override_constants/separation = 4
+
+[node name="ReadoutTitle" type="Label" parent="HUD/ReadoutPanel/ReadoutVBox"]
+text = "TARGET BRIEF"
+theme_override_font_sizes/font_size = 15
+
+[node name="ReadoutBody" type="Label" parent="HUD/ReadoutPanel/ReadoutVBox"]
+size_flags_vertical = 3
+text = "No target"
+autowrap_mode = 2
+vertical_alignment = 0
 
 [node name="BottomPanel" type="Panel" parent="HUD"]
 anchor_left = 0.0
@@ -146,6 +211,54 @@ max_value = 100.0
 value = 0.0
 show_percentage = false
 
+[node name="SpeedSep" type="Control" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(24, 0)
+
+[node name="SpeedLabel" type="Label" parent="HUD/BottomPanel/HUDBox"]
+text = "SPD"
+vertical_alignment = 1
+
+[node name="SpeedValue" type="Label" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(96, 32)
+text = "0/64 kph"
+vertical_alignment = 1
+
+[node name="JumpSep" type="Control" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(24, 0)
+
+[node name="JumpLabel" type="Label" parent="HUD/BottomPanel/HUDBox"]
+text = "JJ"
+vertical_alignment = 1
+
+[node name="JumpValue" type="Label" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(92, 32)
+text = "--"
+vertical_alignment = 1
+
+[node name="PostureSep" type="Control" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(24, 0)
+
+[node name="PostureLabel" type="Label" parent="HUD/BottomPanel/HUDBox"]
+text = "PST"
+vertical_alignment = 1
+
+[node name="PostureValue" type="Label" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(72, 32)
+text = "NORM"
+vertical_alignment = 1
+
+[node name="WeaponSep" type="Control" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(24, 0)
+
+[node name="WeaponLabel" type="Label" parent="HUD/BottomPanel/HUDBox"]
+text = "WPN"
+vertical_alignment = 1
+
+[node name="WeaponValue" type="Label" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(220, 32)
+text = "--"
+vertical_alignment = 1
+
 [node name="StatusLabel" type="Label" parent="HUD"]
 anchor_left = 0.5
 anchor_top = 0.0
@@ -157,6 +270,38 @@ offset_top = 16.0
 offset_bottom = 56.0
 horizontal_alignment = 1
 text = ""
+
+[node name="ChatPanel" type="Panel" parent="HUD"]
+visible = false
+offset_left = 16.0
+offset_top = 244.0
+offset_right = 408.0
+offset_bottom = 364.0
+
+[node name="ChatVBox" type="VBoxContainer" parent="HUD/ChatPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
+theme_override_constants/separation = 4
+
+[node name="ChatTitle" type="Label" parent="HUD/ChatPanel/ChatVBox"]
+text = "ALL CHAT"
+theme_override_font_sizes/font_size = 15
+
+[node name="ChatHint" type="Label" parent="HUD/ChatPanel/ChatVBox"]
+text = "Combat chat is not supported by the current server yet."
+autowrap_mode = 2
+
+[node name="ChatInput" type="LineEdit" parent="HUD/ChatPanel/ChatVBox"]
+placeholder_text = "Draft message"
+
+[node name="ChatStatus" type="Label" parent="HUD/ChatPanel/ChatVBox"]
+text = "Enter drafts only; Esc closes."
+autowrap_mode = 2
+modulate = Color(0.9, 0.8, 0.35, 1)
 
 [node name="ResultOverlay" type="PanelContainer" parent="HUD"]
 visible = false
@@ -187,4 +332,3 @@ theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 modulate = Color(0.7, 0.7, 0.7, 1)
 text = "Returning to menu in 4 seconds..."
-
