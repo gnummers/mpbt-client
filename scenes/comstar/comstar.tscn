@@ -1,0 +1,165 @@
+[gd_scene load_steps=2 format=3 uid="uid://comstar_scene"]
+
+[ext_resource type="Script" path="res://scenes/comstar/comstar.gd" id="1_comstar"]
+
+[node name="ComStar" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_comstar")
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+
+[node name="Header" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+
+[node name="TitleLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ComStar Terminal"
+theme_override_font_sizes/font_size = 18
+
+[node name="StatusLabel" type="Label" parent="MainVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+
+[node name="BackButton" type="Button" parent="MainVBox/Header"]
+layout_mode = 2
+text = "Back"
+
+[node name="HSep" type="HSeparator" parent="MainVBox"]
+layout_mode = 2
+
+[node name="ContentHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LeftPanel" type="VBoxContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 1
+custom_minimum_size = Vector2(240, 0)
+
+[node name="InboxLabel" type="Label" parent="MainVBox/ContentHBox/LeftPanel"]
+layout_mode = 2
+text = "Inbox"
+theme_override_font_sizes/font_size = 14
+
+[node name="InboxScroll" type="ScrollContainer" parent="MainVBox/ContentHBox/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InboxList" type="VBoxContainer" parent="MainVBox/ContentHBox/LeftPanel/InboxScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ComposeButton" type="Button" parent="MainVBox/ContentHBox/LeftPanel"]
+layout_mode = 2
+text = "Compose"
+
+[node name="VSep" type="VSeparator" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+
+[node name="RightPanel" type="VBoxContainer" parent="MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlaceholderLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel"]
+layout_mode = 2
+text = "Select a message or compose a new one."
+autowrap_mode = 3
+
+[node name="DetailView" type="VBoxContainer" parent="MainVBox/ContentHBox/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+visible = false
+
+[node name="FromLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+layout_mode = 2
+text = "From: "
+
+[node name="SubjectLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+layout_mode = 2
+text = "Subject: "
+
+[node name="DateLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+layout_mode = 2
+text = "Sent: "
+
+[node name="HSep2" type="HSeparator" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+layout_mode = 2
+
+[node name="BodyLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 3
+text = ""
+
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+layout_mode = 2
+
+[node name="ReplyButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/DetailView/ActionBar"]
+layout_mode = 2
+text = "Reply"
+
+[node name="DeleteButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/DetailView/ActionBar"]
+layout_mode = 2
+text = "Delete"
+
+[node name="ComposeView" type="VBoxContainer" parent="MainVBox/ContentHBox/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+visible = false
+
+[node name="ToRow" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+layout_mode = 2
+
+[node name="ToLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ToRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(70, 0)
+text = "To:"
+
+[node name="ToField" type="LineEdit" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ToRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 64
+placeholder_text = "Display name"
+
+[node name="SubjectRow" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+layout_mode = 2
+
+[node name="SubjectLabel2" type="Label" parent="MainVBox/ContentHBox/RightPanel/ComposeView/SubjectRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(70, 0)
+text = "Subject:"
+
+[node name="SubjectField" type="LineEdit" parent="MainVBox/ContentHBox/RightPanel/ComposeView/SubjectRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 100
+placeholder_text = "(optional)"
+
+[node name="BodyField" type="TextEdit" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+layout_mode = 2
+size_flags_vertical = 3
+wrap_mode = 1
+placeholder_text = "Message (max 1000 characters)"
+
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+layout_mode = 2
+
+[node name="SendButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ActionBar"]
+layout_mode = 2
+text = "Send"
+
+[node name="CancelButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ActionBar"]
+layout_mode = 2
+text = "Cancel"

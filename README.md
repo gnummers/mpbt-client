@@ -167,7 +167,7 @@ AI upscaling is acceptable for large scenes, map backgrounds, terrain textures, 
 
 ## Current Status
 
-Milestones M0–M11 are complete. The client includes:
+Milestones M0–M13 are complete. The client includes:
 
 - Login, registration, and character creation flow
 - Solaris world shell: room navigation, presence roster, room chat, minimap
@@ -175,7 +175,9 @@ Milestones M0–M11 are complete. The client includes:
 - Arena ready room: multi-player staging and match launch
 - 3D combat scene: WASD+mouse, live snapshot sync, HUD, match results
 - Solaris VII standings leaderboard
-- In-app Settings screen (server URL, asset paths, display, input rebinding)
+- ComStar Terminal: private player-to-player messaging (inbox, compose, reply, delete)
+- In-app Settings screen (server URL, asset paths, display, input rebinding, audio)
+- Audio: volume settings (Master/Music/SFX), scene BGM hooks
 - Export presets for Windows, Linux, macOS, Android (Experimental), and iOS (Experimental)
 - Touch controls for mobile (Virtual Joystick + look zone)
 - Diagnostics overlay (F3): FPS, WebSocket/server status, active scene

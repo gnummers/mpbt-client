@@ -15,6 +15,7 @@ extends Control
 var _world_client: WorldClient
 var _travel_client: WorldTravelClient
 var _cbills_http: HTTPRequest
+var _comstar_unread: Node  # ComstarClient (unread-count only)
 var _rooms: Array = []
 var _selected_id: int = -1
 var _current_room_id: int = -1
@@ -22,6 +23,8 @@ var _current_room_id: int = -1
 @onready var _status_label: Label        = $MainVBox/Header/StatusLabel
 @onready var _user_label: Label          = $MainVBox/Header/UserLabel
 @onready var _cbills_label: Label        = $MainVBox/Header/CbillsLabel
+@onready var _comstar_btn: Button        = $MainVBox/Header/ComStarButton
+@onready var _comstar_badge: Label       = $MainVBox/Header/ComStarBadge
 @onready var _room_list: VBoxContainer   = $MainVBox/ContentHBox/RoomPanel/RoomVBox/RoomScroll/RoomList
 @onready var _room_name: Label           = $MainVBox/ContentHBox/DetailPanel/RoomName
 @onready var _room_desc: Label           = $MainVBox/ContentHBox/DetailPanel/RoomDesc
@@ -57,10 +60,17 @@ func _ready() -> void:
 	add_child(_cbills_http)
 	_cbills_http.request_completed.connect(_on_cbills_fetched)
 
+	_comstar_unread = load("res://scripts/net/comstar_client.gd").new()
+	add_child(_comstar_unread)
+	_comstar_unread.unread_count_loaded.connect(_on_comstar_unread_loaded)
+
+	_comstar_btn.pressed.connect(_on_comstar_pressed)
+
 	WSClient.presence_updated.connect(_on_presence_updated)
 	WSClient.ws_connected.connect(_on_ws_connected)
 	WSClient.ws_disconnected.connect(_on_ws_disconnected)
 	WSClient.room_chat_received.connect(_on_room_chat_received)
+	WSClient.comstar_message_received.connect(_on_comstar_message_received)
 
 	var char_name: String = AuthSession.character.get("display_name", "")
 	if not AuthSession.username.is_empty() and not char_name.is_empty():
@@ -73,6 +83,7 @@ func _ready() -> void:
 	if ServerBridge.is_online and not ServerBridge.game_api_url.is_empty():
 		_world_client.fetch_rooms(ServerBridge.game_api_url)
 		_fetch_cbills()
+		_fetch_comstar_unread()
 	else:
 		ServerBridge.server_available.connect(_on_server_available, CONNECT_ONE_SHOT)
 		ServerBridge.server_unavailable.connect(_on_server_unavailable, CONNECT_ONE_SHOT)
@@ -86,6 +97,7 @@ func _set_status(text: String) -> void:
 func _on_server_available(_info: Dictionary) -> void:
 	_world_client.fetch_rooms(ServerBridge.game_api_url)
 	_fetch_cbills()
+	_fetch_comstar_unread()
 
 
 func _on_server_unavailable(_reason: String) -> void:
@@ -301,6 +313,31 @@ func _on_presence_updated(rooms: Array) -> void:
 	var lbl := Label.new()
 	lbl.text = "(empty)"
 	_presence_list.add_child(lbl)
+
+
+## ── ComStar badge ────────────────────────────────────────────────────────────
+
+func _fetch_comstar_unread() -> void:
+	if ServerBridge.game_api_url.is_empty():
+		return
+	_comstar_unread.fetch_unread_count(ServerBridge.game_api_url)
+
+
+func _on_comstar_unread_loaded(count: int) -> void:
+	if count > 0:
+		_comstar_badge.text = "[%d]" % count
+		_comstar_badge.visible = true
+	else:
+		_comstar_badge.visible = false
+
+
+func _on_comstar_message_received() -> void:
+	_fetch_comstar_unread()
+
+
+func _on_comstar_pressed() -> void:
+	_poll_timer.stop()
+	get_tree().change_scene_to_file("res://scenes/comstar/comstar.tscn")
 
 
 func _on_back_pressed() -> void:

@@ -19,6 +19,7 @@ signal arena_match_launched(data: Dictionary)
 signal combat_snapshot_received(data: Dictionary)
 signal combat_hit_received(data: Dictionary)
 signal combat_end_received(data: Dictionary)
+signal comstar_message_received
 
 const _RECONNECT_DELAY := 5.0
 
@@ -102,6 +103,11 @@ func _handle_message(text: String) -> void:
 			combat_hit_received.emit(data)
 		"combat_end":
 			combat_end_received.emit(data)
+		"comstar_new_message":
+			var to_name := str(data.get("to", ""))
+			var my_name := str(AuthSession.character.get("display_name", ""))
+			if not my_name.is_empty() and to_name == my_name:
+				comstar_message_received.emit()
 
 
 ## Send a JSON message to the server over the WebSocket connection.
