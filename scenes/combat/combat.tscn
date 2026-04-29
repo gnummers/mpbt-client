@@ -1,57 +1,190 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scenes/combat/combat.gd" id="1_combat_script"]
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_arena"]
-size = Vector2(32, 32)
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat_1"]
+sky_top_color = Color(0.04, 0.06, 0.1, 1)
+sky_horizon_color = Color(0.16, 0.2, 0.26, 1)
+ground_bottom_color = Color(0.06, 0.06, 0.05, 1)
+ground_horizon_color = Color(0.12, 0.11, 0.09, 1)
+sun_angle_max = 30.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
-albedo_color = Color(0.24, 0.29, 0.23, 1)
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("SkyMat_1")
+
+[sub_resource type="Environment" id="Env_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 3
+ambient_light_color = Color(0.6, 0.65, 0.7, 1)
+ambient_light_energy = 0.5
+fog_enabled = true
+fog_density = 0.002
+fog_light_color = Color(0.08, 0.1, 0.14, 1)
+
+[sub_resource type="StandardMaterial3D" id="GroundMat_1"]
+albedo_color = Color(0.2, 0.25, 0.18, 1)
 roughness = 1.0
+uv1_scale = Vector3(40.0, 40.0, 1.0)
 
-[sub_resource type="BoxMesh" id="BoxMesh_mech"]
+[sub_resource type="PlaneMesh" id="GroundMesh_1"]
+size = Vector2(1000, 1000)
+subdivide_width = 0
+subdivide_depth = 0
+material = SubResource("GroundMat_1")
+
+[sub_resource type="BoxShape3D" id="GroundShape_1"]
+size = Vector3(1000, 0.2, 1000)
+
+[sub_resource type="BoxMesh" id="MechBox_1"]
 size = Vector3(1.8, 3.2, 1.2)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mech"]
-albedo_color = Color(0.58, 0.47, 0.26, 1)
-roughness = 0.8
+[sub_resource type="StandardMaterial3D" id="MechMat_1"]
+albedo_color = Color(0.4, 0.52, 0.3, 1)
+roughness = 0.7
+metallic = 0.2
 
-[sub_resource type="Environment" id="Environment_default"]
-background_mode = 1
-background_color = Color(0.05, 0.06, 0.075, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.62, 0.68, 0.74, 1)
-ambient_light_energy = 0.55
+[sub_resource type="CapsuleShape3D" id="MechShape_1"]
+radius = 0.9
+height = 3.2
 
 [node name="Combat" type="Node3D"]
 script = ExtResource("1_combat_script")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_default")
+environment = SubResource("Env_1")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-rotation = Vector3(-0.785398, -0.523599, 0)
-light_energy = 2.0
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 80, 0)
+light_energy = 1.8
+shadow_enabled = true
 
-[node name="ArenaGround" type="MeshInstance3D" parent="."]
-mesh = SubResource("PlaneMesh_arena")
-surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+[node name="ArenaGround" type="StaticBody3D" parent="."]
 
-[node name="PlaceholderMech" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
-mesh = SubResource("BoxMesh_mech")
-surface_material_override/0 = SubResource("StandardMaterial3D_mech")
+[node name="GroundMesh" type="MeshInstance3D" parent="ArenaGround"]
+mesh = SubResource("GroundMesh_1")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 8, 12)
+[node name="GroundCollision" type="CollisionShape3D" parent="ArenaGround"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("GroundShape_1")
+
+[node name="LocalMech" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -100)
+floor_stop_on_slope = true
+floor_snap_length = 0.3
+
+[node name="MechMesh" type="MeshInstance3D" parent="LocalMech"]
+mesh = SubResource("MechBox_1")
+surface_material_override/0 = SubResource("MechMat_1")
+
+[node name="MechCollision" type="CollisionShape3D" parent="LocalMech"]
+shape = SubResource("MechShape_1")
+
+[node name="NameTag" type="Label3D" parent="LocalMech"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.008
+billboard = 1
+text = "Player"
+font_size = 24
+modulate = Color(0.7, 1.0, 0.7, 1)
+
+[node name="CameraPivot" type="Node3D" parent="LocalMech"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+
+[node name="Camera3D" type="Camera3D" parent="LocalMech/CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.97237, 0.233445, 0, -0.233445, 0.97237, 0, 2.0, 7.5)
 current = true
-fov = 55.0
+fov = 60.0
+near = 0.1
+far = 800.0
 
-[node name="Hud" type="CanvasLayer" parent="."]
+[node name="RemoteMechs" type="Node3D" parent="."]
 
-[node name="Status" type="Label" parent="Hud"]
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 520.0
-offset_bottom = 72.0
-text = "Combat placeholder - Esc returns to menu"
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="BottomPanel" type="Panel" parent="HUD"]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -72.0
+offset_bottom = 0.0
+
+[node name="HUDBox" type="HBoxContainer" parent="HUD/BottomPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = -8.0
+theme_override_constants/separation = 12
+
+[node name="HPLabel" type="Label" parent="HUD/BottomPanel/HUDBox"]
+text = "HP"
+vertical_alignment = 1
+
+[node name="HealthBar" type="ProgressBar" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(220, 32)
+size_flags_vertical = 4
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HeatSep" type="Control" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(24, 0)
+
+[node name="HeatLabel" type="Label" parent="HUD/BottomPanel/HUDBox"]
+text = "HEAT"
+vertical_alignment = 1
+
+[node name="HeatBar" type="ProgressBar" parent="HUD/BottomPanel/HUDBox"]
+custom_minimum_size = Vector2(220, 32)
+size_flags_vertical = 4
+min_value = 0.0
+max_value = 100.0
+value = 0.0
+show_percentage = false
+
+[node name="StatusLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -360.0
+offset_right = 360.0
+offset_top = 16.0
+offset_bottom = 56.0
+horizontal_alignment = 1
+text = ""
+
+[node name="ResultOverlay" type="PanelContainer" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_right = 240.0
+offset_top = -140.0
+offset_bottom = 140.0
+
+[node name="ResultVBox" type="VBoxContainer" parent="HUD/ResultOverlay"]
+alignment = 1
+
+[node name="ResultTitle" type="Label" parent="HUD/ResultOverlay/ResultVBox"]
+theme_override_font_sizes/font_size = 42
+horizontal_alignment = 1
+text = "RESULT"
+
+[node name="ResultDesc" type="Label" parent="HUD/ResultOverlay/ResultVBox"]
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = ""
+
+[node name="ExitHint" type="Label" parent="HUD/ResultOverlay/ResultVBox"]
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+modulate = Color(0.7, 0.7, 0.7, 1)
+text = "Returning to menu in 4 seconds…"
+

@@ -16,6 +16,9 @@ signal ws_disconnected
 signal room_chat_received(room_id: int, username: String, text: String)
 signal arena_queue_updated(slots: Array)
 signal arena_match_launched(data: Dictionary)
+signal combat_snapshot_received(data: Dictionary)
+signal combat_hit_received(data: Dictionary)
+signal combat_end_received(data: Dictionary)
 
 const _RECONNECT_DELAY := 5.0
 
@@ -93,3 +96,16 @@ func _handle_message(text: String) -> void:
 			arena_queue_updated.emit(data.get("slots", []))
 		"arena_match_launch":
 			arena_match_launched.emit(data)
+		"combat_snapshot":
+			combat_snapshot_received.emit(data)
+		"combat_hit":
+			combat_hit_received.emit(data)
+		"combat_end":
+			combat_end_received.emit(data)
+
+
+## Send a JSON message to the server over the WebSocket connection.
+## Silently drops the message if the connection is not open.
+func send_message(data: Dictionary) -> void:
+	if _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		_ws.send_text(JSON.stringify(data))
