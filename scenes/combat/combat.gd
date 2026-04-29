@@ -1512,7 +1512,7 @@ func _target_readout_text(target: Dictionary, detailed: bool) -> String:
 	if detailed:
 		var actor_info: Dictionary = _remote_actor_info.get(target_name, {})
 		lines.append("CLASS %s" % str(actor_info.get("typeString", "?")))
-		lines.append("BEARING %+d" % int(round(rad_to_deg(float(target.get("bearing", 0.0)))))
+		lines.append("BEARING %+d" % int(round(rad_to_deg(float(target.get("bearing", 0.0))))))
 		lines.append("WINDOW %s" % _target_range_band(float(target.get("distance", 0.0))))
 	return "\n".join(lines)
 
