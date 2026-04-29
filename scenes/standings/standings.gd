@@ -99,7 +99,7 @@ func _make_standing_row(s: Dictionary) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 0)
 
-	var is_local := (name_str == AuthSession.character.get("display_name", ""))
+	var is_local: bool = (name_str == AuthSession.character.get("display_name", ""))
 	var row_color := Color(0.25, 0.85, 0.25) if is_local else Color(0.85, 0.85, 0.85)
 
 	for pair: Array in [

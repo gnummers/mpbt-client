@@ -47,7 +47,7 @@ text = "Asset Browser"
 
 [node name="BackButton" type="Button" parent="Margin/Layout/Header"]
 layout_mode = 2
-text = "← Back"
+text = "<- Back"
 
 [node name="Content" type="HSplitContainer" parent="Margin/Layout"]
 layout_mode = 2

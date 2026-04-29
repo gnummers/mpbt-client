@@ -37,7 +37,7 @@ func _on_submit_pressed() -> void:
 	submit_button.disabled = true
 	_set_status("Creating character\u2026")
 
-	var allegiance := ALLEGIANCES[allegiance_opt.selected]
+	var allegiance: String = ALLEGIANCES[allegiance_opt.selected]
 	AuthSession.create_character(ServerBridge.api_url, display_name, allegiance)
 
 

@@ -37,7 +37,7 @@ theme_override_constants/separation = 12
 [node name="BackButton" type="Button" parent="MainVBox/Header"]
 layout_mode = 2
 custom_minimum_size = Vector2(90, 0)
-text = "← Menu"
+text = "<- Menu"
 
 [node name="TitleLabel" type="Label" parent="MainVBox/Header"]
 layout_mode = 2
@@ -127,7 +127,7 @@ placeholder_text = "C:/Games/MPBT"
 
 [node name="RetailBrowse" type="Button" parent="MainVBox/Scroll/Fields/RetailRow"]
 layout_mode = 2
-text = "Browse…"
+text = "Browse..."
 
 [node name="ExtractedRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
 layout_mode = 2
@@ -146,7 +146,7 @@ placeholder_text = "C:/MPBT/assets"
 
 [node name="ExtractedBrowse" type="Button" parent="MainVBox/Scroll/Fields/ExtractedRow"]
 layout_mode = 2
-text = "Browse…"
+text = "Browse..."
 
 [node name="DiagSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
 layout_mode = 2

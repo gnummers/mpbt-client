@@ -156,11 +156,11 @@ func _apply_rebind(event: InputEventKey) -> void:
 
 
 func _on_save_pressed() -> void:
-	var res_str := RESOLUTIONS[_resolution_opt.selected] \
+	var res_str: String = RESOLUTIONS[_resolution_opt.selected] \
 		if _resolution_opt.selected >= 0 else RESOLUTIONS[0]
-	var wm_str := WINDOW_MODES[_window_mode_opt.selected] \
+	var wm_str: String = WINDOW_MODES[_window_mode_opt.selected] \
 		if _window_mode_opt.selected >= 0 else WINDOW_MODES[0]
-	var scale_val := UI_SCALES[_ui_scale_opt.selected] \
+	var scale_val: float = UI_SCALES[_ui_scale_opt.selected] \
 		if _ui_scale_opt.selected >= 0 else 1.0
 	var controls_dict := {}
 	for action in CONTROL_ACTIONS:

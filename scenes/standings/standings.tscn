@@ -37,7 +37,7 @@ theme_override_constants/separation = 12
 [node name="BackButton" type="Button" parent="MainVBox/Header"]
 layout_mode = 2
 custom_minimum_size = Vector2(90, 0)
-text = "← Menu"
+text = "<- Menu"
 
 [node name="TitleLabel" type="Label" parent="MainVBox/Header"]
 layout_mode = 2

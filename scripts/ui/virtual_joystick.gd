@@ -38,7 +38,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
 		if touch.pressed and _touch_index < 0:
-			var local_pos := to_local(touch.position)
+			var local_pos := get_global_transform().affine_inverse() * touch.position
 			if Rect2(Vector2.ZERO, size).has_point(local_pos):
 				_touch_index = touch.index
 				_base_pos    = local_pos
@@ -55,7 +55,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag:
 		var drag := event as InputEventScreenDrag
 		if drag.index == _touch_index:
-			var offset  := to_local(drag.position) - _base_pos
+			var offset  := (get_global_transform().affine_inverse() * drag.position) - _base_pos
 			var clamped := offset.limit_length(BASE_RADIUS)
 			_handle_pos = _base_pos + clamped
 			var raw     := clamped / BASE_RADIUS
