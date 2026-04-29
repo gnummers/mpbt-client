@@ -7,7 +7,7 @@ background music and sound effects for the MPBT client.
 
 It creates two programmatic audio buses at startup:
 - **Music** — background music (BGM), loops automatically
-- **SFX** — one-shot sound effects
+- **SFX** — one-shot sound effects, played through a small player pool so cues can overlap
 
 Both buses send to the **Master** bus, so the Master volume slider controls everything.
 
@@ -37,11 +37,10 @@ in the in-game Settings screen.  Changes are live-previewed and reverted on Canc
 
 SFX clips live under `res://assets/audio/sfx/<name>.ogg`.
 
-If a bundled file is absent, the configured `assets.extracted_path` is searched for
-OGG/WAV/MP3 files under:
+If a bundled file is absent, the configured `assets.extracted_path` is searched under:
 
-- BGM: `audio/bgm/`, `audio/music/`, `music/`, `bgm/`
-- SFX: `audio/sfx/`, `audio/sounds/`, `sfx/`, `sounds/`
+- BGM (`.ogg`, `.wav`, `.mp3`): `audio/bgm/`, `audio/music/`, `music/`, `bgm/`
+- SFX (`.ogg`, `.wav`, `.mp3`, `.pcm`): `audio/sfx/`, `audio/sound/`, `audio/sounds/`, `sfx/`, `sound/`, `sounds/`
 
 The resolver prefers files whose base name matches the requested track or clip.
 If nothing is found the call is a no-op.
@@ -52,10 +51,29 @@ Current SFX hooks:
 |-------|-----------|
 | UI button click | `ui_click` |
 | UI button hover | `ui_hover` |
-| Combat weapon fire | `weapon_fire` |
-| Combat hit | `weapon_hit` |
+| Combat weapon fire | weapon-class-specific retail cue (`lasrfire`, `ppcfire`, `acanfire`, `mislfire`, `mgunfire`, `flamer`) |
+| Combat hit | impact-class-specific retail cue (`hit*`, `expld*`, `aexpld`, `collide`, `blwpart`) |
+| Jump start | `jump` |
+| Jump landing | `landing` |
+| Ground movement | speed-scaled `engine*` plus cadence `step` |
+| Turn-in-place / torso actuator feel | `actuator`, `torso` |
+| Stand up from downed posture | `getup` |
+| Radar range step | `radar` |
+| Target lock / target cycle | `locked` |
+| Remote weapon fire | spatialized fire cue at the attacking mech |
+| Remote weapon impact | spatialized impact cue at the target / hit point |
 | Match victory | `victory` |
 | Match defeat | `defeat` |
+
+When a requested logical SFX name has no exact filename match, the client also tries
+common retail-style candidates. Current fallback groups:
+
+| Logical clip | Retail filename candidates |
+|--------------|----------------------------|
+| `ui_click` | `button`, `button2`, `gclick`, `lever` |
+| `ui_hover` | `button2`, `gclick`, `lever`, `radar` |
+| `weapon_fire` | `lasrfire`, `mgunfire`, `mislfire`, `ppcfire`, `acanfire`, `flamer` |
+| `weapon_hit` | `hit1`, `hit2`, `hit3`, `expld1`, `expld2`, `expld3`, `expld4`, `aexpld`, `collide`, `blwpart` |
 
 ## Providing Retail Assets
 
@@ -75,6 +93,18 @@ If you have WAV/MIDI originals, convert with:
 ```
 ffmpeg -i input.wav -c:a libvorbis -q:a 6 output.ogg
 ```
+
+Retail `.pcm` SFX clips are now loaded directly from extracted assets using the current
+best guess for the KSOUND-era format:
+
+- unsigned 8-bit PCM
+- mono
+- `11025 Hz` mix rate
+
+That guess is good enough for local testing and hook mapping, but it is still based on
+reverse-engineering evidence rather than a fully documented retail format spec. If you
+convert the clips manually, keep the retail base filename where practical so the same
+fallback resolver can find them.
 
 ## API Reference
 

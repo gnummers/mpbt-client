@@ -44,6 +44,16 @@ const TIC_LABELS := ["A", "B", "C"]
 const THROTTLE_STEP_PCT := 10
 const THROTTLE_LERP_RATE := 5.0
 const TURN_RATE := 1.7
+const MOVEMENT_AUDIO_ENGINE_INTERVAL_SLOW := 2.8
+const MOVEMENT_AUDIO_ENGINE_INTERVAL_FAST := 1.5
+const MOVEMENT_AUDIO_STEP_INTERVAL_SLOW := 0.85
+const MOVEMENT_AUDIO_STEP_INTERVAL_FAST := 0.35
+const MOVEMENT_AUDIO_ACTUATOR_INTERVAL := 0.6
+const REMOTE_SFX_POOL_SIZE := 8
+const REMOTE_SFX_MAX_DISTANCE := 180.0
+const REMOTE_SFX_UNIT_SIZE := 12.0
+const REMOTE_FIRE_VOLUME_DB := -5.0
+const REMOTE_IMPACT_VOLUME_DB := -3.0
 const READOUT_TARGET_BRIEF := "target_brief"
 const READOUT_TARGET_DETAIL := "target_detail"
 const READOUT_SELF_DETAIL := "self_detail"
@@ -117,6 +127,11 @@ var _input_timer: float = 0.0
 var _status_timer: float = 0.0
 var _ended: bool = false
 var _exit_timer: float = 0.0
+var _movement_engine_timer: float = 0.0
+var _movement_step_timer: float = 0.0
+var _movement_actuator_timer: float = 0.0
+var _remote_sfx_players: Array = []
+var _remote_sfx_cursor: int = 0
 
 var _local_actor_info: Dictionary = {}
 var _local_posture_state: int = POSTURE_NORMAL
@@ -166,6 +181,7 @@ func _ready() -> void:
 	_update_target_hud()
 	_update_weapon_hud()
 	_update_readout_panel({})
+	_init_remote_sfx_players()
 	_chat_input.text_submitted.connect(_on_chat_text_submitted)
 
 	WSClient.combat_snapshot_received.connect(_on_combat_snapshot)
@@ -309,6 +325,34 @@ func _tic_label(tic_index: int) -> String:
 	return TIC_LABELS[tic_index]
 
 
+func _tic_position_text(tic_index: int, slot: int) -> String:
+	var slots := _tic_slots(tic_index)
+	if slots.is_empty():
+		return "TIC %s 0/0" % _tic_label(tic_index)
+	var current_index := slots.find(slot)
+	if current_index < 0:
+		current_index = 0
+	return "TIC %s %d/%d" % [_tic_label(tic_index), current_index + 1, slots.size()]
+
+
+func _tic_members_text(tic_index: int) -> String:
+	var slots := _tic_slots(tic_index)
+	if slots.is_empty():
+		return "MEMBERS none"
+	var labels: Array[String] = []
+	for slot_v in slots:
+		var slot := int(slot_v)
+		if slot < 0 or slot >= _weapon_type_ids.size():
+			continue
+		labels.append(MecParser.weapon_short_name(int(_weapon_type_ids[slot])))
+		if labels.size() >= 4:
+			break
+	var text := ", ".join(labels)
+	if slots.size() > labels.size():
+		text = "%s +" % text
+	return "MEMBERS %s" % text
+
+
 func _set_selected_tic(tic_index: int) -> void:
 	var slots := _tic_slots(tic_index)
 	if slots.is_empty():
@@ -317,6 +361,7 @@ func _set_selected_tic(tic_index: int) -> void:
 	_selected_tic_index = tic_index
 	if not slots.has(_selected_weapon_slot):
 		_selected_weapon_slot = int(slots[0])
+	_flash_status(_tic_position_text(_selected_tic_index, _selected_weapon_slot))
 	_update_weapon_hud()
 
 
@@ -360,6 +405,7 @@ func _queue_tic_fire(tic_index: int) -> void:
 	for slot_v in slots:
 		_queue_fire_slot(int(slot_v))
 	_selected_tic_index = tic_index
+	_flash_status("Fire %s" % _tic_position_text(_selected_tic_index, int(slots[0])))
 	_update_weapon_hud()
 
 
@@ -451,6 +497,32 @@ func _posture_color(posture_state: int) -> Color:
 			return Color(0.35, 1.0, 0.45)
 
 
+func _remote_base_color(is_bot: bool) -> Color:
+	return Color(0.75, 0.18, 0.12) if is_bot else Color(0.2, 0.3, 0.8)
+
+
+func _remote_label_color(posture_state: int, is_bot: bool, is_selected: bool) -> Color:
+	var base_color := _posture_color(posture_state) if posture_state != POSTURE_NORMAL else (
+		Color(1.0, 0.5, 0.5) if is_bot else Color(0.5, 0.7, 1.0)
+	)
+	if not is_selected:
+		return base_color
+	return base_color.lerp(Color(1.0, 0.95, 0.35), 0.7)
+
+
+func _apply_remote_selection_visuals(remote: Node3D, is_selected: bool, is_bot: bool) -> void:
+	var mesh_inst := remote.get_node_or_null("MeshPivot/MechMesh")
+	if not (mesh_inst is MeshInstance3D):
+		return
+	var material := (mesh_inst as MeshInstance3D).get_active_material(0)
+	if not (material is StandardMaterial3D):
+		return
+	var standard_material := material as StandardMaterial3D
+	standard_material.albedo_color = _remote_base_color(is_bot).lerp(Color(1.0, 0.92, 0.45), 0.35 if is_selected else 0.0)
+	standard_material.emission_enabled = is_selected
+	standard_material.emission = Color(1.0, 0.92, 0.35) if is_selected else Color.BLACK
+
+
 func _apply_local_mech_visuals(delta: float) -> void:
 	_apply_visual_pose(_local_mech_mesh, null, _local_posture_state, delta, false)
 
@@ -507,13 +579,14 @@ func _refresh_remote_name_tag(remote: Node3D, uname: String, type_str: String, p
 	if not (name_tag is Label3D):
 		return
 	var label := name_tag as Label3D
+	var is_selected_target := uname == _selected_target_username
 	var posture_suffix := ""
 	if posture_state != POSTURE_NORMAL:
 		posture_suffix = " %s" % _posture_tag(posture_state)
-	label.text = "%s\n[%s]%s" % [uname, type_str, posture_suffix]
-	label.modulate = _posture_color(posture_state) if posture_state != POSTURE_NORMAL else (
-		Color(1.0, 0.5, 0.5) if is_bot else Color(0.5, 0.7, 1.0)
-	)
+	label.text = "> %s <\n[%s]%s" % [uname, type_str, posture_suffix] if is_selected_target else "%s\n[%s]%s" % [uname, type_str, posture_suffix]
+	label.modulate = _remote_label_color(posture_state, is_bot, is_selected_target)
+	label.scale = Vector3.ONE * (1.18 if is_selected_target else 1.0)
+	_apply_remote_selection_visuals(remote, is_selected_target, is_bot)
 
 
 func _heat_capacity_for_sinks(heat_sinks: int) -> float:
@@ -553,7 +626,7 @@ func _update_weapon_hud() -> void:
 	else:
 		text = "%s RDY" % [text]
 	if _selected_tic_index >= 0:
-		text = "%s TIC %s" % [text, _tic_label(_selected_tic_index)]
+		text = "%s %s" % [text, _tic_position_text(_selected_tic_index, _selected_weapon_slot)]
 	_weapon_value.text = text
 
 
@@ -747,8 +820,8 @@ func _fire_weapon_slot(slot: int) -> void:
 		_update_weapon_hud()
 		return
 
-	AudioManager.play_sfx("weapon_fire")
 	var weapon_type_id: int = _selected_weapon_type_id()
+	AudioManager.play_weapon_fire_sfx(weapon_type_id)
 	var ammo_state := _consume_selected_weapon_ammo()
 	_start_selected_weapon_cooldown()
 	_apply_selected_weapon_heat()
@@ -819,12 +892,14 @@ func _try_start_jump() -> void:
 	_jump_start_timer = JUMP_START_THROTTLE
 	var impulse: float = 7.0 + min(float(_jump_jet_count), 8.0) * 0.35
 	_local_mech.velocity.y = impulse
+	AudioManager.play_jump_start_sfx()
 	_update_jump_hud()
 	_send_combat_action(4)
 
 
 func _complete_jump_landing() -> void:
 	_jump_flags = 0
+	AudioManager.play_jump_land_sfx()
 	_update_jump_hud()
 	_send_combat_action(6)
 
@@ -835,6 +910,85 @@ func _tick_jump_state(delta: float) -> void:
 	if _local_mech.is_on_floor() and _jump_fuel < JUMP_FUEL_MAX:
 		_jump_fuel = min(JUMP_FUEL_MAX, _jump_fuel + JUMP_FUEL_RECHARGE_PER_SEC * delta)
 		_update_jump_hud()
+
+
+func _tick_movement_audio(delta: float, throttle_ratio: float, turn_axis: float) -> void:
+	var grounded := _local_mech.is_on_floor() and _jump_flags == 0
+	var flat_speed_ms := Vector2(_local_mech.velocity.x, _local_mech.velocity.z).length()
+	var speed_ratio := 0.0 if _mech_speed_ms <= 0.01 else clamp(flat_speed_ms / _mech_speed_ms, 0.0, 1.0)
+	var moving_grounded := grounded and speed_ratio > 0.12 and absf(throttle_ratio) > 0.05
+	var turning_grounded := grounded and absf(turn_axis) > 0.35
+
+	if moving_grounded:
+		_movement_engine_timer -= delta
+		_movement_step_timer -= delta
+		if _movement_engine_timer <= 0.0:
+			AudioManager.play_engine_movement_sfx(speed_ratio)
+			_movement_engine_timer = lerpf(MOVEMENT_AUDIO_ENGINE_INTERVAL_SLOW, MOVEMENT_AUDIO_ENGINE_INTERVAL_FAST, speed_ratio)
+		if _movement_step_timer <= 0.0:
+			AudioManager.play_step_sfx(speed_ratio)
+			_movement_step_timer = lerpf(MOVEMENT_AUDIO_STEP_INTERVAL_SLOW, MOVEMENT_AUDIO_STEP_INTERVAL_FAST, speed_ratio)
+	else:
+		_movement_engine_timer = 0.0
+		_movement_step_timer = 0.0
+
+	if turning_grounded and not moving_grounded:
+		_movement_actuator_timer -= delta
+		if _movement_actuator_timer <= 0.0:
+			AudioManager.play_actuator_sfx()
+			_movement_actuator_timer = MOVEMENT_AUDIO_ACTUATOR_INTERVAL
+	else:
+		_movement_actuator_timer = 0.0
+
+
+func _init_remote_sfx_players() -> void:
+	for i in REMOTE_SFX_POOL_SIZE:
+		var player := AudioStreamPlayer3D.new()
+		player.name = "RemoteSFX%d" % i
+		player.bus = "SFX"
+		player.max_distance = REMOTE_SFX_MAX_DISTANCE
+		player.unit_size = REMOTE_SFX_UNIT_SIZE
+		_effects.add_child(player)
+		_remote_sfx_players.append(player)
+
+
+func _next_remote_sfx_player() -> AudioStreamPlayer3D:
+	if _remote_sfx_players.is_empty():
+		return null
+
+	for i in _remote_sfx_players.size():
+		var index := (_remote_sfx_cursor + i) % _remote_sfx_players.size()
+		var player_v: Variant = _remote_sfx_players[index]
+		if not (player_v is AudioStreamPlayer3D):
+			continue
+		var player := player_v as AudioStreamPlayer3D
+		if not player.playing:
+			_remote_sfx_cursor = (index + 1) % _remote_sfx_players.size()
+			return player
+
+	var fallback_v: Variant = _remote_sfx_players[_remote_sfx_cursor]
+	if not (fallback_v is AudioStreamPlayer3D):
+		return null
+	var fallback := fallback_v as AudioStreamPlayer3D
+	_remote_sfx_cursor = (_remote_sfx_cursor + 1) % _remote_sfx_players.size()
+	return fallback
+
+
+func _play_remote_sfx_stream(stream: AudioStream, world_position: Vector3, volume_db: float = 0.0) -> void:
+	if stream == null:
+		return
+	if _camera.global_position.distance_to(world_position) > REMOTE_SFX_MAX_DISTANCE * 1.5:
+		return
+
+	var player := _next_remote_sfx_player()
+	if player == null:
+		return
+	if player.playing:
+		player.stop()
+	player.global_position = world_position
+	player.volume_db = volume_db
+	player.stream = stream
+	player.play()
 
 
 func _tick_weapon_cooldowns(delta: float) -> void:
@@ -917,20 +1071,55 @@ func _spawn_local_weapon_effect(weapon_type_id: int) -> Dictionary:
 	}
 
 
-func _spawn_hit_event_effect(data: Dictionary) -> void:
+func _resolve_hit_event_audio_positions(data: Dictionary) -> Dictionary:
 	var attacker := str(data.get("source", data.get("attacker", "")))
 	var target := str(data.get("target", ""))
 	var weapon_type_id := int(data.get("weaponTypeId", data.get("weaponType", 7)))
 	var attacker_node := _actor_node_for_username(attacker)
 	var target_node := _actor_node_for_username(target)
 	if attacker_node == null or target_node == null:
-		return
+		return {}
 
 	var weapon_slot: int = int(data.get("weaponSlot", 0))
 	var source_attach_hint: Variant = data.get("sourceAttach", data.get("weaponMountInternalIndex", -1))
 	var origin: Vector3 = _muzzle_position(attacker_node, weapon_slot, source_attach_hint)
 	var impact: Vector3 = _effect_impact_position(target_node, data, origin)
+	return {
+		"attacker": attacker,
+		"target": target,
+		"weaponTypeId": weapon_type_id,
+		"damage": int(data.get("damage", 0)),
+		"origin": origin,
+		"impact": impact,
+	}
+
+
+func _spawn_hit_event_effect(data: Dictionary) -> Dictionary:
+	var resolved := _resolve_hit_event_audio_positions(data)
+	if resolved.is_empty():
+		return {}
+	var origin: Vector3 = resolved.get("origin", Vector3.ZERO)
+	var impact: Vector3 = resolved.get("impact", origin)
+	var weapon_type_id := int(resolved.get("weaponTypeId", 7))
 	_spawn_weapon_effect(origin, impact, weapon_type_id)
+	return resolved
+
+
+func _play_remote_hit_event_audio(resolved: Dictionary) -> void:
+	if resolved.is_empty():
+		return
+
+	var attacker := str(resolved.get("attacker", ""))
+	var target := str(resolved.get("target", ""))
+	var weapon_type_id := int(resolved.get("weaponTypeId", -1))
+	var damage := int(resolved.get("damage", 0))
+	var origin: Vector3 = resolved.get("origin", Vector3.ZERO)
+	var impact: Vector3 = resolved.get("impact", origin)
+
+	if attacker != _username:
+		_play_remote_sfx_stream(AudioManager.load_weapon_fire_sfx_stream(weapon_type_id), origin, REMOTE_FIRE_VOLUME_DB)
+	if target != _username:
+		_play_remote_sfx_stream(AudioManager.load_weapon_hit_sfx_stream(weapon_type_id, damage), impact, REMOTE_IMPACT_VOLUME_DB)
 
 
 func _actor_node_for_username(username: String) -> Node3D:
@@ -1307,6 +1496,7 @@ func _cycle_radar_range() -> void:
 
 func _step_radar_range(delta: int) -> void:
 	_radar_range_index = (_radar_range_index + delta + RADAR_RANGES.size()) % RADAR_RANGES.size()
+	AudioManager.play_radar_ping_sfx()
 	_flash_status("Radar %dm" % _current_radar_range())
 	_update_target_hud()
 
@@ -1323,6 +1513,7 @@ func _update_target_hud() -> void:
 	if target.is_empty():
 		_selected_target_username = ""
 		_target_name.text = "NO TARGET"
+		_target_name.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 		_target_range.text = "RNG --"
 		_target_status.text = "RADAR %dm" % _current_radar_range()
 		_target_status.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
@@ -1334,14 +1525,16 @@ func _update_target_hud() -> void:
 	var bearing := float(target.get("bearing", 0.0))
 	var health := int(target.get("health", -1))
 	var posture_state := int(target.get("posture", POSTURE_NORMAL))
+	var is_selected_target := target_name == _selected_target_username
 	_target_name.text = target_name
+	_target_name.add_theme_color_override("font_color", Color(1.0, 0.95, 0.35) if is_selected_target else Color(1.0, 1.0, 1.0))
 	_target_range.text = "RNG %dm  BRG %+d" % [int(round(distance)), int(round(rad_to_deg(bearing)))]
 	var status := _target_range_band(distance)
 	if posture_state != POSTURE_NORMAL:
 		status = "%s  %s" % [status, _posture_tag(posture_state)]
 	if health >= 0:
 		status = "%s  HP %d" % [status, health]
-	if target_name == _selected_target_username:
+	if is_selected_target:
 		status = "%s  LOCK" % status
 	_target_status.text = status
 	var status_color := _posture_color(posture_state)
@@ -1367,6 +1560,7 @@ func _radar_actor_entries() -> Array:
 			"heading": node.rotation.y,
 			"health": int(info.get("health", -1)),
 			"posture": _actor_posture_state(info, int(info.get("health", 100))),
+			"selected": str(uname) == _selected_target_username,
 		})
 	return actors
 
@@ -1464,6 +1658,7 @@ func _cycle_target() -> void:
 			break
 	var next_target := visible[(current_index + 1) % visible.size()] as Dictionary
 	_selected_target_username = str(next_target.get("username", ""))
+	AudioManager.play_target_lock_sfx()
 	_flash_status("Target %s" % _selected_target_username)
 	_update_target_hud()
 
@@ -1483,15 +1678,16 @@ func _target_range_band(distance: float) -> String:
 
 
 func _update_readout_panel(target: Dictionary) -> void:
+	var readout_selected: bool = not target.is_empty() and str(target.get("username", "")) == _selected_target_username
 	match _readout_mode:
 		READOUT_TARGET_DETAIL:
-			_readout_title.text = "TARGET DETAIL"
+			_readout_title.text = "TARGET DETAIL LOCK" if readout_selected else "TARGET DETAIL"
 			_readout_body.text = _target_readout_text(target, true)
 		READOUT_SELF_DETAIL:
 			_readout_title.text = "SELF DETAIL"
 			_readout_body.text = _self_readout_text()
 		_:
-			_readout_title.text = "TARGET BRIEF"
+			_readout_title.text = "TARGET BRIEF LOCK" if readout_selected else "TARGET BRIEF"
 			_readout_body.text = _target_readout_text(target, false)
 
 
@@ -1502,6 +1698,8 @@ func _target_readout_text(target: Dictionary, detailed: bool) -> String:
 	var posture_state := int(target.get("posture", POSTURE_NORMAL))
 	var health := int(target.get("health", -1))
 	var distance := int(round(float(target.get("distance", 0.0))))
+	var actor_info: Dictionary = _remote_actor_info.get(target_name, {})
+	var is_selected_target := target_name == _selected_target_username
 	var lines := [
 		"ID %s" % target_name,
 		"RANGE %dm" % distance,
@@ -1509,23 +1707,61 @@ func _target_readout_text(target: Dictionary, detailed: bool) -> String:
 	]
 	if health >= 0:
 		lines.append("HEALTH %d%%" % health)
+	if is_selected_target:
+		lines.append("LOCK SELECTED")
 	if detailed:
-		var actor_info: Dictionary = _remote_actor_info.get(target_name, {})
 		lines.append("CLASS %s" % str(actor_info.get("typeString", "?")))
+		lines.append("CONTACT %s" % ("BOT" if bool(actor_info.get("isBot", false)) else "PILOT"))
 		lines.append("BEARING %+d" % int(round(rad_to_deg(float(target.get("bearing", 0.0))))))
 		lines.append("WINDOW %s" % _target_range_band(float(target.get("distance", 0.0))))
+		var target_heat_text := _actor_heat_readout(actor_info)
+		if not target_heat_text.is_empty():
+			lines.append(target_heat_text)
+		var target_mobility_text := _actor_mobility_readout(actor_info, posture_state)
+		if not target_mobility_text.is_empty():
+			lines.append(target_mobility_text)
 	return "\n".join(lines)
 
 
 func _self_readout_text() -> String:
-	return "\n".join([
+	var lines := [
 		"MECH %s" % _mech_type,
 		"HP %d%%" % _health,
 		"HEAT %d/%d" % [int(round(_heat)), int(round(_heat_capacity))],
 		"THROTTLE %+d%%" % _throttle_pct,
 		"POSTURE %s" % _posture_tag(_local_posture_state),
-		"TIC %s" % (_tic_label(_selected_tic_index) if _selected_tic_index >= 0 else "-"),
-	])
+		"RADAR %dm" % _current_radar_range(),
+	]
+	if _selected_tic_index >= 0:
+		lines.append(_tic_position_text(_selected_tic_index, _selected_weapon_slot))
+		lines.append(_tic_members_text(_selected_tic_index))
+	else:
+		lines.append("TIC -")
+	if _jump_jet_count > 0:
+		lines.append("JUMP FUEL %d" % int(round(_jump_fuel)))
+	if not _selected_target_username.is_empty():
+		lines.append("TARGET %s" % _selected_target_username)
+	return "\n".join(lines)
+
+
+func _actor_heat_readout(actor_info: Dictionary) -> String:
+	if actor_info.has("retailHeat"):
+		return "HEAT %d" % int(round(float(actor_info.get("retailHeat", 0.0))))
+	if actor_info.has("heat"):
+		return "HEAT %d" % int(round(float(actor_info.get("heat", 0.0))))
+	return ""
+
+
+func _actor_mobility_readout(actor_info: Dictionary, posture_state: int) -> String:
+	if posture_state == POSTURE_DOWNED:
+		return "MOBILITY PRONE"
+	if posture_state == POSTURE_CRIPPLED:
+		return "MOBILITY CRIPPLED"
+	if bool(actor_info.get("airborne", false)):
+		return "MOBILITY AIRBORNE"
+	if int(actor_info.get("jumpFlags", 0)) != 0:
+		return "MOBILITY JUMPING"
+	return ""
 
 
 func _flash_status(text: String) -> void:
@@ -1632,6 +1868,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_flash_status("Throttle 0%")
 
 		if event.is_action_pressed("stand_up") and _local_posture_state == POSTURE_DOWNED:
+			AudioManager.play_stand_up_sfx()
 			_send_combat_action(0)
 			_flash_status("Stand up")
 
@@ -1741,6 +1978,7 @@ func _physics_process(delta: float) -> void:
 	_local_mech.velocity.x = lerpf(_local_mech.velocity.x, target_velocity.x, clamp(delta * THROTTLE_LERP_RATE, 0.0, 1.0))
 	_local_mech.velocity.z = lerpf(_local_mech.velocity.z, target_velocity.z, clamp(delta * THROTTLE_LERP_RATE, 0.0, 1.0))
 	_local_mech.move_and_slide()
+	_tick_movement_audio(delta, throttle_ratio, turn_axis)
 	_tick_weapon_cooldowns(delta)
 	_cool_heat(delta)
 	_tick_jump_state(delta)
@@ -1944,20 +2182,23 @@ func _on_combat_hit(data: Dictionary) -> void:
 	var attacker := str(data.get("source", data.get("attacker", "")))
 	var damage := int(data.get("damage", 0))
 	var health := int(data.get("health", 0))
+	var weapon_type_id := int(data.get("weaponTypeId", -1))
 	var section_label: String = _impact_section_label(data)
+	var remote_audio_event: Dictionary = _resolve_hit_event_audio_positions(data)
 
 	if target == _username:
 		_apply_damage_updates_from_event(data)
-		_spawn_hit_event_effect(data)
+		if remote_audio_event.is_empty():
+			remote_audio_event = _spawn_hit_event_effect(data)
 		_health = health
 		_health_bar.value = float(_health)
-		AudioManager.play_sfx("weapon_hit")
+		AudioManager.play_weapon_hit_sfx(weapon_type_id, damage)
 		var hit_text := "⚠ HIT"
 		if not section_label.is_empty():
 			hit_text = "%s %s" % [hit_text, section_label]
-		_status_label.text = "%s by %s  -%d dmg  HP: %d" % [hit_text, attacker, damage, _health]
-		_status_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.15))
-		_status_timer = 2.5
+			_status_label.text = "%s by %s  -%d dmg  HP: %d" % [hit_text, attacker, damage, _health]
+			_status_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.15))
+			_status_timer = 2.5
 	elif attacker == _username:
 		if not data.has("impactX"):
 			var target_node := _actor_node_for_username(target)
@@ -1965,13 +2206,15 @@ func _on_combat_hit(data: Dictionary) -> void:
 				var origin: Vector3 = _muzzle_position(_local_mech, int(data.get("weaponSlot", _selected_weapon_slot)), data.get("sourceAttach", _selected_weapon_mount_internal_index()))
 				var impact: Vector3 = _effect_impact_position(target_node, data, origin)
 				_spawn_impact_flash(impact, Color(1.0, 0.7, 0.2, 0.8), 0.35, 0.2)
-		AudioManager.play_sfx("weapon_hit")
+		AudioManager.play_weapon_hit_sfx(weapon_type_id, damage)
 		var attack_text := "✓ HIT %s" % target
 		if not section_label.is_empty():
 			attack_text = "%s %s" % [attack_text, section_label]
 		_status_label.text = "%s  -%d  HP: %d" % [attack_text, damage, health]
 		_status_label.add_theme_color_override("font_color", Color(0.25, 1.0, 0.3))
 		_status_timer = 1.5
+
+	_play_remote_hit_event_audio(remote_audio_event)
 
 
 func _apply_damage_updates_from_event(data: Dictionary) -> void:

@@ -8,6 +8,7 @@ const HEADING_COLOR := Color(0.6, 1.0, 0.7, 0.8)
 const AIRBORNE_COLOR := Color(0.95, 0.85, 0.2, 0.95)
 const DOWNED_COLOR := Color(1.0, 0.55, 0.18, 0.95)
 const CRIPPLED_COLOR := Color(1.0, 0.22, 0.16, 0.95)
+const SELECTED_RING_COLOR := Color(1.0, 0.95, 0.35, 1.0)
 
 const POSTURE_NORMAL := 0
 const POSTURE_AIRBORNE := 1
@@ -53,6 +54,7 @@ func _draw() -> void:
 			continue
 		var scaled: Vector2 = Vector2(right_m, -forward_m) * (radius / float(_range_meters))
 		var posture_state: int = int(actor.get("posture", POSTURE_NORMAL))
+		var is_selected: bool = bool(actor.get("selected", false))
 		var blip_color := BLIP_COLOR
 		var blip_radius := 3.5
 		match posture_state:
@@ -64,4 +66,8 @@ func _draw() -> void:
 			POSTURE_CRIPPLED:
 				blip_color = CRIPPLED_COLOR
 				blip_radius = 4.5
-		draw_circle(center + scaled, blip_radius, blip_color)
+		var blip_pos := center + scaled
+		if is_selected:
+			draw_circle(blip_pos, blip_radius + 4.0, Color(SELECTED_RING_COLOR, 0.18))
+			draw_arc(blip_pos, blip_radius + 4.0, 0.0, TAU, 24, SELECTED_RING_COLOR, 2.0)
+		draw_circle(blip_pos, blip_radius, blip_color)

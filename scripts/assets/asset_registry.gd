@@ -17,6 +17,7 @@ class_name AssetRegistry
 
 const IMAGE_EXTS := [".png", ".bmp", ".jpg", ".jpeg"]
 const AUDIO_EXTS := [".ogg", ".wav", ".mp3"]
+const SFX_AUDIO_EXTS := [".ogg", ".wav", ".mp3", ".pcm"]
 const MAP_EXTS   := [".map"]
 
 const CATEGORY_DIRS := {
@@ -72,7 +73,7 @@ static func load_image_texture(path: String) -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
-static func find_audio(base_path: String, track_name: String, kind: String) -> String:
+static func find_audio(base_path: String, track_name: String, kind: String, extra_hints: Array = []) -> String:
 	if base_path.is_empty() or not DirAccess.dir_exists_absolute(base_path):
 		return ""
 
@@ -87,16 +88,21 @@ static func find_audio(base_path: String, track_name: String, kind: String) -> S
 	else:
 		dirs = [
 			base_path.path_join("audio/sfx"),
+			base_path.path_join("audio/sound"),
 			base_path.path_join("audio/sounds"),
 			base_path.path_join("sfx"),
+			base_path.path_join("sound"),
 			base_path.path_join("sounds"),
 		]
 
 	var files: Array = []
+	var exts := AUDIO_EXTS if kind == "bgm" else SFX_AUDIO_EXTS
 	for dir_path: String in dirs:
-		files.append_array(_scan_dir_recursive(dir_path, AUDIO_EXTS))
+		files.append_array(_scan_dir_recursive(dir_path, exts))
 
-	return _best_match(files, [track_name])
+	var hints: Array = [track_name]
+	hints.append_array(extra_hints)
+	return _best_match(files, hints)
 
 
 static func _fail(msg: String) -> Dictionary:
