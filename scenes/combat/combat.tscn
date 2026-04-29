@@ -230,9 +230,24 @@ vertical_alignment = 1
 text = "RNG --"
 vertical_alignment = 1
 
-[node name="TargetStatus" type="Label" parent="HUD/TargetInfo/TargetBox"]
+[node name="TargetStatusRow" type="HBoxContainer" parent="HUD/TargetInfo/TargetBox"]
+theme_override_constants/separation = 6
+
+[node name="TargetStatusLeftBadge" type="TextureRect" parent="HUD/TargetInfo/TargetBox/TargetStatusRow"]
+visible = false
+custom_minimum_size = Vector2(40, 28)
+stretch_mode = 5
+
+[node name="TargetStatus" type="Label" parent="HUD/TargetInfo/TargetBox/TargetStatusRow"]
+size_flags_horizontal = 3
 text = "RADAR 300"
+horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="TargetStatusRightBadge" type="TextureRect" parent="HUD/TargetInfo/TargetBox/TargetStatusRow"]
+visible = false
+custom_minimum_size = Vector2(40, 28)
+stretch_mode = 5
 
 [node name="ReadoutPanel" type="Panel" parent="HUD"]
 offset_left = 16.0

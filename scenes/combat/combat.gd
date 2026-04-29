@@ -91,7 +91,9 @@ const COMBAT_CHAT_TEAM := "team"
 @onready var _target_header_art: TextureRect = $HUD/TargetInfo/TargetHeaderArt
 @onready var _target_name: Label = $HUD/TargetInfo/TargetBox/TargetName
 @onready var _target_range: Label = $HUD/TargetInfo/TargetBox/TargetRange
-@onready var _target_status: Label = $HUD/TargetInfo/TargetBox/TargetStatus
+@onready var _target_status_left_badge: TextureRect = $HUD/TargetInfo/TargetBox/TargetStatusRow/TargetStatusLeftBadge
+@onready var _target_status: Label = $HUD/TargetInfo/TargetBox/TargetStatusRow/TargetStatus
+@onready var _target_status_right_badge: TextureRect = $HUD/TargetInfo/TargetBox/TargetStatusRow/TargetStatusRightBadge
 @onready var _readout_panel: Panel = $HUD/ReadoutPanel
 @onready var _readout_header_art: TextureRect = $HUD/ReadoutPanel/ReadoutHeaderArt
 @onready var _readout_footer_art: TextureRect = $HUD/ReadoutPanel/ReadoutFooterArt
@@ -193,6 +195,8 @@ var _touch_overlay = null  ## TouchOverlay CanvasLayer, or null on desktop
 var _tic_icon_active_texture: Texture2D = null
 var _tic_icon_inactive_texture: Texture2D = null
 var _radar_range_textures: Array = []
+var _range_window_left_textures: Array = []
+var _range_window_right_textures: Array = []
 
 
 # ─── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -377,8 +381,11 @@ func _apply_hud_art() -> void:
 	_tic_icon_active_texture = null
 	_tic_icon_inactive_texture = null
 	_radar_range_textures = []
+	_range_window_left_textures = []
+	_range_window_right_textures = []
 	if extracted.is_empty():
 		_update_radar_range_hud()
+		_update_target_range_window_art(-1)
 		_update_tic_hud()
 		return
 
@@ -397,7 +404,11 @@ func _apply_hud_art() -> void:
 	_assign_hud_art(_status_badge_right, extracted, ["log2", "logo", "status", "right"])
 	for index in RADAR_RANGES.size():
 		_radar_range_textures.append(_load_hud_art_texture(extracted, ["rdr%d" % (index + 1), "radar", str(RADAR_RANGES[index])]))
+	for index in 4:
+		_range_window_left_textures.append(_load_hud_art_texture(extracted, ["lpr%d" % (index + 1), "range", "left"]))
+		_range_window_right_textures.append(_load_hud_art_texture(extracted, ["rpr%d" % (index + 1), "range", "right"]))
 	_update_radar_range_hud()
+	_update_target_range_window_art(-1)
 	_update_tic_hud()
 
 
@@ -1913,6 +1924,7 @@ func _update_target_hud() -> void:
 		_target_range.text = "RNG --"
 		_target_status.text = "RADAR %dm" % _current_radar_range()
 		_target_status.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
+		_update_target_range_window_art(-1)
 		_update_readout_panel({})
 		return
 
@@ -1926,6 +1938,7 @@ func _update_target_hud() -> void:
 	_target_name.add_theme_color_override("font_color", Color(1.0, 0.95, 0.35) if is_selected_target else Color(1.0, 1.0, 1.0))
 	_target_range.text = "RNG %dm  BRG %+d" % [int(round(distance)), int(round(rad_to_deg(bearing)))]
 	var status := _target_range_band(distance)
+	var range_band_index := _target_range_band_index(distance)
 	if posture_state != POSTURE_NORMAL:
 		status = "%s  %s" % [status, _posture_tag(posture_state)]
 	if health >= 0:
@@ -1933,6 +1946,7 @@ func _update_target_hud() -> void:
 	if is_selected_target:
 		status = "%s  LOCK" % status
 	_target_status.text = status
+	_update_target_range_window_art(range_band_index)
 	var status_color := _posture_color(posture_state)
 	if posture_state == POSTURE_NORMAL:
 		status_color = Color(1.0, 0.35, 0.2) if status.begins_with("OUT") else Color(0.35, 1.0, 0.45)
@@ -2064,13 +2078,55 @@ func _target_range_band(distance: float) -> String:
 	var long_range := float(MecParser.weapon_long_range_meters(type_id))
 	if long_range <= 0.0:
 		return "RADAR %dm" % _current_radar_range()
+	var range_band_index := _target_range_band_index(distance)
+	match range_band_index:
+		0:
+			return "SHORT"
+		1:
+			return "MED"
+		2:
+			return "LONG"
+		_:
+			return "OUT RNG"
+
+
+func _target_range_band_index(distance: float) -> int:
+	var type_id := _selected_weapon_type_id()
+	var long_range := float(MecParser.weapon_long_range_meters(type_id))
+	if long_range <= 0.0:
+		return -1
 	if distance <= long_range / 3.0:
-		return "SHORT"
+		return 0
 	if distance <= long_range * 2.0 / 3.0:
-		return "MED"
+		return 1
 	if distance <= long_range:
-		return "LONG"
-	return "OUT RNG"
+		return 2
+	return 3
+
+
+func _update_target_range_window_art(range_band_index: int) -> void:
+	var left_texture: Texture2D = null
+	var right_texture: Texture2D = null
+	if range_band_index >= 0 and range_band_index < _range_window_left_textures.size():
+		var left_v: Variant = _range_window_left_textures[range_band_index]
+		if left_v is Texture2D:
+			left_texture = left_v as Texture2D
+	if range_band_index >= 0 and range_band_index < _range_window_right_textures.size():
+		var right_v: Variant = _range_window_right_textures[range_band_index]
+		if right_v is Texture2D:
+			right_texture = right_v as Texture2D
+
+	if left_texture != null:
+		_target_status_left_badge.texture = left_texture
+		_target_status_left_badge.visible = true
+	else:
+		_target_status_left_badge.visible = false
+
+	if right_texture != null:
+		_target_status_right_badge.texture = right_texture
+		_target_status_right_badge.visible = true
+	else:
+		_target_status_right_badge.visible = false
 
 
 func _update_readout_panel(target: Dictionary) -> void:
