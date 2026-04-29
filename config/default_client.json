@@ -13,9 +13,17 @@
     "enabled": true,
     "log_network": false
   },
+  "display": {
+    "window_mode": "windowed",
+    "resolution": "1280x720",
+    "integer_scale": false
+  },
   "audio": {
     "master_db": 0,
     "music_db": -10,
     "sfx_db": 0
+  },
+  "ui": {
+    "scale": 1.0
   }
 }

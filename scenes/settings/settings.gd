@@ -12,8 +12,14 @@ const MAIN_SCENE := "res://scenes/main/main.tscn"
 
 const RESOLUTIONS       := ["1280x720", "1920x1080", "2560x1440"]
 const RESOLUTION_LABELS := ["1280×720 (default)", "1920×1080", "2560×1440"]
-const CONTROL_ACTIONS   := ["move_forward", "move_backward", "move_left", "move_right", "fire"]
-const CONTROL_ROW_NAMES := ["ForwardRow", "BackwardRow", "LeftRow", "RightRow", "FireRow"]
+const WINDOW_MODES  := ["windowed", "borderless", "fullscreen"]
+const WINDOW_LABELS := ["Windowed", "Borderless Fullscreen", "Exclusive Fullscreen"]
+const UI_SCALES       := [1.0, 1.25, 1.5]
+const UI_SCALE_LABELS := ["100% (default)", "125%", "150%"]
+const CONTROL_ACTIONS   := ["move_forward", "move_backward", "move_left", "move_right",
+							"turn_left", "turn_right", "fire", "ui_chat"]
+const CONTROL_ROW_NAMES := ["ForwardRow", "BackwardRow", "LeftRow", "RightRow",
+							"TurnLeftRow", "TurnRightRow", "FireRow", "ChatRow"]
 
 @onready var _server_url_edit:    LineEdit      = $MainVBox/Scroll/Fields/ServerUrlRow/ServerUrlEdit
 @onready var _ws_url_edit:        LineEdit      = $MainVBox/Scroll/Fields/WsUrlRow/WsUrlEdit
@@ -26,8 +32,9 @@ const CONTROL_ROW_NAMES := ["ForwardRow", "BackwardRow", "LeftRow", "RightRow", 
 @onready var _extracted_browse:   Button        = $MainVBox/Scroll/Fields/ExtractedRow/ExtractedBrowse
 @onready var _retail_dialog:      FileDialog    = $RetailDialog
 @onready var _extracted_dialog:   FileDialog    = $ExtractedDialog
-@onready var _fullscreen_check:   CheckBox      = $MainVBox/Scroll/Fields/FullscreenRow/FullscreenCheck
+@onready var _window_mode_opt:    OptionButton  = $MainVBox/Scroll/Fields/WindowModeRow/WindowModeOption
 @onready var _resolution_opt:     OptionButton  = $MainVBox/Scroll/Fields/ResolutionRow/ResolutionOption
+@onready var _integer_scale_check: CheckBox     = $MainVBox/Scroll/Fields/IntegerScaleRow/IntegerScaleCheck
 @onready var _rebind_modal:       Control       = $RebindModal
 @onready var _master_slider:      HSlider       = $MainVBox/Scroll/Fields/MasterRow/MasterSlider
 @onready var _music_slider:       HSlider       = $MainVBox/Scroll/Fields/MusicRow/MusicSlider
@@ -35,6 +42,7 @@ const CONTROL_ROW_NAMES := ["ForwardRow", "BackwardRow", "LeftRow", "RightRow", 
 @onready var _master_val:         Label         = $MainVBox/Scroll/Fields/MasterRow/MasterValueLabel
 @onready var _music_val:          Label         = $MainVBox/Scroll/Fields/MusicRow/MusicValueLabel
 @onready var _sfx_val:            Label         = $MainVBox/Scroll/Fields/SfxRow/SfxValueLabel
+@onready var _ui_scale_opt:       OptionButton  = $MainVBox/Scroll/Fields/UIScaleRow/UIScaleOption
 
 var _key_labels:     Dictionary = {}  ## action_name -> Label
 var _rebind_pending: String     = ""
@@ -54,13 +62,26 @@ func _ready() -> void:
 		_extracted_browse.visible = false
 
 	# Display section
+	for i in WINDOW_LABELS.size():
+		_window_mode_opt.add_item(WINDOW_LABELS[i], i)
+	var wm_idx := WINDOW_MODES.find(ClientConfig.display_window_mode())
+	_window_mode_opt.selected = wm_idx if wm_idx >= 0 else 0
+	_window_mode_opt.item_selected.connect(_on_window_mode_changed)
+
 	for i in RESOLUTION_LABELS.size():
 		_resolution_opt.add_item(RESOLUTION_LABELS[i], i)
-	_fullscreen_check.button_pressed = ClientConfig.display_fullscreen()
-	_resolution_opt.disabled = _fullscreen_check.button_pressed
+	_resolution_opt.disabled = _window_mode_opt.selected != 0
 	var res_idx := RESOLUTIONS.find(ClientConfig.display_resolution())
 	_resolution_opt.selected = res_idx if res_idx >= 0 else 0
-	_fullscreen_check.toggled.connect(_on_fullscreen_toggled)
+
+	_integer_scale_check.button_pressed = ClientConfig.display_integer_scale()
+
+	# Accessibility section
+	for i in UI_SCALE_LABELS.size():
+		_ui_scale_opt.add_item(UI_SCALE_LABELS[i], i)
+	var cur_scale := ClientConfig.ui_scale()
+	var scale_idx := UI_SCALES.find(cur_scale)
+	_ui_scale_opt.selected = scale_idx if scale_idx >= 0 else 0
 
 	# Controls section
 	_setup_control_rows()
@@ -102,8 +123,8 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _on_fullscreen_toggled(checked: bool) -> void:
-	_resolution_opt.disabled = checked
+func _on_window_mode_changed(idx: int) -> void:
+	_resolution_opt.disabled = idx != 0
 
 
 func _on_rebind_pressed(action_name: String) -> void:
@@ -137,6 +158,10 @@ func _apply_rebind(event: InputEventKey) -> void:
 func _on_save_pressed() -> void:
 	var res_str := RESOLUTIONS[_resolution_opt.selected] \
 		if _resolution_opt.selected >= 0 else RESOLUTIONS[0]
+	var wm_str := WINDOW_MODES[_window_mode_opt.selected] \
+		if _window_mode_opt.selected >= 0 else WINDOW_MODES[0]
+	var scale_val := UI_SCALES[_ui_scale_opt.selected] \
+		if _ui_scale_opt.selected >= 0 else 1.0
 	var controls_dict := {}
 	for action in CONTROL_ACTIONS:
 		controls_dict[action] = _get_key_for_action(action)
@@ -156,14 +181,18 @@ func _on_save_pressed() -> void:
 			"log_network": false,
 		},
 		"display": {
-			"fullscreen": _fullscreen_check.button_pressed,
-			"resolution": res_str,
+			"window_mode":   wm_str,
+			"resolution":    res_str,
+			"integer_scale": _integer_scale_check.button_pressed,
 		},
 		"controls": controls_dict,
 		"audio": {
 			"master_db": int(_master_slider.value),
 			"music_db":  int(_music_slider.value),
 			"sfx_db":    int(_sfx_slider.value),
+		},
+		"ui": {
+			"scale": scale_val,
 		},
 	}
 

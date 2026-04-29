@@ -49,22 +49,56 @@ func network_logging_enabled() -> bool:
 	return bool(diagnostics.get("log_network", false))
 
 
+func display_window_mode() -> String:
+	var display := _dict_value(data, "display")
+	if display.has("window_mode"):
+		var mode := str(display.get("window_mode", "windowed")).to_lower()
+		if mode in ["windowed", "borderless", "fullscreen"]:
+			return mode
+	# Legacy fallback: old configs stored a bool "fullscreen" key.
+	# WINDOW_MODE_FULLSCREEN was borderless, so preserve that mapping.
+	if display.get("fullscreen", false):
+		return "borderless"
+	return "windowed"
+
+
 func display_fullscreen() -> bool:
-	return bool(_dict_value(data, "display").get("fullscreen", false))
+	return display_window_mode() != "windowed"
 
 
 func display_resolution() -> String:
 	return str(_dict_value(data, "display").get("resolution", "1280x720"))
 
 
+func display_integer_scale() -> bool:
+	return bool(_dict_value(data, "display").get("integer_scale", false))
+
+
+func ui_scale() -> float:
+	var val := float(_dict_value(data, "ui").get("scale", 1.0))
+	if val >= 1.5:
+		return 1.5
+	elif val >= 1.25:
+		return 1.25
+	return 1.0
+
+
 func apply_display_settings() -> void:
 	if not data.has("display"):
 		return
-	if display_fullscreen():
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	else:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-		DisplayServer.window_set_size(_parse_resolution(display_resolution()))
+	match display_window_mode():
+		"fullscreen":
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+		"borderless":
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		_:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			DisplayServer.window_set_size(_parse_resolution(display_resolution()))
+
+	var root := get_tree().root
+	root.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER \
+		if display_integer_scale() else Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+	ThemeDB.fallback_base_scale = ui_scale()
 
 
 func saved_controls() -> Dictionary:
