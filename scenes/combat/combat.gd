@@ -1736,8 +1736,8 @@ func _physics_process(delta: float) -> void:
 		_jump_pending = false
 		_try_start_jump()
 
-	var throttle_ratio := clamp(float(_throttle_pct) / 100.0, -1.0, 1.0)
-	var target_velocity := forward * (_mech_speed_ms * throttle_ratio)
+	var throttle_ratio: float = clamp(float(_throttle_pct) / 100.0, -1.0, 1.0)
+	var target_velocity: Vector3 = forward * (_mech_speed_ms * throttle_ratio)
 	_local_mech.velocity.x = lerpf(_local_mech.velocity.x, target_velocity.x, clamp(delta * THROTTLE_LERP_RATE, 0.0, 1.0))
 	_local_mech.velocity.z = lerpf(_local_mech.velocity.z, target_velocity.z, clamp(delta * THROTTLE_LERP_RATE, 0.0, 1.0))
 	_local_mech.move_and_slide()
