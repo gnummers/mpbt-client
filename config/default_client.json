@@ -12,5 +12,10 @@
   "diagnostics": {
     "enabled": true,
     "log_network": false
+  },
+  "audio": {
+    "master_db": 0,
+    "music_db": -10,
+    "sfx_db": 0
   }
 }

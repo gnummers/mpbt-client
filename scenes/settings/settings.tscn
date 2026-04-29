@@ -303,6 +303,89 @@ layout_mode = 2
 custom_minimum_size = Vector2(80, 0)
 text = "Rebind"
 
+[node name="AudioSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+text = "— Audio —"
+theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
+
+[node name="MasterRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MasterLabel" type="Label" parent="MainVBox/Scroll/Fields/MasterRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "Master Volume"
+vertical_alignment = 1
+
+[node name="MasterSlider" type="HSlider" parent="MainVBox/Scroll/Fields/MasterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 20)
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = 0.0
+
+[node name="MasterValueLabel" type="Label" parent="MainVBox/Scroll/Fields/MasterRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(55, 0)
+text = "0 dB"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="MusicRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MusicLabel" type="Label" parent="MainVBox/Scroll/Fields/MusicRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "Music Volume"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="MainVBox/Scroll/Fields/MusicRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 20)
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = -10.0
+
+[node name="MusicValueLabel" type="Label" parent="MainVBox/Scroll/Fields/MusicRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(55, 0)
+text = "-10 dB"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SfxRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SfxLabel" type="Label" parent="MainVBox/Scroll/Fields/SfxRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "SFX Volume"
+vertical_alignment = 1
+
+[node name="SfxSlider" type="HSlider" parent="MainVBox/Scroll/Fields/SfxRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 20)
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = 0.0
+
+[node name="SfxValueLabel" type="Label" parent="MainVBox/Scroll/Fields/SfxRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(55, 0)
+text = "0 dB"
+horizontal_alignment = 2
+vertical_alignment = 1
+
 [node name="ActionBar" type="HBoxContainer" parent="MainVBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 44)

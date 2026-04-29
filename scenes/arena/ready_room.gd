@@ -33,6 +33,7 @@ var _navigating: bool = false
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("arena")
 	_arena_client = ArenaClient.new()
 	add_child(_arena_client)
 	_arena_client.queue_fetched.connect(_on_queue_fetched)

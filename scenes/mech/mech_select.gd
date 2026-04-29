@@ -25,6 +25,7 @@ var _current_filter: String = "all"
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("world")
 	_mech_client = MechClient.new()
 	add_child(_mech_client)
 	_mech_client.mechs_loaded.connect(_on_mechs_loaded)

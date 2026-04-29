@@ -38,6 +38,7 @@ var _current_room_id: int = -1
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("world")
 	_world_client = WorldClient.new()
 	add_child(_world_client)
 	_world_client.rooms_loaded.connect(_on_rooms_loaded)

@@ -17,6 +17,7 @@ var _mode: Mode = Mode.LOGIN
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("menu")
 	AuthSession.login_complete.connect(_on_login_complete)
 	AuthSession.login_failed.connect(_on_login_failed)
 	_update_mode()

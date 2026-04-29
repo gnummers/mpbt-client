@@ -11,6 +11,7 @@ const ALLEGIANCES := ["Davion", "Steiner", "Liao", "Marik", "Kurita"]
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("menu")
 	AuthSession.character_created.connect(_on_character_created)
 	AuthSession.creation_failed.connect(_on_creation_failed)
 

@@ -29,6 +29,12 @@ const CONTROL_ROW_NAMES := ["ForwardRow", "BackwardRow", "LeftRow", "RightRow", 
 @onready var _fullscreen_check:   CheckBox      = $MainVBox/Scroll/Fields/FullscreenRow/FullscreenCheck
 @onready var _resolution_opt:     OptionButton  = $MainVBox/Scroll/Fields/ResolutionRow/ResolutionOption
 @onready var _rebind_modal:       Control       = $RebindModal
+@onready var _master_slider:      HSlider       = $MainVBox/Scroll/Fields/MasterRow/MasterSlider
+@onready var _music_slider:       HSlider       = $MainVBox/Scroll/Fields/MusicRow/MusicSlider
+@onready var _sfx_slider:         HSlider       = $MainVBox/Scroll/Fields/SfxRow/SfxSlider
+@onready var _master_val:         Label         = $MainVBox/Scroll/Fields/MasterRow/MasterValueLabel
+@onready var _music_val:          Label         = $MainVBox/Scroll/Fields/MusicRow/MusicValueLabel
+@onready var _sfx_val:            Label         = $MainVBox/Scroll/Fields/SfxRow/SfxValueLabel
 
 var _key_labels:     Dictionary = {}  ## action_name -> Label
 var _rebind_pending: String     = ""
@@ -58,6 +64,17 @@ func _ready() -> void:
 
 	# Controls section
 	_setup_control_rows()
+
+	# Audio section — connect AFTER setting values to avoid spurious callbacks
+	_master_slider.value = ClientConfig.master_volume_db()
+	_music_slider.value  = ClientConfig.music_volume_db()
+	_sfx_slider.value    = ClientConfig.sfx_volume_db()
+	_master_val.text = _db_label(_master_slider.value)
+	_music_val.text  = _db_label(_music_slider.value)
+	_sfx_val.text    = _db_label(_sfx_slider.value)
+	_master_slider.value_changed.connect(_on_master_changed)
+	_music_slider.value_changed.connect(_on_music_changed)
+	_sfx_slider.value_changed.connect(_on_sfx_changed)
 
 
 func _setup_control_rows() -> void:
@@ -143,6 +160,11 @@ func _on_save_pressed() -> void:
 			"resolution": res_str,
 		},
 		"controls": controls_dict,
+		"audio": {
+			"master_db": int(_master_slider.value),
+			"music_db":  int(_music_slider.value),
+			"sfx_db":    int(_sfx_slider.value),
+		},
 	}
 
 	var file := FileAccess.open("user://mpbt-client.json", FileAccess.WRITE)
@@ -157,6 +179,7 @@ func _on_save_pressed() -> void:
 	file.close()
 
 	ClientConfig.load_config()
+	AudioManager.apply_from_config()
 	WSClient.reconnect()
 	ServerBridge.reset()
 	ServerBridge.check_config()
@@ -165,6 +188,8 @@ func _on_save_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
+	# Revert live audio preview since slider changes are applied immediately
+	AudioManager.apply_from_config()
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 
@@ -207,3 +232,22 @@ func _get_key_for_action(action: String) -> int:
 func _set_status(text: String, color: Color = Color(0.7, 0.7, 0.7)) -> void:
 	_status_label.text     = text
 	_status_label.modulate = color
+
+
+func _on_master_changed(value: float) -> void:
+	_master_val.text = _db_label(value)
+	AudioManager.set_master_db(value)
+
+
+func _on_music_changed(value: float) -> void:
+	_music_val.text = _db_label(value)
+	AudioManager.set_music_db(value)
+
+
+func _on_sfx_changed(value: float) -> void:
+	_sfx_val.text = _db_label(value)
+	AudioManager.set_sfx_db(value)
+
+
+func _db_label(db: float) -> String:
+	return "%d dB" % int(db)

@@ -63,6 +63,7 @@ var _touch_overlay = null  ## TouchOverlay CanvasLayer, or null on desktop
 # ─── Lifecycle ─────────────────────────────────────────────────────────────────
 
 func _ready() -> void:
+	AudioManager.play_bgm("combat")
 	var pm: Dictionary = AuthSession.pending_match
 	if pm.is_empty():
 		push_warning("CombatScene: no pending_match — returning to menu")

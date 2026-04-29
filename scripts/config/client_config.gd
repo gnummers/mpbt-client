@@ -89,6 +89,18 @@ func apply_input_remapping() -> void:
 		InputMap.action_add_event(action, ev)
 
 
+func master_volume_db() -> float:
+	return float(_dict_value(data, "audio").get("master_db", 0.0))
+
+
+func music_volume_db() -> float:
+	return float(_dict_value(data, "audio").get("music_db", -10.0))
+
+
+func sfx_volume_db() -> float:
+	return float(_dict_value(data, "audio").get("sfx_db", 0.0))
+
+
 func _parse_resolution(res_str: String) -> Vector2i:
 	var parts := res_str.split("x")
 	if parts.size() == 2:

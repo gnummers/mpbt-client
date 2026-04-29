@@ -15,6 +15,7 @@ const SETTINGS_SCENE      := "res://scenes/settings/settings.tscn"
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("menu")
 	server_value.text = ClientConfig.server_base_url()
 	websocket_value.text = ClientConfig.server_websocket_url()
 

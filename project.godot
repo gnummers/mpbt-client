@@ -25,6 +25,7 @@ ServerBridge="*res://scripts/net/server_bridge.gd"
 AuthSession="*res://scripts/net/auth_session.gd"
 WSClient="*res://scripts/net/ws_client.gd"
 DiagOverlay="*res://scripts/ui/diag_overlay.gd"
+AudioManager="*res://scripts/audio/audio_manager.gd"
 
 [display]
 
