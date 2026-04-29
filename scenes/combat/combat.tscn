@@ -1,7 +1,8 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scenes/combat/combat.gd" id="1_combat_script"]
 [ext_resource type="Script" path="res://scripts/ui/combat_radar.gd" id="2_radar_script"]
+[ext_resource type="Script" path="res://scripts/ui/combat_reticle.gd" id="3_reticle_script"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_1"]
 sky_top_color = Color(0.04, 0.06, 0.1, 1)
@@ -105,16 +106,68 @@ far = 800.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
+[node name="CockpitTopArt" type="TextureRect" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -276.0
+offset_top = 0.0
+offset_right = 276.0
+offset_bottom = 26.0
+mouse_filter = 2
+
+[node name="CockpitLeftArt" type="TextureRect" parent="HUD"]
+visible = false
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 44.0
+offset_bottom = 240.0
+mouse_filter = 2
+
+[node name="CockpitRightArt" type="TextureRect" parent="HUD"]
+visible = false
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -44.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 240.0
+mouse_filter = 2
+
+[node name="RadarFrame" type="TextureRect" parent="HUD"]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -210.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 210.0
+grow_horizontal = 0
+mouse_filter = 2
+
 [node name="Radar" type="Control" parent="HUD"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -174.0
-offset_top = 18.0
-offset_right = -18.0
-offset_bottom = 174.0
+offset_left = -186.0
+offset_top = 30.0
+offset_right = -26.0
+offset_bottom = 190.0
 grow_horizontal = 0
 script = ExtResource("2_radar_script")
+
+[node name="Reticle" type="Control" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+mouse_filter = 2
+script = ExtResource("3_reticle_script")
 
 [node name="TargetInfo" type="Panel" parent="HUD"]
 offset_left = 16.0
@@ -122,11 +175,19 @@ offset_top = 16.0
 offset_right = 300.0
 offset_bottom = 96.0
 
+[node name="TargetHeaderArt" type="TextureRect" parent="HUD/TargetInfo"]
+visible = false
+offset_left = 10.0
+offset_top = 6.0
+offset_right = 184.0
+offset_bottom = 22.0
+mouse_filter = 2
+
 [node name="TargetBox" type="VBoxContainer" parent="HUD/TargetInfo"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = 8.0
+offset_top = 26.0
 offset_right = -10.0
 offset_bottom = -8.0
 
@@ -148,13 +209,29 @@ offset_top = 104.0
 offset_right = 360.0
 offset_bottom = 236.0
 
+[node name="ReadoutHeaderArt" type="TextureRect" parent="HUD/ReadoutPanel"]
+visible = false
+offset_left = 10.0
+offset_top = 6.0
+offset_right = 184.0
+offset_bottom = 22.0
+mouse_filter = 2
+
+[node name="ReadoutFooterArt" type="TextureRect" parent="HUD/ReadoutPanel"]
+visible = false
+offset_left = 10.0
+offset_top = 110.0
+offset_right = 184.0
+offset_bottom = 128.0
+mouse_filter = 2
+
 [node name="ReadoutVBox" type="VBoxContainer" parent="HUD/ReadoutPanel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = 8.0
+offset_top = 26.0
 offset_right = -10.0
-offset_bottom = -8.0
+offset_bottom = -18.0
 theme_override_constants/separation = 4
 
 [node name="ReadoutTitle" type="Label" parent="HUD/ReadoutPanel/ReadoutVBox"]
@@ -167,6 +244,120 @@ text = "No target"
 autowrap_mode = 2
 vertical_alignment = 0
 
+[node name="TicPanel" type="Panel" parent="HUD"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -304.0
+offset_top = -164.0
+offset_right = -18.0
+offset_bottom = -82.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="TicVBox" type="VBoxContainer" parent="HUD/TicPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = -6.0
+theme_override_constants/separation = 4
+
+[node name="TicTitle" type="Label" parent="HUD/TicPanel/TicVBox"]
+text = "TIC GROUPS"
+theme_override_font_sizes/font_size = 14
+
+[node name="TicRow" type="HBoxContainer" parent="HUD/TicPanel/TicVBox"]
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="TicSlotA" type="Panel" parent="HUD/TicPanel/TicVBox/TicRow"]
+custom_minimum_size = Vector2(84, 52)
+
+[node name="VBox" type="VBoxContainer" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotA"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+theme_override_constants/separation = 1
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotA/VBox"]
+visible = false
+custom_minimum_size = Vector2(15, 14)
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotA/VBox"]
+text = "TIC A"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+
+[node name="Detail" type="Label" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotA/VBox"]
+text = "EMPTY"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 11
+
+[node name="TicSlotB" type="Panel" parent="HUD/TicPanel/TicVBox/TicRow"]
+custom_minimum_size = Vector2(84, 52)
+
+[node name="VBox" type="VBoxContainer" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotB"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+theme_override_constants/separation = 1
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotB/VBox"]
+visible = false
+custom_minimum_size = Vector2(15, 14)
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotB/VBox"]
+text = "TIC B"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+
+[node name="Detail" type="Label" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotB/VBox"]
+text = "EMPTY"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 11
+
+[node name="TicSlotC" type="Panel" parent="HUD/TicPanel/TicVBox/TicRow"]
+custom_minimum_size = Vector2(84, 52)
+
+[node name="VBox" type="VBoxContainer" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotC"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+theme_override_constants/separation = 1
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotC/VBox"]
+visible = false
+custom_minimum_size = Vector2(15, 14)
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotC/VBox"]
+text = "TIC C"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+
+[node name="Detail" type="Label" parent="HUD/TicPanel/TicVBox/TicRow/TicSlotC/VBox"]
+text = "EMPTY"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 11
+
 [node name="BottomPanel" type="Panel" parent="HUD"]
 anchor_left = 0.0
 anchor_top = 1.0
@@ -174,6 +365,18 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = -72.0
 offset_bottom = 0.0
+
+[node name="CockpitBottomArt" type="TextureRect" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -276.0
+offset_top = -88.0
+offset_right = 276.0
+offset_bottom = -72.0
+mouse_filter = 2
 
 [node name="HUDBox" type="HBoxContainer" parent="HUD/BottomPanel"]
 anchor_right = 1.0
@@ -259,17 +462,41 @@ custom_minimum_size = Vector2(220, 32)
 text = "--"
 vertical_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="HUD"]
+[node name="StatusPanel" type="Panel" parent="HUD"]
 anchor_left = 0.5
 anchor_top = 0.0
 anchor_right = 0.5
 anchor_bottom = 0.0
-offset_left = -360.0
-offset_right = 360.0
-offset_top = 16.0
-offset_bottom = 56.0
+offset_left = -268.0
+offset_right = 268.0
+offset_top = 14.0
+offset_bottom = 58.0
+
+[node name="StatusHBox" type="HBoxContainer" parent="HUD/StatusPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = -8.0
+offset_bottom = -4.0
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="StatusBadgeLeft" type="TextureRect" parent="HUD/StatusPanel/StatusHBox"]
+visible = false
+custom_minimum_size = Vector2(80, 40)
+stretch_mode = 5
+
+[node name="StatusLabel" type="Label" parent="HUD/StatusPanel/StatusHBox"]
+size_flags_horizontal = 3
 horizontal_alignment = 1
+vertical_alignment = 1
 text = ""
+
+[node name="StatusBadgeRight" type="TextureRect" parent="HUD/StatusPanel/StatusHBox"]
+visible = false
+custom_minimum_size = Vector2(80, 40)
+stretch_mode = 5
 
 [node name="ChatPanel" type="Panel" parent="HUD"]
 visible = false

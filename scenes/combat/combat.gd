@@ -57,6 +57,10 @@ const REMOTE_IMPACT_VOLUME_DB := -3.0
 const REMOTE_ENGINE_VOLUME_DB := -8.0
 const REMOTE_STEP_VOLUME_DB := -6.0
 const REMOTE_ACTUATOR_VOLUME_DB := -8.0
+const REMOTE_JUMP_VOLUME_DB := -6.0
+const REMOTE_LANDING_VOLUME_DB := -4.0
+const REMOTE_STAND_VOLUME_DB := -5.0
+const REMOTE_DESTRUCTION_VOLUME_DB := -2.0
 const REMOTE_MOVEMENT_MIN_SPEED_RATIO := 0.08
 const REMOTE_MOVEMENT_TURN_RATE := 0.75
 const READOUT_TARGET_BRIEF := "target_brief"
@@ -74,19 +78,48 @@ const COMBAT_CHAT_TEAM := "team"
 @onready var _name_tag: Label3D = $LocalMech/NameTag
 @onready var _remote_mechs: Node3D = $RemoteMechs
 @onready var _effects: Node3D = $Effects
+@onready var _cockpit_top_art: TextureRect = $HUD/CockpitTopArt
+@onready var _cockpit_left_art: TextureRect = $HUD/CockpitLeftArt
+@onready var _cockpit_right_art: TextureRect = $HUD/CockpitRightArt
+@onready var _radar_frame_art: TextureRect = $HUD/RadarFrame
 @onready var _radar = $HUD/Radar
+@onready var _reticle: CombatReticle = $HUD/Reticle
+@onready var _target_info_panel: Panel = $HUD/TargetInfo
+@onready var _target_header_art: TextureRect = $HUD/TargetInfo/TargetHeaderArt
 @onready var _target_name: Label = $HUD/TargetInfo/TargetBox/TargetName
 @onready var _target_range: Label = $HUD/TargetInfo/TargetBox/TargetRange
 @onready var _target_status: Label = $HUD/TargetInfo/TargetBox/TargetStatus
+@onready var _readout_panel: Panel = $HUD/ReadoutPanel
+@onready var _readout_header_art: TextureRect = $HUD/ReadoutPanel/ReadoutHeaderArt
+@onready var _readout_footer_art: TextureRect = $HUD/ReadoutPanel/ReadoutFooterArt
 @onready var _readout_title: Label = $HUD/ReadoutPanel/ReadoutVBox/ReadoutTitle
 @onready var _readout_body: Label = $HUD/ReadoutPanel/ReadoutVBox/ReadoutBody
+@onready var _tic_panel: Panel = $HUD/TicPanel
+@onready var _tic_title: Label = $HUD/TicPanel/TicVBox/TicTitle
+@onready var _tic_slot_a: Panel = $HUD/TicPanel/TicVBox/TicRow/TicSlotA
+@onready var _tic_slot_a_icon: TextureRect = $HUD/TicPanel/TicVBox/TicRow/TicSlotA/VBox/Icon
+@onready var _tic_slot_a_title: Label = $HUD/TicPanel/TicVBox/TicRow/TicSlotA/VBox/Title
+@onready var _tic_slot_a_detail: Label = $HUD/TicPanel/TicVBox/TicRow/TicSlotA/VBox/Detail
+@onready var _tic_slot_b: Panel = $HUD/TicPanel/TicVBox/TicRow/TicSlotB
+@onready var _tic_slot_b_icon: TextureRect = $HUD/TicPanel/TicVBox/TicRow/TicSlotB/VBox/Icon
+@onready var _tic_slot_b_title: Label = $HUD/TicPanel/TicVBox/TicRow/TicSlotB/VBox/Title
+@onready var _tic_slot_b_detail: Label = $HUD/TicPanel/TicVBox/TicRow/TicSlotB/VBox/Detail
+@onready var _tic_slot_c: Panel = $HUD/TicPanel/TicVBox/TicRow/TicSlotC
+@onready var _tic_slot_c_icon: TextureRect = $HUD/TicPanel/TicVBox/TicRow/TicSlotC/VBox/Icon
+@onready var _tic_slot_c_title: Label = $HUD/TicPanel/TicVBox/TicRow/TicSlotC/VBox/Title
+@onready var _tic_slot_c_detail: Label = $HUD/TicPanel/TicVBox/TicRow/TicSlotC/VBox/Detail
+@onready var _bottom_panel: Panel = $HUD/BottomPanel
+@onready var _cockpit_bottom_art: TextureRect = $HUD/CockpitBottomArt
 @onready var _health_bar: ProgressBar = $HUD/BottomPanel/HUDBox/HealthBar
 @onready var _heat_bar: ProgressBar = $HUD/BottomPanel/HUDBox/HeatBar
 @onready var _speed_value: Label = $HUD/BottomPanel/HUDBox/SpeedValue
 @onready var _jump_value: Label = $HUD/BottomPanel/HUDBox/JumpValue
 @onready var _posture_value: Label = $HUD/BottomPanel/HUDBox/PostureValue
 @onready var _weapon_value: Label = $HUD/BottomPanel/HUDBox/WeaponValue
-@onready var _status_label: Label = $HUD/StatusLabel
+@onready var _status_panel: Panel = $HUD/StatusPanel
+@onready var _status_badge_left: TextureRect = $HUD/StatusPanel/StatusHBox/StatusBadgeLeft
+@onready var _status_label: Label = $HUD/StatusPanel/StatusHBox/StatusLabel
+@onready var _status_badge_right: TextureRect = $HUD/StatusPanel/StatusHBox/StatusBadgeRight
 @onready var _chat_panel: Panel = $HUD/ChatPanel
 @onready var _chat_title: Label = $HUD/ChatPanel/ChatVBox/ChatTitle
 @onready var _chat_hint: Label = $HUD/ChatPanel/ChatVBox/ChatHint
@@ -154,6 +187,8 @@ var _combat_chat_mode: String = COMBAT_CHAT_ALL
 
 var _is_mobile:    bool    = false
 var _touch_overlay = null  ## TouchOverlay CanvasLayer, or null on desktop
+var _tic_icon_active_texture: Texture2D = null
+var _tic_icon_inactive_texture: Texture2D = null
 
 
 # ─── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -179,6 +214,8 @@ func _ready() -> void:
 	_camera_pivot.rotation.x = _pitch
 	_health_bar.modulate = Color(0.25, 0.9, 0.25)
 	_heat_bar.modulate = Color(1.0, 0.55, 0.1)
+	_apply_hud_theme()
+	_apply_hud_art()
 	_apply_retail_mech_runtime()
 	_update_heat_hud()
 	_update_speed_hud()
@@ -218,6 +255,153 @@ func _exit_tree() -> void:
 		WSClient.combat_end_received.disconnect(_on_combat_end)
 	if WSClient.ws_connected.is_connected(_on_ws_connected):
 		WSClient.ws_connected.disconnect(_on_ws_connected)
+
+
+func _apply_hud_theme() -> void:
+	_apply_panel_style(_target_info_panel, Color(0.16, 0.45, 0.28, 0.95), Color(0.02, 0.05, 0.04, 0.8))
+	_apply_panel_style(_readout_panel, Color(0.16, 0.45, 0.28, 0.95), Color(0.02, 0.05, 0.04, 0.8))
+	_apply_panel_style(_tic_panel, Color(0.16, 0.45, 0.28, 0.95), Color(0.02, 0.05, 0.04, 0.86))
+	_apply_panel_style(_bottom_panel, Color(0.16, 0.45, 0.28, 0.92), Color(0.01, 0.04, 0.03, 0.92), 4)
+	_apply_panel_style(_status_panel, Color(0.72, 0.62, 0.18, 0.95), Color(0.05, 0.06, 0.03, 0.88), 6)
+	_apply_panel_style(_chat_panel, Color(0.78, 0.62, 0.16, 0.95), Color(0.06, 0.05, 0.03, 0.9))
+	_apply_panel_style(_result_overlay, Color(0.22, 0.55, 0.3, 0.95), Color(0.01, 0.03, 0.02, 0.94), 5)
+
+	_apply_bar_style(_health_bar)
+	_apply_bar_style(_heat_bar)
+	_apply_line_edit_style(_chat_input)
+
+	_style_label(_target_name, Color(1.0, 0.94, 0.38))
+	_style_label(_target_range, Color(0.58, 1.0, 0.68))
+	_style_label(_target_status, Color(0.9, 0.8, 0.35))
+	_style_label(_readout_title, Color(0.72, 1.0, 0.8))
+	_style_label(_readout_body, Color(0.78, 0.92, 0.84))
+	_style_label(_tic_title, Color(0.72, 1.0, 0.8))
+	_style_label(_tic_slot_a_title, Color(0.82, 0.95, 0.84))
+	_style_label(_tic_slot_b_title, Color(0.82, 0.95, 0.84))
+	_style_label(_tic_slot_c_title, Color(0.82, 0.95, 0.84))
+	_style_label(_tic_slot_a_detail, Color(0.86, 0.92, 0.78), 1)
+	_style_label(_tic_slot_b_detail, Color(0.86, 0.92, 0.78), 1)
+	_style_label(_tic_slot_c_detail, Color(0.86, 0.92, 0.78), 1)
+	_style_label(_status_label, Color(1.0, 0.9, 0.3), 3)
+	_style_label(_chat_title, Color(1.0, 0.94, 0.38))
+	_style_label(_chat_hint, Color(0.82, 0.92, 0.84))
+	_style_label(_chat_status, Color(0.95, 0.82, 0.38))
+	_style_label(_result_title, Color(0.8, 1.0, 0.78), 4)
+	_style_label(_result_desc, Color(0.86, 0.94, 0.88), 3)
+
+
+func _apply_panel_style(panel: Control, border_color: Color, bg_color: Color, corner_radius: int = 6) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = border_color
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = corner_radius
+	style.corner_radius_top_right = corner_radius
+	style.corner_radius_bottom_left = corner_radius
+	style.corner_radius_bottom_right = corner_radius
+	style.content_margin_left = 8
+	style.content_margin_top = 6
+	style.content_margin_right = 8
+	style.content_margin_bottom = 6
+	panel.add_theme_stylebox_override("panel", style)
+
+
+func _apply_bar_style(bar: ProgressBar) -> void:
+	var background := StyleBoxFlat.new()
+	background.bg_color = Color(0.02, 0.05, 0.04, 0.92)
+	background.border_color = Color(0.16, 0.45, 0.28, 0.95)
+	background.border_width_left = 2
+	background.border_width_top = 2
+	background.border_width_right = 2
+	background.border_width_bottom = 2
+	background.corner_radius_top_left = 5
+	background.corner_radius_top_right = 5
+	background.corner_radius_bottom_left = 5
+	background.corner_radius_bottom_right = 5
+
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(1.0, 1.0, 1.0, 0.92)
+	fill.corner_radius_top_left = 4
+	fill.corner_radius_top_right = 4
+	fill.corner_radius_bottom_left = 4
+	fill.corner_radius_bottom_right = 4
+
+	bar.add_theme_stylebox_override("background", background)
+	bar.add_theme_stylebox_override("fill", fill)
+
+
+func _apply_line_edit_style(line_edit: LineEdit) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.03, 0.06, 0.05, 0.95)
+	normal.border_color = Color(0.75, 0.62, 0.16, 0.95)
+	normal.border_width_left = 2
+	normal.border_width_top = 2
+	normal.border_width_right = 2
+	normal.border_width_bottom = 2
+	normal.corner_radius_top_left = 4
+	normal.corner_radius_top_right = 4
+	normal.corner_radius_bottom_left = 4
+	normal.corner_radius_bottom_right = 4
+	normal.content_margin_left = 8
+	normal.content_margin_right = 8
+	normal.content_margin_top = 6
+	normal.content_margin_bottom = 6
+
+	line_edit.add_theme_stylebox_override("normal", normal)
+	line_edit.add_theme_stylebox_override("focus", normal.duplicate())
+	line_edit.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
+	line_edit.add_theme_color_override("font_placeholder_color", Color(0.72, 0.74, 0.66))
+	line_edit.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+	line_edit.add_theme_constant_override("outline_size", 2)
+	line_edit.caret_blink = true
+
+
+func _style_label(label: Label, font_color: Color, outline_size: int = 2) -> void:
+	label.add_theme_color_override("font_color", font_color)
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+	label.add_theme_constant_override("outline_size", outline_size)
+
+
+func _apply_hud_art() -> void:
+	var extracted := ClientConfig.asset_extracted_path()
+	_reticle.set_texture(null)
+	_tic_icon_active_texture = null
+	_tic_icon_inactive_texture = null
+	if extracted.is_empty():
+		_update_tic_hud()
+		return
+
+	_assign_hud_art(_cockpit_top_art, extracted, ["comt", "cockpit", "top"])
+	_assign_hud_art(_cockpit_bottom_art, extracted, ["comb", "cockpit", "bottom"])
+	_assign_hud_art(_cockpit_left_art, extracted, ["coml", "cockpit", "left"])
+	_assign_hud_art(_cockpit_right_art, extracted, ["comr", "cockpit", "right"])
+	_assign_hud_art(_radar_frame_art, extracted, ["radr", "radar", "combat"])
+	_assign_hud_art(_target_header_art, extracted, ["sidt", "side", "top"])
+	_assign_hud_art(_readout_header_art, extracted, ["sidt", "side", "top"])
+	_assign_hud_art(_readout_footer_art, extracted, ["sidb", "side", "bottom"])
+	_reticle.set_texture(_load_hud_art_texture(extracted, ["crss", "cross", "reticle"]))
+	_tic_icon_active_texture = _load_hud_art_texture(extracted, ["tic1", "tic", "active"])
+	_tic_icon_inactive_texture = _load_hud_art_texture(extracted, ["tic2", "tic", "inactive"])
+	_assign_hud_art(_status_badge_left, extracted, ["log1", "logo", "status", "left"])
+	_assign_hud_art(_status_badge_right, extracted, ["log2", "logo", "status", "right"])
+	_update_tic_hud()
+
+
+func _assign_hud_art(target: TextureRect, extracted_path: String, hints: Array) -> void:
+	var texture := _load_hud_art_texture(extracted_path, hints)
+	if texture == null:
+		target.visible = false
+		return
+	target.texture = texture
+	target.visible = true
+
+
+func _load_hud_art_texture(extracted_path: String, hints: Array) -> Texture2D:
+	var art_path := AssetRegistry.find_image(extracted_path, ["Combat", "UI"], hints)
+	return AssetRegistry.load_image_texture(art_path)
 
 
 func _return_to_menu_deferred() -> void:
@@ -612,6 +796,7 @@ func _update_heat_hud() -> void:
 func _update_weapon_hud() -> void:
 	if _weapon_type_ids.is_empty():
 		_weapon_value.text = "--"
+		_update_tic_hud()
 		return
 	var type_id: int = _selected_weapon_type_id()
 	var text := "%d/%d %s" % [
@@ -634,6 +819,64 @@ func _update_weapon_hud() -> void:
 	if _selected_tic_index >= 0:
 		text = "%s %s" % [text, _tic_position_text(_selected_tic_index, _selected_weapon_slot)]
 	_weapon_value.text = text
+	_update_tic_hud()
+
+
+func _update_tic_hud() -> void:
+	var slot_panels := [_tic_slot_a, _tic_slot_b, _tic_slot_c]
+	var slot_icons := [_tic_slot_a_icon, _tic_slot_b_icon, _tic_slot_c_icon]
+	var slot_titles := [_tic_slot_a_title, _tic_slot_b_title, _tic_slot_c_title]
+	var slot_details := [_tic_slot_a_detail, _tic_slot_b_detail, _tic_slot_c_detail]
+
+	for tic_index in TIC_LABELS.size():
+		var slots := _tic_slots(tic_index)
+		var panel: Panel = slot_panels[tic_index]
+		var icon: TextureRect = slot_icons[tic_index]
+		var title_label: Label = slot_titles[tic_index]
+		var detail_label: Label = slot_details[tic_index]
+		var is_active := _selected_tic_index == tic_index
+		var contains_selected := slots.has(_selected_weapon_slot)
+		var is_empty := slots.is_empty()
+		title_label.text = "TIC %s" % _tic_label(tic_index)
+		if is_empty:
+			detail_label.text = "EMPTY"
+		elif is_active:
+			detail_label.text = _tic_position_text(tic_index, _selected_weapon_slot).trim_prefix("TIC %s " % _tic_label(tic_index))
+		else:
+			detail_label.text = "%d WPN%s" % [slots.size(), " SEL" if contains_selected else ""]
+		_style_tic_slot(panel, title_label, detail_label, is_active, contains_selected, is_empty)
+		var icon_texture := _tic_icon_active_texture if is_active else _tic_icon_inactive_texture
+		if icon_texture != null:
+			icon.texture = icon_texture
+			icon.visible = true
+			icon.modulate = Color.WHITE if is_active else Color(0.72, 0.82, 0.76, 0.92)
+		else:
+			icon.visible = false
+
+
+func _style_tic_slot(panel: Panel, title_label: Label, detail_label: Label, is_active: bool, contains_selected: bool, is_empty: bool) -> void:
+	var border_color := Color(0.14, 0.34, 0.24, 0.95)
+	var bg_color := Color(0.02, 0.05, 0.04, 0.86)
+	var title_color := Color(0.72, 0.9, 0.76)
+	var detail_color := Color(0.78, 0.86, 0.78)
+	if is_empty:
+		border_color = Color(0.18, 0.2, 0.18, 0.95)
+		bg_color = Color(0.03, 0.04, 0.04, 0.82)
+		title_color = Color(0.56, 0.62, 0.58)
+		detail_color = Color(0.5, 0.56, 0.52)
+	elif is_active:
+		border_color = Color(0.95, 0.86, 0.28, 0.98)
+		bg_color = Color(0.09, 0.11, 0.04, 0.9)
+		title_color = Color(1.0, 0.94, 0.42)
+		detail_color = Color(0.98, 0.92, 0.6)
+	elif contains_selected:
+		border_color = Color(0.4, 0.82, 0.54, 0.98)
+		bg_color = Color(0.03, 0.08, 0.05, 0.88)
+		title_color = Color(0.7, 1.0, 0.76)
+		detail_color = Color(0.8, 0.96, 0.82)
+	_apply_panel_style(panel, border_color, bg_color, 4)
+	_style_label(title_label, title_color)
+	_style_label(detail_label, detail_color, 1)
 
 
 func _selected_weapon_type_id() -> int:
@@ -1008,6 +1251,9 @@ func _tick_remote_movement_audio(uname: String, remote: Node3D, target: Dictiona
 			"engine_timer": 0.0,
 			"step_timer": 0.0,
 			"actuator_timer": 0.0,
+			"last_posture": int(target.get("posture", POSTURE_NORMAL)),
+			"last_airborne": bool(target.get("airborne", false)),
+			"last_jump_flags": int(target.get("jumpFlags", 0)),
 		}
 		return
 
@@ -1020,6 +1266,9 @@ func _tick_remote_movement_audio(uname: String, remote: Node3D, target: Dictiona
 	var engine_timer := float(state.get("engine_timer", 0.0))
 	var step_timer := float(state.get("step_timer", 0.0))
 	var actuator_timer := float(state.get("actuator_timer", 0.0))
+	var last_posture := int(state.get("last_posture", POSTURE_NORMAL))
+	var last_airborne := bool(state.get("last_airborne", false))
+	var last_jump_flags := int(state.get("last_jump_flags", 0))
 
 	var current_position := remote.global_position
 	var flat_delta := Vector2(current_position.x - last_position.x, current_position.z - last_position.z)
@@ -1029,10 +1278,14 @@ func _tick_remote_movement_audio(uname: String, remote: Node3D, target: Dictiona
 		max_speed_ms = DEFAULT_MECH_SPEED_MS
 	var speed_ratio := clamp(flat_speed_ms / max_speed_ms, 0.0, 1.0)
 	var throttle_ratio := clamp(float(target.get("throttlePct", 0)) / 100.0, -1.0, 1.0)
-	var grounded := not bool(target.get("airborne", false)) and int(target.get("jumpFlags", 0)) == 0
 	var posture_state := int(target.get("posture", POSTURE_NORMAL))
+	var airborne := bool(target.get("airborne", false))
+	var jump_flags := int(target.get("jumpFlags", 0))
+	var grounded := not airborne and jump_flags == 0
 	if posture_state == POSTURE_DOWNED:
 		grounded = false
+
+	_tick_remote_posture_audio(current_position, last_posture, posture_state, last_airborne, airborne, last_jump_flags, jump_flags)
 
 	var moving_grounded := grounded and speed_ratio > REMOTE_MOVEMENT_MIN_SPEED_RATIO and absf(throttle_ratio) > 0.05
 	var heading_delta := absf(wrapf(remote.rotation.y - last_heading, -PI, PI))
@@ -1066,7 +1319,49 @@ func _tick_remote_movement_audio(uname: String, remote: Node3D, target: Dictiona
 		"engine_timer": engine_timer,
 		"step_timer": step_timer,
 		"actuator_timer": actuator_timer,
+		"last_posture": posture_state,
+		"last_airborne": airborne,
+		"last_jump_flags": jump_flags,
 	}
+
+
+func _tick_remote_posture_audio(world_position: Vector3, last_posture: int, posture_state: int, last_airborne: bool, airborne: bool, last_jump_flags: int, jump_flags: int) -> void:
+	var entered_airborne := not last_airborne and airborne
+	var started_jump := (last_jump_flags & 0x3) == 0 and (jump_flags & 0x3) != 0
+	if posture_state == POSTURE_AIRBORNE and (entered_airborne or started_jump):
+		_play_remote_sfx_stream(AudioManager.load_sfx_stream("jump"), world_position, REMOTE_JUMP_VOLUME_DB)
+
+	var landed := (last_airborne or (last_jump_flags & 0x3) != 0) and not airborne and jump_flags == 0
+	if landed and posture_state == POSTURE_NORMAL:
+		_play_remote_sfx_stream(AudioManager.load_sfx_stream("landing"), world_position, REMOTE_LANDING_VOLUME_DB)
+
+	var stood_up := last_posture == POSTURE_DOWNED and posture_state == POSTURE_NORMAL
+	if stood_up:
+		_play_remote_sfx_stream(AudioManager.load_sfx_stream("getup"), world_position, REMOTE_STAND_VOLUME_DB)
+
+	var crippled := last_posture != POSTURE_CRIPPLED and posture_state == POSTURE_CRIPPLED
+	if crippled:
+		_play_remote_sfx_stream(AudioManager.load_weapon_hit_sfx_stream(-1, 15), world_position, REMOTE_DESTRUCTION_VOLUME_DB)
+
+
+func _prune_remote_actors(seen_usernames: Dictionary) -> void:
+	var removed_target: bool = false
+	for uname_v in _remote_nodes.keys():
+		var uname := str(uname_v)
+		if seen_usernames.has(uname):
+			continue
+		var node_v: Variant = _remote_nodes.get(uname)
+		if node_v is Node:
+			(node_v as Node).queue_free()
+		_remote_nodes.erase(uname)
+		_remote_targets.erase(uname)
+		_remote_actor_info.erase(uname)
+		_remote_movement_audio.erase(uname)
+		if _selected_target_username == uname:
+			_selected_target_username = ""
+			removed_target = true
+	if removed_target:
+		_update_target_hud()
 
 
 func _tick_weapon_cooldowns(delta: float) -> void:
@@ -2149,11 +2444,15 @@ func _on_combat_snapshot(data: Dictionary) -> void:
 		return
 
 	var actors: Array = data.get("actors", [])
+	var seen_usernames: Dictionary = {}
 	for actor_v: Variant in actors:
 		if typeof(actor_v) != TYPE_DICTIONARY:
 			continue
 		var actor := actor_v as Dictionary
 		var uname := str(actor.get("username", ""))
+		if uname.is_empty():
+			continue
+		seen_usernames[uname] = true
 
 		if uname == _username:
 			# Server is authoritative for health and heat only.
@@ -2173,6 +2472,7 @@ func _on_combat_snapshot(data: Dictionary) -> void:
 			_apply_local_combat_state(actor)
 		else:
 			_update_remote_actor(actor)
+	_prune_remote_actors(seen_usernames)
 
 
 func _update_remote_actor(actor: Dictionary) -> void:

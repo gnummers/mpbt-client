@@ -63,6 +63,8 @@ Current SFX hooks:
 | Remote weapon fire | spatialized fire cue at the attacking mech |
 | Remote weapon impact | spatialized impact cue at the target / hit point |
 | Remote movement | spatialized `engine*`, `step`, and `actuator`/`torso` cadence for other mechs |
+| Remote jump / landing / stand-up | spatialized `jump`, `landing`, and `getup` on replicated posture changes |
+| Remote destruction | spatialized heavy explosion cue when a remote mech transitions to crippled |
 | Match victory | `victory` |
 | Match defeat | `defeat` |
 

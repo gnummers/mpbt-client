@@ -9,6 +9,8 @@ const AIRBORNE_COLOR := Color(0.95, 0.85, 0.2, 0.95)
 const DOWNED_COLOR := Color(1.0, 0.55, 0.18, 0.95)
 const CRIPPLED_COLOR := Color(1.0, 0.22, 0.16, 0.95)
 const SELECTED_RING_COLOR := Color(1.0, 0.95, 0.35, 1.0)
+const BACKGROUND_COLOR := Color(0.01, 0.08, 0.04, 0.62)
+const SWEEP_COLOR := Color(0.18, 0.95, 0.48, 0.08)
 
 const POSTURE_NORMAL := 0
 const POSTURE_AIRBORNE := 1
@@ -32,6 +34,12 @@ func set_state(local_position: Vector3, local_heading: float, actors: Array, ran
 func _draw() -> void:
 	var center: Vector2 = size * 0.5
 	var radius: float = min(size.x, size.y) * 0.46
+	draw_circle(center, radius, BACKGROUND_COLOR)
+	draw_colored_polygon([
+		center,
+		center + Vector2(radius * 0.16, -radius),
+		center + Vector2(-radius * 0.16, -radius),
+	], SWEEP_COLOR)
 	draw_arc(center, radius, 0.0, TAU, 96, RING_COLOR, 2.0)
 	draw_arc(center, radius * 0.5, 0.0, TAU, 96, RING_COLOR, 1.0)
 	draw_line(center + Vector2(-radius, 0), center + Vector2(radius, 0), RING_COLOR, 1.0)
