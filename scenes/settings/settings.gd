@@ -15,6 +15,8 @@ const MAIN_SCENE := "res://scenes/main/main.tscn"
 @onready var _diag_check: CheckBox      = $MainVBox/Scroll/Fields/DiagRow/DiagCheck
 @onready var _status_label: Label       = $MainVBox/ActionBar/StatusLabel
 @onready var _user_path_label: Label    = $MainVBox/Header/UserPathLabel
+@onready var _retail_browse:    Button     = $MainVBox/Scroll/Fields/RetailRow/RetailBrowse
+@onready var _extracted_browse: Button     = $MainVBox/Scroll/Fields/ExtractedRow/ExtractedBrowse
 @onready var _retail_dialog: FileDialog = $RetailDialog
 @onready var _extracted_dialog: FileDialog = $ExtractedDialog
 
@@ -26,6 +28,10 @@ func _ready() -> void:
 	_retail_edit.text = ClientConfig.retail_asset_path()
 	_extracted_edit.text = ClientConfig.asset_extracted_path()
 	_diag_check.button_pressed = ClientConfig.diagnostics_enabled()
+	var is_mobile := OS.has_feature("android") or OS.has_feature("ios")
+	if is_mobile:
+		_retail_browse.visible    = false
+		_extracted_browse.visible = false
 
 
 func _on_save_pressed() -> void:

@@ -15,14 +15,15 @@ extends Node3D
 ##   - Forward = -Z (Godot default).  Heading = rotation.y.
 ##   - The server uses the same convention: forward = (-sin(h), 0, -cos(h)).
 
-const MAIN_SCENE := "res://scenes/main/main.tscn"
-const MECH_SPEED_MS := 17.8          ## ~64 kph in m/s
-const MOUSE_SENSITIVITY := 0.0025
-const PITCH_INITIAL := 0.30          ## radians, slightly above-and-behind view
-const PITCH_MIN := 0.05
-const PITCH_MAX := 0.80
-const INPUT_INTERVAL := 0.1          ## seconds between combat_input sends (10 Hz)
-const GRAVITY := 9.8
+const MAIN_SCENE         := "res://scenes/main/main.tscn"
+const TOUCH_OVERLAY_SCENE := "res://scenes/ui/touch_overlay.tscn"
+const MECH_SPEED_MS      := 17.8          ## ~64 kph in m/s
+const MOUSE_SENSITIVITY  := 0.0025
+const PITCH_INITIAL      := 0.30          ## radians, slightly above-and-behind view
+const PITCH_MIN          := 0.05
+const PITCH_MAX          := 0.80
+const INPUT_INTERVAL     := 0.1           ## seconds between combat_input sends (10 Hz)
+const GRAVITY            := 9.8
 
 # ─── Node references (filled by @onready) ─────────────────────────────────────
 
@@ -55,6 +56,9 @@ var _exit_timer: float = 0.0
 
 var _remote_nodes: Dictionary = {}  # username: String -> Node3D
 
+var _is_mobile:    bool    = false
+var _touch_overlay = null  ## TouchOverlay CanvasLayer, or null on desktop
+
 
 # ─── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -83,7 +87,12 @@ func _ready() -> void:
 	WSClient.combat_end_received.connect(_on_combat_end)
 	WSClient.ws_connected.connect(_on_ws_connected)
 
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_is_mobile = OS.has_feature("android") or OS.has_feature("ios")
+	if _is_mobile:
+		_touch_overlay = load(TOUCH_OVERLAY_SCENE).instantiate()
+		add_child(_touch_overlay)
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_send_combat_join()
 
 
@@ -113,14 +122,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		_surrender()
 		return
 
-	if event is InputEventMouseMotion:
-		var motion := event as InputEventMouseMotion
-		_local_mech.rotation.y -= motion.relative.x * MOUSE_SENSITIVITY
-		_pitch = clamp(_pitch - motion.relative.y * MOUSE_SENSITIVITY, PITCH_MIN, PITCH_MAX)
-		_camera_pivot.rotation.x = _pitch
+	if not _is_mobile:
+		if event is InputEventMouseMotion:
+			var motion := event as InputEventMouseMotion
+			_local_mech.rotation.y -= motion.relative.x * MOUSE_SENSITIVITY
+			_pitch = clamp(_pitch - motion.relative.y * MOUSE_SENSITIVITY, PITCH_MIN, PITCH_MAX)
+			_camera_pivot.rotation.x = _pitch
 
-	if event.is_action_pressed("fire"):
-		_fire_pending = true
+		if event.is_action_pressed("fire"):
+			_fire_pending = true
 
 
 # ─── Physics / frame loop ──────────────────────────────────────────────────────
@@ -140,15 +150,25 @@ func _physics_process(delta: float) -> void:
 
 	# --- Movement ---
 	var forward := -_local_mech.global_transform.basis.z
-	var right := _local_mech.global_transform.basis.x
+	var right   := _local_mech.global_transform.basis.x
 
-	var move_dir := Vector3.ZERO
-	if Input.is_action_pressed("move_forward"):  move_dir += forward
-	if Input.is_action_pressed("move_backward"): move_dir -= forward
-	if Input.is_action_pressed("move_left"):     move_dir -= right
-	if Input.is_action_pressed("move_right"):    move_dir += right
+	var fwd_axis := Input.get_axis("move_backward", "move_forward")
+	var str_axis := Input.get_axis("move_left", "move_right")
 
-	if move_dir.length_squared() > 0.0:
+	if _touch_overlay != null:
+		var tv: Vector2 = _touch_overlay.move_value
+		fwd_axis = clamp(fwd_axis + tv.y, -1.0, 1.0)
+		str_axis = clamp(str_axis + tv.x, -1.0, 1.0)
+		var ld: Vector2 = _touch_overlay.get_look_delta()
+		_local_mech.rotation.y -= ld.x * MOUSE_SENSITIVITY
+		_pitch = clamp(_pitch - ld.y * MOUSE_SENSITIVITY, PITCH_MIN, PITCH_MAX)
+		_camera_pivot.rotation.x = _pitch
+		if _touch_overlay.fire_pressed:
+			_touch_overlay.fire_pressed = false
+			_fire_pending = true
+
+	var move_dir := (forward * fwd_axis) + (right * str_axis)
+	if move_dir.length_squared() > 0.01:
 		move_dir = move_dir.normalized()
 
 	if not _local_mech.is_on_floor():
