@@ -62,6 +62,7 @@ Current SFX hooks:
 | Target lock / target cycle | `locked` |
 | Remote weapon fire | spatialized fire cue at the attacking mech |
 | Remote weapon impact | spatialized impact cue at the target / hit point |
+| Remote movement | spatialized `engine*`, `step`, and `actuator`/`torso` cadence for other mechs |
 | Match victory | `victory` |
 | Match defeat | `defeat` |
 

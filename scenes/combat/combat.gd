@@ -54,6 +54,11 @@ const REMOTE_SFX_MAX_DISTANCE := 180.0
 const REMOTE_SFX_UNIT_SIZE := 12.0
 const REMOTE_FIRE_VOLUME_DB := -5.0
 const REMOTE_IMPACT_VOLUME_DB := -3.0
+const REMOTE_ENGINE_VOLUME_DB := -8.0
+const REMOTE_STEP_VOLUME_DB := -6.0
+const REMOTE_ACTUATOR_VOLUME_DB := -8.0
+const REMOTE_MOVEMENT_MIN_SPEED_RATIO := 0.08
+const REMOTE_MOVEMENT_TURN_RATE := 0.75
 const READOUT_TARGET_BRIEF := "target_brief"
 const READOUT_TARGET_DETAIL := "target_detail"
 const READOUT_SELF_DETAIL := "self_detail"
@@ -132,6 +137,7 @@ var _movement_step_timer: float = 0.0
 var _movement_actuator_timer: float = 0.0
 var _remote_sfx_players: Array = []
 var _remote_sfx_cursor: int = 0
+var _remote_movement_audio: Dictionary = {}  # username: String -> cadence timers + last pose
 
 var _local_actor_info: Dictionary = {}
 var _local_posture_state: int = POSTURE_NORMAL
@@ -989,6 +995,78 @@ func _play_remote_sfx_stream(stream: AudioStream, world_position: Vector3, volum
 	player.volume_db = volume_db
 	player.stream = stream
 	player.play()
+
+
+func _tick_remote_movement_audio(uname: String, remote: Node3D, target: Dictionary, delta: float) -> void:
+	if delta <= 0.0:
+		return
+
+	if not _remote_movement_audio.has(uname):
+		_remote_movement_audio[uname] = {
+			"last_position": remote.global_position,
+			"last_heading": remote.rotation.y,
+			"engine_timer": 0.0,
+			"step_timer": 0.0,
+			"actuator_timer": 0.0,
+		}
+		return
+
+	var state_v: Variant = _remote_movement_audio.get(uname, {})
+	if typeof(state_v) != TYPE_DICTIONARY:
+		return
+	var state := state_v as Dictionary
+	var last_position: Vector3 = state.get("last_position", remote.global_position)
+	var last_heading := float(state.get("last_heading", remote.rotation.y))
+	var engine_timer := float(state.get("engine_timer", 0.0))
+	var step_timer := float(state.get("step_timer", 0.0))
+	var actuator_timer := float(state.get("actuator_timer", 0.0))
+
+	var current_position := remote.global_position
+	var flat_delta := Vector2(current_position.x - last_position.x, current_position.z - last_position.z)
+	var flat_speed_ms := flat_delta.length() / delta
+	var max_speed_ms := float(target.get("speedMs", DEFAULT_MECH_SPEED_MS))
+	if max_speed_ms <= 0.01:
+		max_speed_ms = DEFAULT_MECH_SPEED_MS
+	var speed_ratio := clamp(flat_speed_ms / max_speed_ms, 0.0, 1.0)
+	var throttle_ratio := clamp(float(target.get("throttlePct", 0)) / 100.0, -1.0, 1.0)
+	var grounded := not bool(target.get("airborne", false)) and int(target.get("jumpFlags", 0)) == 0
+	var posture_state := int(target.get("posture", POSTURE_NORMAL))
+	if posture_state == POSTURE_DOWNED:
+		grounded = false
+
+	var moving_grounded := grounded and speed_ratio > REMOTE_MOVEMENT_MIN_SPEED_RATIO and absf(throttle_ratio) > 0.05
+	var heading_delta := absf(wrapf(remote.rotation.y - last_heading, -PI, PI))
+	var turn_rate := heading_delta / delta
+	var turning_grounded := grounded and turn_rate > REMOTE_MOVEMENT_TURN_RATE
+
+	if moving_grounded:
+		engine_timer -= delta
+		step_timer -= delta
+		if engine_timer <= 0.0:
+			_play_remote_sfx_stream(AudioManager.load_engine_movement_sfx_stream(speed_ratio), current_position, REMOTE_ENGINE_VOLUME_DB)
+			engine_timer = lerpf(MOVEMENT_AUDIO_ENGINE_INTERVAL_SLOW, MOVEMENT_AUDIO_ENGINE_INTERVAL_FAST, speed_ratio)
+		if step_timer <= 0.0:
+			_play_remote_sfx_stream(AudioManager.load_step_sfx_stream(speed_ratio), current_position, REMOTE_STEP_VOLUME_DB)
+			step_timer = lerpf(MOVEMENT_AUDIO_STEP_INTERVAL_SLOW, MOVEMENT_AUDIO_STEP_INTERVAL_FAST, speed_ratio)
+	else:
+		engine_timer = 0.0
+		step_timer = 0.0
+
+	if turning_grounded and not moving_grounded:
+		actuator_timer -= delta
+		if actuator_timer <= 0.0:
+			_play_remote_sfx_stream(AudioManager.load_actuator_sfx_stream(), current_position, REMOTE_ACTUATOR_VOLUME_DB)
+			actuator_timer = MOVEMENT_AUDIO_ACTUATOR_INTERVAL
+	else:
+		actuator_timer = 0.0
+
+	_remote_movement_audio[uname] = {
+		"last_position": current_position,
+		"last_heading": remote.rotation.y,
+		"engine_timer": engine_timer,
+		"step_timer": step_timer,
+		"actuator_timer": actuator_timer,
+	}
 
 
 func _tick_weapon_cooldowns(delta: float) -> void:
@@ -2123,6 +2201,10 @@ func _update_remote_actor(actor: Dictionary) -> void:
 		"position": Vector3(x, 1.6, z),
 		"heading": heading,
 		"posture": posture_state,
+		"airborne": bool(actor.get("airborne", false)),
+		"jumpFlags": int(actor.get("jumpFlags", 0)),
+		"throttlePct": int(actor.get("throttlePct", 0)),
+		"speedMs": float(actor.get("speedMag", 0)) / 100.0,
 	}
 
 
@@ -2139,6 +2221,7 @@ func _update_remote_actors(delta: float) -> void:
 		remote.position = remote.position.lerp(target_pos, weight)
 		remote.rotation.y = lerp_angle(remote.rotation.y, target_heading, weight)
 		_apply_remote_mech_visuals(remote, posture_state, delta)
+		_tick_remote_movement_audio(str(uname), remote, target, delta)
 
 
 func _create_remote_mech_node(uname: String, is_bot: bool, type_str: String) -> Node3D:

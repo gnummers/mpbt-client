@@ -93,6 +93,24 @@ func load_weapon_hit_sfx_stream(type_id: int, damage: int = 0) -> AudioStream:
 	return _load_sfx_variant_stream(_weapon_hit_cue_names(type_id, damage))
 
 
+func load_engine_movement_sfx_stream(speed_ratio: float) -> AudioStream:
+	if speed_ratio >= 0.75:
+		return _load_sfx_variant_stream(["engine3", "engine2"])
+	elif speed_ratio >= 0.35:
+		return _load_sfx_variant_stream(["engine2", "engine"])
+	return load_sfx_stream("engine")
+
+
+func load_step_sfx_stream(speed_ratio: float) -> AudioStream:
+	if speed_ratio >= 0.65:
+		return _load_sfx_variant_stream(["step", "actuator"])
+	return load_sfx_stream("step")
+
+
+func load_actuator_sfx_stream() -> AudioStream:
+	return _load_sfx_variant_stream(["actuator", "torso"])
+
+
 func play_sfx(sfx_name: String) -> void:
 	var stream := load_sfx_stream(sfx_name)
 	if stream == null:
@@ -175,23 +193,24 @@ func play_target_lock_sfx() -> void:
 
 
 func play_engine_movement_sfx(speed_ratio: float) -> void:
-	if speed_ratio >= 0.75:
-		_play_sfx_variant(["engine3", "engine2"])
-	elif speed_ratio >= 0.35:
-		_play_sfx_variant(["engine2", "engine"])
-	else:
-		play_sfx("engine")
+	var stream := load_engine_movement_sfx_stream(speed_ratio)
+	if stream == null:
+		return
+	_play_stream_on_sfx_player(stream)
 
 
 func play_step_sfx(speed_ratio: float) -> void:
-	if speed_ratio >= 0.65:
-		_play_sfx_variant(["step", "actuator"])
-	else:
-		play_sfx("step")
+	var stream := load_step_sfx_stream(speed_ratio)
+	if stream == null:
+		return
+	_play_stream_on_sfx_player(stream)
 
 
 func play_actuator_sfx() -> void:
-	_play_sfx_variant(["actuator", "torso"])
+	var stream := load_actuator_sfx_stream()
+	if stream == null:
+		return
+	_play_stream_on_sfx_player(stream)
 
 
 func play_stand_up_sfx() -> void:
