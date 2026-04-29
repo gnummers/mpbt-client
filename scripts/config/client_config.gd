@@ -15,6 +15,8 @@ func load_config() -> void:
 	data = _read_json(DEFAULT_CONFIG_PATH)
 	data = _merge_dicts(data, _read_json(LOCAL_CONFIG_PATH))
 	data = _merge_dicts(data, _read_json(USER_CONFIG_PATH))
+	apply_display_settings()
+	apply_input_remapping()
 
 
 func server_base_url() -> String:
@@ -45,6 +47,53 @@ func diagnostics_enabled() -> bool:
 func network_logging_enabled() -> bool:
 	var diagnostics := _dict_value(data, "diagnostics")
 	return bool(diagnostics.get("log_network", false))
+
+
+func display_fullscreen() -> bool:
+	return bool(_dict_value(data, "display").get("fullscreen", false))
+
+
+func display_resolution() -> String:
+	return str(_dict_value(data, "display").get("resolution", "1280x720"))
+
+
+func apply_display_settings() -> void:
+	if not data.has("display"):
+		return
+	if display_fullscreen():
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_size(_parse_resolution(display_resolution()))
+
+
+func saved_controls() -> Dictionary:
+	return _dict_value(data, "controls")
+
+
+func apply_input_remapping() -> void:
+	for action in saved_controls():
+		if not InputMap.has_action(action):
+			continue
+		var new_keycode := int(saved_controls()[action])
+		if new_keycode <= 0:
+			continue
+		var non_key := InputMap.action_get_events(action).filter(
+			func(e: InputEvent) -> bool: return not (e is InputEventKey)
+		)
+		InputMap.action_erase_events(action)
+		for ev in non_key:
+			InputMap.action_add_event(action, ev)
+		var ev := InputEventKey.new()
+		ev.physical_keycode = new_keycode
+		InputMap.action_add_event(action, ev)
+
+
+func _parse_resolution(res_str: String) -> Vector2i:
+	var parts := res_str.split("x")
+	if parts.size() == 2:
+		return Vector2i(int(parts[0]), int(parts[1]))
+	return Vector2i(1280, 720)
 
 
 func _read_json(path: String) -> Dictionary:

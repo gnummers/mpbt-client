@@ -167,7 +167,7 @@ AI upscaling is acceptable for large scenes, map backgrounds, terrain textures, 
 
 ## Current Status
 
-Milestones M0–M8 are complete. The client includes:
+Milestones M0–M11 are complete. The client includes:
 
 - Login, registration, and character creation flow
 - Solaris world shell: room navigation, presence roster, room chat, minimap
@@ -175,8 +175,12 @@ Milestones M0–M8 are complete. The client includes:
 - Arena ready room: multi-player staging and match launch
 - 3D combat scene: WASD+mouse, live snapshot sync, HUD, match results
 - Solaris VII standings leaderboard
-- In-app Settings screen (server URL, asset paths, first-run onboarding)
-- Export presets for Windows, Linux, and macOS
+- In-app Settings screen (server URL, asset paths, display, input rebinding)
+- Export presets for Windows, Linux, macOS, Android (Experimental), and iOS (Experimental)
+- Touch controls for mobile (Virtual Joystick + look zone)
+- Diagnostics overlay (F3): FPS, WebSocket/server status, active scene
+- Input rebinding with persistent save to `user://mpbt-client.json`
+- Display mode and resolution control (windowed/fullscreen, 3 presets)
 
-M9 (Packaging and Distribution) is in progress. See [docs/PACKAGING.md](docs/PACKAGING.md)
-for export instructions, code signing, and the release checklist.
+See [docs/PACKAGING.md](docs/PACKAGING.md) for export instructions, code signing, and the release checklist.
+See [docs/MOBILE.md](docs/MOBILE.md) for Android/iOS feasibility details and known limitations.
