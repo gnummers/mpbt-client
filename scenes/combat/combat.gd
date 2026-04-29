@@ -83,6 +83,9 @@ const COMBAT_CHAT_TEAM := "team"
 @onready var _cockpit_right_art: TextureRect = $HUD/CockpitRightArt
 @onready var _radar_frame_art: TextureRect = $HUD/RadarFrame
 @onready var _radar = $HUD/Radar
+@onready var _radar_range_panel: Panel = $HUD/RadarRangePanel
+@onready var _radar_range_badge: TextureRect = $HUD/RadarRangePanel/RadarRangeHBox/RadarRangeBadge
+@onready var _radar_range_label: Label = $HUD/RadarRangePanel/RadarRangeHBox/RadarRangeLabel
 @onready var _reticle: CombatReticle = $HUD/Reticle
 @onready var _target_info_panel: Panel = $HUD/TargetInfo
 @onready var _target_header_art: TextureRect = $HUD/TargetInfo/TargetHeaderArt
@@ -189,6 +192,7 @@ var _is_mobile:    bool    = false
 var _touch_overlay = null  ## TouchOverlay CanvasLayer, or null on desktop
 var _tic_icon_active_texture: Texture2D = null
 var _tic_icon_inactive_texture: Texture2D = null
+var _radar_range_textures: Array = []
 
 
 # ─── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -263,6 +267,7 @@ func _apply_hud_theme() -> void:
 	_apply_panel_style(_tic_panel, Color(0.16, 0.45, 0.28, 0.95), Color(0.02, 0.05, 0.04, 0.86))
 	_apply_panel_style(_bottom_panel, Color(0.16, 0.45, 0.28, 0.92), Color(0.01, 0.04, 0.03, 0.92), 4)
 	_apply_panel_style(_status_panel, Color(0.72, 0.62, 0.18, 0.95), Color(0.05, 0.06, 0.03, 0.88), 6)
+	_apply_panel_style(_radar_range_panel, Color(0.16, 0.45, 0.28, 0.95), Color(0.02, 0.05, 0.04, 0.88), 5)
 	_apply_panel_style(_chat_panel, Color(0.78, 0.62, 0.16, 0.95), Color(0.06, 0.05, 0.03, 0.9))
 	_apply_panel_style(_result_overlay, Color(0.22, 0.55, 0.3, 0.95), Color(0.01, 0.03, 0.02, 0.94), 5)
 
@@ -273,6 +278,7 @@ func _apply_hud_theme() -> void:
 	_style_label(_target_name, Color(1.0, 0.94, 0.38))
 	_style_label(_target_range, Color(0.58, 1.0, 0.68))
 	_style_label(_target_status, Color(0.9, 0.8, 0.35))
+	_style_label(_radar_range_label, Color(0.82, 1.0, 0.84))
 	_style_label(_readout_title, Color(0.72, 1.0, 0.8))
 	_style_label(_readout_body, Color(0.78, 0.92, 0.84))
 	_style_label(_tic_title, Color(0.72, 1.0, 0.8))
@@ -370,7 +376,9 @@ func _apply_hud_art() -> void:
 	_reticle.set_texture(null)
 	_tic_icon_active_texture = null
 	_tic_icon_inactive_texture = null
+	_radar_range_textures = []
 	if extracted.is_empty():
+		_update_radar_range_hud()
 		_update_tic_hud()
 		return
 
@@ -387,6 +395,9 @@ func _apply_hud_art() -> void:
 	_tic_icon_inactive_texture = _load_hud_art_texture(extracted, ["tic2", "tic", "inactive"])
 	_assign_hud_art(_status_badge_left, extracted, ["log1", "logo", "status", "left"])
 	_assign_hud_art(_status_badge_right, extracted, ["log2", "logo", "status", "right"])
+	for index in RADAR_RANGES.size():
+		_radar_range_textures.append(_load_hud_art_texture(extracted, ["rdr%d" % (index + 1), "radar", str(RADAR_RANGES[index])]))
+	_update_radar_range_hud()
 	_update_tic_hud()
 
 
@@ -1871,11 +1882,23 @@ func _step_radar_range(delta: int) -> void:
 	_radar_range_index = (_radar_range_index + delta + RADAR_RANGES.size()) % RADAR_RANGES.size()
 	AudioManager.play_radar_ping_sfx()
 	_flash_status("Radar %dm" % _current_radar_range())
+	_update_radar_range_hud()
 	_update_target_hud()
 
 
 func _current_radar_range() -> int:
 	return int(RADAR_RANGES[_radar_range_index])
+
+
+func _update_radar_range_hud() -> void:
+	_radar_range_label.text = "%dm" % _current_radar_range()
+	if _radar_range_index >= 0 and _radar_range_index < _radar_range_textures.size():
+		var texture_v: Variant = _radar_range_textures[_radar_range_index]
+		if texture_v is Texture2D:
+			_radar_range_badge.texture = texture_v as Texture2D
+			_radar_range_badge.visible = true
+			return
+	_radar_range_badge.visible = false
 
 
 func _update_target_hud() -> void:
