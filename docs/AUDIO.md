@@ -97,17 +97,22 @@ If you have WAV/MIDI originals, convert with:
 ffmpeg -i input.wav -c:a libvorbis -q:a 6 output.ogg
 ```
 
-Retail `.pcm` SFX clips are now loaded directly from extracted assets using the current
-best guess for the KSOUND-era format:
+The extractor now converts retail `.pcm` SFX clips into standard `.wav` files under the
+extracted asset path, using the current best guess for the KSOUND-era format:
 
 - unsigned 8-bit PCM
 - mono
 - `11025 Hz` mix rate
 
 That guess is good enough for local testing and hook mapping, but it is still based on
-reverse-engineering evidence rather than a fully documented retail format spec. If you
-convert the clips manually, keep the retail base filename where practical so the same
-fallback resolver can find them.
+reverse-engineering evidence rather than a fully documented retail format spec. The
+runtime still accepts raw `.pcm` as a fallback for manual setups, but extracted `.wav`
+files are now the preferred path. If you convert clips manually, keep the retail base
+filename where practical so the same fallback resolver can find them.
+
+For common hooked logical cues such as `ui_click` and `ui_hover`, the extractor also
+emits exact alias WAVs so those UI sounds resolve directly without depending on
+best-match filename heuristics.
 
 ## API Reference
 

@@ -17,6 +17,7 @@ extends Control
 const MAIN_SCENE   := "res://scenes/main/main.tscn"
 const COMBAT_SCENE := "res://scenes/combat/combat.tscn"
 
+@onready var _backdrop_art: TextureRect = $BackdropArt
 @onready var _mech_label:   Label      = $MainVBox/Header/MechLabel
 @onready var _slot_list:    VBoxContainer = $MainVBox/ContentHBox/QueuePanel/QueueVBox/SlotList
 @onready var _status_label: Label      = $MainVBox/ContentHBox/ActionPanel/ActionMargin/ActionVBox/StatusLabel
@@ -34,6 +35,7 @@ var _navigating: bool = false
 
 func _ready() -> void:
 	AudioManager.play_bgm("arena")
+	_apply_retail_art()
 	_arena_client = ArenaClient.new()
 	add_child(_arena_client)
 	_arena_client.queue_fetched.connect(_on_queue_fetched)
@@ -52,7 +54,7 @@ func _ready() -> void:
 
 	# Gate: must be logged in with a character and mech selected.
 	if not AuthSession.is_logged_in or AuthSession.character.is_empty():
-		get_tree().change_scene_to_file(MAIN_SCENE)
+		_change_scene_deferred(MAIN_SCENE)
 		return
 	var mech_id = AuthSession.character.get("mech_id", null)
 	if mech_id == null:
@@ -76,6 +78,22 @@ func _ready() -> void:
 
 	_status_label.text = "Loading queue..."
 	_arena_client.fetch_queue(ServerBridge.game_api_url)
+
+
+func _apply_retail_art() -> void:
+	var extracted := ClientConfig.asset_extracted_path()
+	if extracted.is_empty():
+		return
+	var art_path := AssetRegistry.find_image(extracted, ["Scenes", "UI"], ["drop", "arena", "staging"])
+	var texture := AssetRegistry.load_image_texture(art_path)
+	if texture == null:
+		return
+	_backdrop_art.texture = texture
+	_backdrop_art.visible = true
+
+
+func _change_scene_deferred(path: String) -> void:
+	get_tree().call_deferred("change_scene_to_file", path)
 
 
 # ── Queue display ─────────────────────────────────────────────────────────────
@@ -151,13 +169,13 @@ func _on_queue_left() -> void:
 	_update_buttons()
 	_status_label.text = "Left queue."
 	if _navigating:
-		get_tree().change_scene_to_file(MAIN_SCENE)
+		_change_scene_deferred(MAIN_SCENE)
 
 
 func _on_leave_failed(_reason: String) -> void:
 	# Best-effort: navigate anyway so the player isn't stuck.
 	if _navigating:
-		get_tree().change_scene_to_file(MAIN_SCENE)
+		_change_scene_deferred(MAIN_SCENE)
 
 
 func _on_ready_set(ready: bool, launched: bool, _arena_id: String) -> void:
@@ -205,7 +223,7 @@ func _on_arena_match_launched(data: Dictionary) -> void:
 	}
 
 	_status_label.text = "Match launching! (%s)" % ("Solo vs Bot" if mode == "solo" else "PvP")
-	get_tree().change_scene_to_file(COMBAT_SCENE)
+	_change_scene_deferred(COMBAT_SCENE)
 
 
 func _on_ws_connected() -> void:
@@ -256,7 +274,7 @@ func _on_back_pressed() -> void:
 		var username := str(AuthSession.character.get("display_name", ""))
 		_arena_client.leave_queue(ServerBridge.game_api_url, username)
 	else:
-		get_tree().change_scene_to_file(MAIN_SCENE)
+		_change_scene_deferred(MAIN_SCENE)
 
 
 # ── Poll timer (WS fallback) ──────────────────────────────────────────────────

@@ -18,6 +18,8 @@ class_name AssetRegistry
 const IMAGE_EXTS := [".png", ".bmp", ".jpg", ".jpeg"]
 const AUDIO_EXTS := [".ogg", ".wav", ".mp3"]
 const SFX_AUDIO_EXTS := [".ogg", ".wav", ".mp3", ".pcm"]
+const BGM_AUDIO_PREFERENCE := [".ogg", ".wav", ".mp3"]
+const SFX_AUDIO_PREFERENCE := [".ogg", ".wav", ".mp3", ".pcm"]
 const MAP_EXTS   := [".map"]
 
 const CATEGORY_DIRS := {
@@ -102,7 +104,8 @@ static func find_audio(base_path: String, track_name: String, kind: String, extr
 
 	var hints: Array = [track_name]
 	hints.append_array(extra_hints)
-	return _best_match(files, hints)
+	var ext_preferences := BGM_AUDIO_PREFERENCE if kind == "bgm" else SFX_AUDIO_PREFERENCE
+	return _best_match(files, hints, ext_preferences)
 
 
 static func _fail(msg: String) -> Dictionary:
@@ -157,16 +160,18 @@ static func _scan_dir_recursive(path: String, exts: Array) -> Array:
 	return files
 
 
-static func _best_match(files: Array, hints: Array) -> String:
+static func _best_match(files: Array, hints: Array, ext_preferences: Array = []) -> String:
 	if files.is_empty():
 		return ""
 
 	var best_path := str(files[0])
 	var best_score := -1
+	var best_ext_rank := _extension_rank(best_path, ext_preferences)
 	for file_v in files:
 		var path := str(file_v)
 		var name := path.get_file().get_basename().to_lower()
 		var score := 0
+		var ext_rank := _extension_rank(path, ext_preferences)
 		for i in hints.size():
 			var hint := str(hints[i]).strip_edges().to_lower()
 			if hint.is_empty():
@@ -177,8 +182,17 @@ static func _best_match(files: Array, hints: Array) -> String:
 				score += 300
 			elif name.contains(hint):
 				score += 100 - i
-		if score > best_score:
+		if score > best_score or (score == best_score and ext_rank < best_ext_rank):
 			best_score = score
+			best_ext_rank = ext_rank
 			best_path = path
 
 	return best_path
+
+
+static func _extension_rank(path: String, ext_preferences: Array) -> int:
+	if ext_preferences.is_empty():
+		return 0
+	var ext := "." + path.get_extension().to_lower()
+	var index := ext_preferences.find(ext)
+	return index if index >= 0 else ext_preferences.size()

@@ -9,9 +9,12 @@ extends Control
 ## Call set_rooms() to supply room data and set_selected() to highlight one.
 ## The canvas redraws automatically when the control is resized.
 
+signal room_selected(room_id: int)
+
 const _MAP_W  := 640.0
 const _MAP_H  := 480.0
 const _DOT_R  := 4.0
+const _CLICK_R := 12.0
 const _BG_COLOR  := Color(0.02, 0.03, 0.04, 1.0)
 const _DOT_COLOR := Color(1.0, 0.70, 0.12, 1.0)   ## amber
 const _SEL_COLOR := Color(0.25, 1.00, 0.35, 1.0)   ## bright green
@@ -41,6 +44,15 @@ func _notification(what: int) -> void:
 		queue_redraw()
 
 
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton \
+	and event.button_index == MOUSE_BUTTON_LEFT \
+	and event.pressed:
+		var room_id := _pick_room(event.position)
+		if room_id >= 0:
+			room_selected.emit(room_id)
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), _BG_COLOR)
 
@@ -67,3 +79,27 @@ func _coordinate_size() -> Vector2:
 	if _background != null:
 		return Vector2(float(_background.get_width()), float(_background.get_height()))
 	return Vector2(_MAP_W, _MAP_H)
+
+
+func _pick_room(pos: Vector2) -> int:
+	if _rooms.is_empty() or size.x < 1.0 or size.y < 1.0:
+		return -1
+
+	var coord_size := _coordinate_size()
+	var sx := size.x / coord_size.x
+	var sy := size.y / coord_size.y
+	var best_id := -1
+	var best_dist := INF
+
+	for room_v in _rooms:
+		var room := room_v as Dictionary
+		var point := Vector2(
+			float(room.get("centreX", 0)) * sx,
+			float(room.get("centreY", 0)) * sy,
+		)
+		var distance := point.distance_to(pos)
+		if distance <= _CLICK_R and distance < best_dist:
+			best_dist = distance
+			best_id = int(room.get("roomId", -1))
+
+	return best_id

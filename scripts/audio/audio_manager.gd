@@ -16,7 +16,8 @@ extends Node
 ## If bundled audio is absent, the configured extracted asset path is searched
 ## for audio/bgm, audio/music, audio/sfx, audio/sound, audio/sounds, music,
 ## bgm, sfx, sound, or sounds. For SFX, logical client names can also fall back
-## to common retail MPBT filenames. Raw retail .pcm clips are treated as
+## to common retail MPBT filenames. Extracted retail sound banks should prefer
+## converted .wav files; raw .pcm remains a manual fallback and is treated as
 ## unsigned 8-bit mono samples at a guessed 11025 Hz mix rate. Missing audio is
 ## a no-op.
 ##
@@ -28,7 +29,7 @@ var _sfx_players:        Array = []
 var _sfx_player_cursor:  int = 0
 var _current_bgm_track:  String = ""
 var _connected_buttons:  Dictionary = {}
-var _audio_cache:        Dictionary = {}
+var _audio_cache:        Dictionary = {}  # cache_key -> { path: String, stream: AudioStream }
 var _variant_cursors:    Dictionary = {}
 
 const RETAIL_SFX_HINTS := {
@@ -241,6 +242,10 @@ func apply_from_config() -> void:
 	set_sfx_db(ClientConfig.sfx_volume_db())
 
 
+func clear_audio_cache() -> void:
+	_audio_cache.clear()
+
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -300,15 +305,31 @@ func _on_button_hovered() -> void:
 func _load_named_audio(track_name: String, kind: String) -> AudioStream:
 	var extracted := ClientConfig.asset_extracted_path()
 	var cache_key := "%s:%s:%s" % [extracted, kind, track_name]
-	if _audio_cache.has(cache_key):
-		return _audio_cache[cache_key]
+	var resolved_path := _resolve_audio_path(track_name, kind, extracted)
+	var cached_value: Variant = _audio_cache.get(cache_key, {})
+	if typeof(cached_value) == TYPE_DICTIONARY:
+		var cached_entry := cached_value as Dictionary
+		if str(cached_entry.get("path", "")) == resolved_path:
+			return cached_entry.get("stream", null) as AudioStream
 
-	var bundled := "res://assets/audio/%s/%s.ogg" % [kind, track_name]
-	var stream := _load_stream(bundled)
+	if resolved_path.is_empty():
+		_audio_cache.erase(cache_key)
+		return null
+
+	var stream := _load_stream(resolved_path)
 	if stream != null:
 		_apply_looping(stream, kind)
-		_audio_cache[cache_key] = stream
-		return stream
+	_audio_cache[cache_key] = {
+		"path": resolved_path,
+		"stream": stream,
+	}
+	return stream
+
+
+func _resolve_audio_path(track_name: String, kind: String, extracted: String) -> String:
+	var bundled := "res://assets/audio/%s/%s.ogg" % [kind, track_name]
+	if ResourceLoader.exists(bundled):
+		return bundled
 
 	var extra_hints: Array = []
 	if kind == "sfx":
@@ -316,12 +337,7 @@ func _load_named_audio(track_name: String, kind: String) -> AudioStream:
 		if retail_hints_value is Array:
 			extra_hints = retail_hints_value
 
-	var external_path := AssetRegistry.find_audio(extracted, track_name, kind, extra_hints)
-	stream = _load_stream(external_path)
-	if stream != null:
-		_apply_looping(stream, kind)
-	_audio_cache[cache_key] = stream
-	return stream
+	return AssetRegistry.find_audio(extracted, track_name, kind, extra_hints)
 
 
 func _load_stream(path: String) -> AudioStream:

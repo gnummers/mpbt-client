@@ -7,159 +7,557 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_comstar")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.058, 0.066, 1)
+
+[node name="ShellNorth" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 19.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ShellSouth" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -37.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ShellWest" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 17.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ShellEast" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -42.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
 
 [node name="MainVBox" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
 
-[node name="Header" type="HBoxContainer" parent="MainVBox"]
+[node name="MessagePanel" type="Control" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
 
-[node name="TitleLabel" type="Label" parent="MainVBox/Header"]
+[node name="MessageBackground" type="ColorRect" parent="MainVBox/MessagePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="MessageNorth" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 20.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="MessageSouth" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -43.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="MessageWest" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 20.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="MessageEast" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -20.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="MessageMargin" type="MarginContainer" parent="MainVBox/MessagePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 14.0
+offset_right = -22.0
+offset_bottom = -34.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MessageVBox" type="VBoxContainer" parent="MainVBox/MessagePanel/MessageMargin"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "ComStar Terminal"
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="MainVBox/MessagePanel/MessageMargin/MessageVBox"]
+layout_mode = 2
+text = "COMSTAR TERMINAL"
+horizontal_alignment = 1
 theme_override_font_sizes/font_size = 18
 
-[node name="StatusLabel" type="Label" parent="MainVBox/Header"]
+[node name="StatusLabel" type="Label" parent="MainVBox/MessagePanel/MessageMargin/MessageVBox"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Loading inbox..."
+horizontal_alignment = 1
+autowrap_mode = 3
+vertical_alignment = 1
+modulate = Color(0.72, 0.72, 0.72, 1)
+
+[node name="UserLabel" type="Label" parent="MainVBox/MessagePanel/MessageMargin/MessageVBox"]
+layout_mode = 2
 text = ""
+horizontal_alignment = 2
 
-[node name="BackButton" type="Button" parent="MainVBox/Header"]
+[node name="CommandBar" type="HBoxContainer" parent="MainVBox"]
 layout_mode = 2
-text = "Back"
+custom_minimum_size = Vector2(0, 38)
+theme_override_constants/separation = 8
+alignment = 1
 
-[node name="HSep" type="HSeparator" parent="MainVBox"]
+[node name="HelpButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
 layout_mode = 2
+text = "Help"
+
+[node name="TravelButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Travel"
+
+[node name="MechButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Mech"
+
+[node name="SideButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Side"
+
+[node name="StatusButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Status"
+disabled = true
+
+[node name="FightButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Fight"
 
 [node name="ContentHBox" type="HBoxContainer" parent="MainVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 8
 
-[node name="LeftPanel" type="VBoxContainer" parent="MainVBox/ContentHBox"]
+[node name="InboxShell" type="Control" parent="MainVBox/ContentHBox"]
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_horizontal = 1
-custom_minimum_size = Vector2(240, 0)
+size_flags_vertical = 3
 
-[node name="InboxLabel" type="Label" parent="MainVBox/ContentHBox/LeftPanel"]
+[node name="InboxBackground" type="ColorRect" parent="MainVBox/ContentHBox/InboxShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="InboxNorth" type="TextureRect" parent="MainVBox/ContentHBox/InboxShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 20.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="InboxSouth" type="TextureRect" parent="MainVBox/ContentHBox/InboxShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -38.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="InboxWest" type="TextureRect" parent="MainVBox/ContentHBox/InboxShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 20.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="InboxEast" type="TextureRect" parent="MainVBox/ContentHBox/InboxShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -20.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="InboxMargin" type="MarginContainer" parent="MainVBox/ContentHBox/InboxShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 12.0
+offset_right = -22.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="InboxVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/InboxShell/InboxMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="InboxLabel" type="Label" parent="MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox"]
 layout_mode = 2
 text = "Inbox"
+horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
 
-[node name="InboxScroll" type="ScrollContainer" parent="MainVBox/ContentHBox/LeftPanel"]
+[node name="InboxScroll" type="ScrollContainer" parent="MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="InboxList" type="VBoxContainer" parent="MainVBox/ContentHBox/LeftPanel/InboxScroll"]
+[node name="InboxList" type="VBoxContainer" parent="MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox/InboxScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ComposeButton" type="Button" parent="MainVBox/ContentHBox/LeftPanel"]
+[node name="ComposeButton" type="Button" parent="MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox"]
+custom_minimum_size = Vector2(92, 29)
 layout_mode = 2
 text = "Compose"
 
-[node name="VSep" type="VSeparator" parent="MainVBox/ContentHBox"]
-layout_mode = 2
-
-[node name="RightPanel" type="VBoxContainer" parent="MainVBox/ContentHBox"]
+[node name="DetailShell" type="Control" parent="MainVBox/ContentHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="PlaceholderLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel"]
+[node name="DetailBackground" type="ColorRect" parent="MainVBox/ContentHBox/DetailShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="DetailNorth" type="TextureRect" parent="MainVBox/ContentHBox/DetailShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 37.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="DetailSouth" type="TextureRect" parent="MainVBox/ContentHBox/DetailShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -37.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="DetailWest" type="TextureRect" parent="MainVBox/ContentHBox/DetailShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 10.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="DetailEast" type="TextureRect" parent="MainVBox/ContentHBox/DetailShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -17.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="DetailMargin" type="MarginContainer" parent="MainVBox/ContentHBox/DetailShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -18.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DetailVBox" type="VBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="DetailTitle" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = "Message Detail"
+horizontal_alignment = 1
+
+[node name="PlaceholderLabel" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox"]
+layout_mode = 2
+size_flags_vertical = 3
 text = "Select a message or compose a new one."
+horizontal_alignment = 1
+vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="DetailView" type="VBoxContainer" parent="MainVBox/ContentHBox/RightPanel"]
+[node name="DetailView" type="VBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 visible = false
 
-[node name="FromLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+[node name="FromLabel" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView"]
 layout_mode = 2
 text = "From: "
 
-[node name="SubjectLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+[node name="SubjectLabel" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView"]
 layout_mode = 2
 text = "Subject: "
 
-[node name="DateLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+[node name="DateLabel" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView"]
 layout_mode = 2
 text = "Sent: "
 
-[node name="HSep2" type="HSeparator" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+[node name="HSep" type="HSeparator" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView"]
 layout_mode = 2
 
-[node name="BodyLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+[node name="BodyLabel" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView"]
 layout_mode = 2
 size_flags_vertical = 3
 autowrap_mode = 3
+vertical_alignment = 1
 text = ""
 
-[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/DetailView"]
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="ReplyButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/DetailView/ActionBar"]
+[node name="ReplyButton" type="Button" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/ActionBar"]
 layout_mode = 2
+custom_minimum_size = Vector2(92, 0)
 text = "Reply"
 
-[node name="DeleteButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/DetailView/ActionBar"]
+[node name="DeleteButton" type="Button" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/ActionBar"]
 layout_mode = 2
+custom_minimum_size = Vector2(92, 0)
 text = "Delete"
 
-[node name="ComposeView" type="VBoxContainer" parent="MainVBox/ContentHBox/RightPanel"]
+[node name="ComposeView" type="VBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 visible = false
+theme_override_constants/separation = 6
 
-[node name="ToRow" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+[node name="ToRow" type="HBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="ToLabel" type="Label" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ToRow"]
+[node name="ToLabel" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ToRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(70, 0)
 text = "To:"
 
-[node name="ToField" type="LineEdit" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ToRow"]
+[node name="ToField" type="LineEdit" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ToRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 max_length = 64
 placeholder_text = "Display name"
 
-[node name="SubjectRow" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+[node name="SubjectRow" type="HBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="SubjectLabel2" type="Label" parent="MainVBox/ContentHBox/RightPanel/ComposeView/SubjectRow"]
+[node name="SubjectLabel2" type="Label" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/SubjectRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(70, 0)
 text = "Subject:"
 
-[node name="SubjectField" type="LineEdit" parent="MainVBox/ContentHBox/RightPanel/ComposeView/SubjectRow"]
+[node name="SubjectField" type="LineEdit" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/SubjectRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 max_length = 100
 placeholder_text = "(optional)"
 
-[node name="BodyField" type="TextEdit" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+[node name="BodyField" type="TextEdit" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView"]
 layout_mode = 2
 size_flags_vertical = 3
 wrap_mode = 1
 placeholder_text = "Message (max 1000 characters)"
 
-[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/RightPanel/ComposeView"]
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="SendButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ActionBar"]
+[node name="SendButton" type="Button" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ActionBar"]
 layout_mode = 2
+custom_minimum_size = Vector2(92, 0)
 text = "Send"
 
-[node name="CancelButton" type="Button" parent="MainVBox/ContentHBox/RightPanel/ComposeView/ActionBar"]
+[node name="CancelButton" type="Button" parent="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ActionBar"]
 layout_mode = 2
+custom_minimum_size = Vector2(92, 0)
 text = "Cancel"
+
+[node name="QuickBar" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
+theme_override_constants/separation = 8
+
+[node name="LeftQuickButtons" type="VBoxContainer" parent="MainVBox/QuickBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ComstarQuickButton" type="Button" parent="MainVBox/QuickBar/LeftQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Mail"
+flat = true
+
+[node name="SettingsQuickButton" type="Button" parent="MainVBox/QuickBar/LeftQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Opts"
+flat = true
+
+[node name="QuickBarSpacer" type="Control" parent="MainVBox/QuickBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RightQuickButtons" type="VBoxContainer" parent="MainVBox/QuickBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MechQuickButton" type="Button" parent="MainVBox/QuickBar/RightQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Mech"
+flat = true
+
+[node name="ExitQuickButton" type="Button" parent="MainVBox/QuickBar/RightQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Exit"
+flat = true
+
+[connection signal="pressed" from="MainVBox/CommandBar/HelpButton" to="." method="_on_help_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/TravelButton" to="." method="_on_travel_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/MechButton" to="." method="_on_mech_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/SideButton" to="." method="_on_side_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/StatusButton" to="." method="_on_status_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/FightButton" to="." method="_on_fight_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox/ComposeButton" to="." method="_on_compose_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/ActionBar/ReplyButton" to="." method="_on_reply_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/ActionBar/DeleteButton" to="." method="_on_delete_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ActionBar/SendButton" to="." method="_on_send_pressed"]
+[connection signal="pressed" from="MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ActionBar/CancelButton" to="." method="_on_cancel_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/LeftQuickButtons/ComstarQuickButton" to="." method="_on_status_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/LeftQuickButtons/SettingsQuickButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/RightQuickButtons/MechQuickButton" to="." method="_on_mech_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/RightQuickButtons/ExitQuickButton" to="." method="_on_help_pressed"]

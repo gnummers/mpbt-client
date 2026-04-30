@@ -1,81 +1,86 @@
 # MPBT Client Worklog
 
-## 2026-04-29 - Retail v1.29 client clone work
+## 2026-04-29 - Retail fidelity, palette correction, and audio pipeline pass
 
-Goal: keep moving `mpbt-client` toward a close functional/art/audio/UI/gameplay clone of the v1.29 retail MPBT client using the local licensed install/extracted assets in `C:\MPBT`, without distributing proprietary assets on GitHub.
+Goal: keep moving `mpbt-client` toward a close functional/art/audio/UI/gameplay clone of the retail MPBT v1.29 client using the local licensed install/extracted assets in `C:\MPBT`, without distributing proprietary assets on GitHub.
 
-Reference source: `C:\MPBT\mpbt-server\RESEARCH.md`, especially the `.MEC` format, combat fire gate, ammo, heat, jump-jet, projectile/effect, radar, and Cmd65/Cmd68/Cmd70 notes.
+Reference source: `C:\MPBT\mpbt-server\RESEARCH.md`, especially the UI/combat behavior notes, `.MEC` handling, and Cmd68/Cmd70 combat observations.
 
-Local asset policy:
+## Local asset policy
+
 - Do not copy proprietary retail assets into the repo.
-- Runtime/local config can point at `C:\MPBT` and `C:\MPBT\assets`.
-- `.gitignore` was expanded to ignore accidentally extracted proprietary folders/assets under repo-local `assets/`.
+- Runtime/local config may point at `C:\MPBT` and `C:\MPBT\assets`.
+- Keep committed changes limited to extraction logic, runtime wiring, layout, fallbacks, and docs.
 
-What changed in this work session:
-- Added local retail asset lookup support in `scripts/assets/asset_registry.gd` for recursive image/audio lookup.
-- Updated `scripts/audio/audio_manager.gd` to load local BGM/SFX from configured extracted retail paths and hook global UI click/hover SFX.
-- Updated main menu to load local extracted retail-like title/menu art when available.
-- Updated Solaris map rendering to use local extracted map art and better offline marker positions.
-- Added `scripts/assets/mec_parser.gd`:
-  - MPBT.MSG variant id map.
-  - v1.29 `.MEC` XOR decrypt.
-  - speed, tonnage, jump jets, heat sinks, armor-like values, weapon ids, mount refs, ammo bins.
-  - recovered retail weapon names, short names, ammo, damage, heat, cooldown, range, internal structure table.
-- Updated mech select to use local `.MEC` roster when server `/mechs` is unavailable.
-- Expanded combat runtime substantially:
-  - `.MEC`-based speed, weapon list, mount refs, ammo bins, internal state, heat sinks, jump jets.
-  - Selected weapon HUD, mouse-wheel and number-key weapon selection.
-  - Per-slot retail-style cooldowns.
-  - Ammo consumption/repointing by ammo bin type.
-  - Mount/internal-state fire gate with `LOST` / `MNT` HUD states.
-  - Heat accumulator, sink-scaled cooling, shutdown blocking, heat metadata in WS messages.
-  - Jump-jet gate using actual `.MEC` jump count, fuel `0x78`, fuel > `0x32` gate, action `4` start and action `6` landing metadata.
-  - Code-generated Cmd68-like weapon effects: beams, projectiles, missile volleys, impact flashes.
-  - Combat radar/target HUD using recovered radar range cycle `50 / 100 / 300 / 800 / 2500`, target range/bearing/HP, and selected-weapon range band.
-- Added `scripts/ui/combat_radar.gd`.
-- Added `jump_jet` and `radar_range` input actions plus settings rebind rows.
-- Added mobile touch `JUMP` button.
+## What changed in this work session
 
-Validation last run:
-- `godot --headless --quit`
-- `godot --headless --editor --quit`
-- `godot --headless --scene res://scenes/combat/combat.tscn --quit`
-- `godot --headless --scene res://scenes/settings/settings.tscn --quit`
-- `git diff --check`
+### World / non-combat presentation
 
-Expected validation note: launching combat scene directly logs `CombatScene: no pending_match - returning to menu`; this is expected.
+- Fixed Mech Bay portrait hint normalization and kept extracted portrait art loading in place.
+- Added extracted backdrop art to the arena ready room and fixed scene changes there by deferring `change_scene_to_file(...)`.
+- Reworked the Solaris world scene into a much closer retail shell:
+  - `FUL*` outer chrome
+  - `RAD*` top message console
+  - `MOV1` travel shell
+  - `MOV2` framed map shell
+  - `RECN/RECS/RECE/RECW` room-list framing
+  - `DSCN/DSCS/DSCE/DSCW` detail framing
+  - `STD0`–`STD4` district thumbnails
+  - command bar + quick-action icons (`CSTR`, `OPTN`, `VMEC`, `EXIT`)
+- Added coordinate-driven N/E/S/W room browsing and clickable room selection on the Solaris map.
+- Wrapped the standings scene in the same retail world-shell chrome/navigation system so it no longer drops back to a bare utility layout.
 
-Known worktree state:
-- Many Godot-generated `.uid` files are untracked. Leave them alone unless deciding a repo policy for Godot UID files.
-- `scripts/assets/mec_parser.gd` and `scripts/ui/combat_radar.gd` are new untracked source files and should be included if committing this work.
-- `scenes/assets/asset_browser.gd` was already dirty from earlier category ordering work; do not revert unrelated user changes.
+### Extracted asset pipeline
 
-Next logical steps:
-- Add client-side combat animation/posture approximations from `Cmd70` research: remote airborne/jump helper, collapse/fall states, and local target/impact presentation without over-inventing unsupported server semantics.
-- Add richer incoming effect handling if/when `mpbt-server` emits Cmd68-like WS fields (`source`, `weaponSlot`, `weaponTypeId`, `target`, `targetAttach`, `impactX/Y/Z`).
-- Improve combat cockpit/HUD styling toward retail once more local UI art is identified in `C:\MPBT\assets`, still without committing proprietary assets.
-- Consider server compatibility work separately: current simple `combat-ws.ts` ignores `combat_action` and most rich `combat_fire` fields.
+- Corrected `mw_mpics.dat` palette handling so extracted `C:\MPBT\assets\ui` uses the proper navigation palette.
+- Corrected `Combat.dat` palette handling so extracted `C:\MPBT\assets\combat` uses the shared combat palette embedded in `DASH`.
+- Regenerated the extracted UI and combat image banks after each fix.
 
-## Copilot Handoff Prompt
+### Audio pipeline
 
-Continue work in `C:\MPBT\mpbt-client`. The objective is to make the Godot client behave and look as close as possible to the v1.29 retail MPBT client, using local licensed/extracted data in `C:\MPBT` and `C:\MPBT\assets`, but never committing proprietary retail assets.
+- Stopped relying on raw extracted `.pcm` clips as the primary runtime path.
+- Updated `extract_assets.py` to convert the retail PCM sound bank into standard WAV files under `C:\MPBT\assets\sound`.
+- Added source fallback so sound extraction uses `C:\MPBT\mpbt-server\sound` in this environment.
+- Emitted exact logical WAV aliases for hooked cues:
+  - `ui_click.wav`
+  - `ui_hover.wav`
+  - `weapon_fire.wav`
+  - `weapon_hit.wav`
+- Updated `AssetRegistry` to prefer decoded formats (`.ogg`/`.wav`/`.mp3`) over raw `.pcm`.
+- Updated `AudioManager` so cached streams refresh when the resolved asset path changes.
+- Refreshed `docs/AUDIO.md` to describe the WAV-first extracted audio path.
 
-Start by reading:
-- `WORKLOG.md`
-- `C:\MPBT\mpbt-server\RESEARCH.md`
-- `scripts/assets/mec_parser.gd`
-- `scenes/combat/combat.gd`
-- `scenes/combat/combat.tscn`
-- `scripts/ui/combat_radar.gd`
+## Current state
 
-Current implementation already covers local retail asset lookup, audio fallback, `.MEC` parsing, offline mech roster, combat speed/weapon/ammo/cooldown/mount/heat/jump/radar/effect behavior. Pick the next narrow retail-fidelity slice from `RESEARCH.md`. A good next step is client-side combat animation/posture approximation from Cmd70 research: remote jump/airborne state, collapse/fall presentation, landing/reset state, and matching HUD/status feedback. Keep edits scoped, use existing Godot patterns, do not copy proprietary assets, and validate with:
+- The client now has a solid retail-style world shell, improved standings presentation, palette-correct extracted UI/combat art, and a Godot-friendly extracted SFX pipeline.
+- `C:\MPBT\assets\ui` and `C:\MPBT\assets\combat` are confirmed accurate after the palette fixes.
+- `C:\MPBT\assets\sound` now contains converted WAV output plus exact logical aliases for the currently hooked UI/combat SFX names.
 
-```powershell
-godot --headless --quit
-godot --headless --editor --quit
-godot --headless --scene res://scenes/combat/combat.tscn --quit
-godot --headless --scene res://scenes/settings/settings.tscn --quit
-git diff --check
-```
+## Validation slice used during this session
 
-The direct combat scene warning about missing `pending_match` is expected.
+- `C:\Users\moose\bin\godot.cmd --headless --path C:\MPBT\mpbt-client --quit-after 2`
+- `C:\Users\moose\bin\godot.cmd --headless --path C:\MPBT\mpbt-client --scene res://scenes/world/world.tscn --quit-after 2`
+- `C:\Users\moose\bin\godot.cmd --headless --path C:\MPBT\mpbt-client --scene res://scenes/standings/standings.tscn --quit-after 2`
+- direct resolver checks confirming:
+  - `ui_click` -> `C:\MPBT\assets\sound\ui_click.wav`
+  - `ui_hover` -> `C:\MPBT\assets\sound\ui_hover.wav`
+  - `weapon_fire` -> `C:\MPBT\assets\sound\weapon_fire.wav`
+  - `weapon_hit` -> `C:\MPBT\assets\sound\weapon_hit.wav`
+
+## Known worktree state
+
+- The current local worktree includes intentional scene/script changes in:
+  - `scenes/world/*`
+  - `scenes/standings/*`
+  - `scenes/arena/*`
+  - `scenes/mech/*`
+  - `scenes/combat/*`
+  - `scripts/world/solaris_map.gd`
+  - `scripts/assets/asset_registry.gd`
+  - `scripts/audio/audio_manager.gd`
+  - `docs/AUDIO.md`
+- Do not revert those local changes while continuing fidelity work.
+
+## Next logical step
+
+Apply the same screenshot-driven retail shell pass to the remaining bare non-combat scenes, starting with **ComStar** and then **Settings**. That continues the highest-confidence visual/UI work already established in World and Standings, reuses the known-good extracted shell assets, and keeps momentum on non-combat retail fidelity before returning to deeper combat posture/animation work.

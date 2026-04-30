@@ -20,424 +20,465 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.047, 0.058, 0.066, 1)
 
+[node name="ShellNorth" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 19.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ShellSouth" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -37.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ShellWest" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 17.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ShellEast" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -42.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
 [node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="MessagePanel" type="Control" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+
+[node name="MessageBackground" type="ColorRect" parent="MainVBox/MessagePanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 0
+color = Color(0, 0, 0, 1)
 
-[node name="Header" type="HBoxContainer" parent="MainVBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 44)
-theme_override_constants/separation = 12
+[node name="MessageNorth" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 20.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
 
-[node name="BackButton" type="Button" parent="MainVBox/Header"]
-layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
-text = "<- Menu"
+[node name="MessageSouth" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -43.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
 
-[node name="TitleLabel" type="Label" parent="MainVBox/Header"]
+[node name="MessageWest" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 20.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="MessageEast" type="TextureRect" parent="MainVBox/MessagePanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -20.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="MessageMargin" type="MarginContainer" parent="MainVBox/MessagePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 14.0
+offset_right = -22.0
+offset_bottom = -34.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MessageVBox" type="VBoxContainer" parent="MainVBox/MessagePanel/MessageMargin"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "SETTINGS"
-horizontal_alignment = 0
-vertical_alignment = 1
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="MainVBox/MessagePanel/MessageMargin/MessageVBox"]
+layout_mode = 2
+text = "SYSTEM OPTIONS"
+horizontal_alignment = 1
 theme_override_font_sizes/font_size = 18
 
-[node name="UserPathLabel" type="Label" parent="MainVBox/Header"]
+[node name="StatusLabel" type="Label" parent="MainVBox/MessagePanel/MessageMargin/MessageVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Adjust settings and save when ready."
+horizontal_alignment = 1
+autowrap_mode = 3
+vertical_alignment = 1
+modulate = Color(0.72, 0.72, 0.72, 1)
+
+[node name="UserLabel" type="Label" parent="MainVBox/MessagePanel/MessageMargin/MessageVBox"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 2
+
+[node name="CommandBar" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 38)
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="HelpButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Help"
+
+[node name="TravelButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Travel"
+
+[node name="MechButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Mech"
+
+[node name="SideButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Side"
+
+[node name="StatusButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Status"
+
+[node name="FightButton" type="Button" parent="MainVBox/CommandBar"]
+custom_minimum_size = Vector2(92, 29)
+layout_mode = 2
+text = "Fight"
+
+[node name="ContentShell" type="Control" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ContentBackground" type="ColorRect" parent="MainVBox/ContentShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ContentNorth" type="TextureRect" parent="MainVBox/ContentShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 37.0
+grow_horizontal = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ContentSouth" type="TextureRect" parent="MainVBox/ContentShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -37.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ContentWest" type="TextureRect" parent="MainVBox/ContentShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 13
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 10.0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ContentEast" type="TextureRect" parent="MainVBox/ContentShell"]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -17.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="ContentMargin" type="MarginContainer" parent="MainVBox/ContentShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -18.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ContentVBox" type="VBoxContainer" parent="MainVBox/ContentShell/ContentMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="ContentHeader" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BoardTitle" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/ContentHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Client Configuration"
+vertical_alignment = 1
+
+[node name="UserPathLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/ContentHeader"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = ""
 horizontal_alignment = 2
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 11
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 
-[node name="HSep" type="HSeparator" parent="MainVBox"]
-layout_mode = 2
-
-[node name="Scroll" type="ScrollContainer" parent="MainVBox"]
+[node name="Scroll" type="ScrollContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Fields" type="VBoxContainer" parent="MainVBox/Scroll"]
+[node name="Fields" type="VBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll"]
+custom_minimum_size = Vector2(1180, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
-offset_right = 1280.0
-offset_bottom = 620.0
 
-[node name="ServerSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="ServerSectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Server —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="ServerUrlRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="ServerUrlRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ServerUrlLabel" type="Label" parent="MainVBox/Scroll/Fields/ServerUrlRow"]
+[node name="ServerUrlLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ServerUrlRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "Web API URL"
 vertical_alignment = 1
 
-[node name="ServerUrlEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/ServerUrlRow"]
+[node name="ServerUrlEdit" type="LineEdit" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ServerUrlRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "http://127.0.0.1:3000"
 
-[node name="WsUrlRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="WsUrlRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="WsUrlLabel" type="Label" parent="MainVBox/Scroll/Fields/WsUrlRow"]
+[node name="WsUrlLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/WsUrlRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "WebSocket URL"
 vertical_alignment = 1
 
-[node name="WsUrlEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/WsUrlRow"]
+[node name="WsUrlEdit" type="LineEdit" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/WsUrlRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "ws://127.0.0.1:3002/ws"
 
-[node name="AssetsSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="AssetsSectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Assets —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="RetailRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="RetailRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="RetailLabel" type="Label" parent="MainVBox/Scroll/Fields/RetailRow"]
+[node name="RetailLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/RetailRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "Retail install path"
 vertical_alignment = 1
 
-[node name="RetailEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/RetailRow"]
+[node name="RetailEdit" type="LineEdit" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/RetailRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "C:/Games/MPBT"
 
-[node name="RetailBrowse" type="Button" parent="MainVBox/Scroll/Fields/RetailRow"]
+[node name="RetailBrowse" type="Button" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/RetailRow"]
 layout_mode = 2
-text = "Browse..."
+custom_minimum_size = Vector2(92, 0)
+text = "Browse"
 
-[node name="ExtractedRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="ExtractedRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ExtractedLabel" type="Label" parent="MainVBox/Scroll/Fields/ExtractedRow"]
+[node name="ExtractedLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ExtractedRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "Extracted assets"
 vertical_alignment = 1
 
-[node name="ExtractedEdit" type="LineEdit" parent="MainVBox/Scroll/Fields/ExtractedRow"]
+[node name="ExtractedEdit" type="LineEdit" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ExtractedRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "C:/MPBT/assets"
 
-[node name="ExtractedBrowse" type="Button" parent="MainVBox/Scroll/Fields/ExtractedRow"]
+[node name="ExtractedBrowse" type="Button" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ExtractedRow"]
 layout_mode = 2
-text = "Browse..."
+custom_minimum_size = Vector2(92, 0)
+text = "Browse"
 
-[node name="DiagSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="DiagSectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Diagnostics —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="DiagRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="DiagRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 
-[node name="DiagCheck" type="CheckBox" parent="MainVBox/Scroll/Fields/DiagRow"]
+[node name="DiagCheck" type="CheckBox" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/DiagRow"]
 layout_mode = 2
 text = "Enable diagnostics logging"
 
-[node name="DisplaySectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="DisplaySectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Display —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="WindowModeRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="WindowModeRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="WindowModeLabel" type="Label" parent="MainVBox/Scroll/Fields/WindowModeRow"]
+[node name="WindowModeLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/WindowModeRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "Window mode"
 vertical_alignment = 1
 
-[node name="WindowModeOption" type="OptionButton" parent="MainVBox/Scroll/Fields/WindowModeRow"]
+[node name="WindowModeOption" type="OptionButton" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/WindowModeRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ResolutionRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="ResolutionRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ResolutionLabel" type="Label" parent="MainVBox/Scroll/Fields/ResolutionRow"]
+[node name="ResolutionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ResolutionRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "Window size"
 vertical_alignment = 1
 
-[node name="ResolutionOption" type="OptionButton" parent="MainVBox/Scroll/Fields/ResolutionRow"]
+[node name="ResolutionOption" type="OptionButton" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ResolutionRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="IntegerScaleRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="IntegerScaleRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="IntegerScaleLabel" type="Label" parent="MainVBox/Scroll/Fields/IntegerScaleRow"]
+[node name="IntegerScaleLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/IntegerScaleRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "Integer scaling"
 vertical_alignment = 1
 
-[node name="IntegerScaleCheck" type="CheckBox" parent="MainVBox/Scroll/Fields/IntegerScaleRow"]
+[node name="IntegerScaleCheck" type="CheckBox" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/IntegerScaleRow"]
 layout_mode = 2
 text = "Pixel-perfect stretch"
 
-[node name="ControlsSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="ControlsSectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Controls —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="ForwardRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ForwardActionLabel" type="Label" parent="MainVBox/Scroll/Fields/ForwardRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Forward"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/ForwardRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/ForwardRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="BackwardRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="BackwardActionLabel" type="Label" parent="MainVBox/Scroll/Fields/BackwardRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Backward"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/BackwardRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/BackwardRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="LeftRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="LeftActionLabel" type="Label" parent="MainVBox/Scroll/Fields/LeftRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Strafe Left"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/LeftRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/LeftRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="RightRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="RightActionLabel" type="Label" parent="MainVBox/Scroll/Fields/RightRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Strafe Right"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/RightRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/RightRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="TurnLeftRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="TurnLeftActionLabel" type="Label" parent="MainVBox/Scroll/Fields/TurnLeftRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Turn Left"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/TurnLeftRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/TurnLeftRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="TurnRightRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="TurnRightActionLabel" type="Label" parent="MainVBox/Scroll/Fields/TurnRightRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Turn Right"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/TurnRightRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/TurnRightRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="FireRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="FireActionLabel" type="Label" parent="MainVBox/Scroll/Fields/FireRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Fire (keyboard)"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/FireRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/FireRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="JumpRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="JumpActionLabel" type="Label" parent="MainVBox/Scroll/Fields/JumpRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Jump Jets"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/JumpRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/JumpRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="RadarRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="RadarActionLabel" type="Label" parent="MainVBox/Scroll/Fields/RadarRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Radar Range"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/RadarRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/RadarRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="ChatRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ChatActionLabel" type="Label" parent="MainVBox/Scroll/Fields/ChatRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-text = "Open Chat"
-vertical_alignment = 1
-
-[node name="KeyLabel" type="Label" parent="MainVBox/Scroll/Fields/ChatRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.7, 0.9, 1.0, 1)
-
-[node name="RebindBtn" type="Button" parent="MainVBox/Scroll/Fields/ChatRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
-text = "Rebind"
-
-[node name="AudioSectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="AudioSectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Audio —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="MasterRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="MasterRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MasterLabel" type="Label" parent="MainVBox/Scroll/Fields/MasterRow"]
+[node name="MasterLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/MasterRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(160, 0)
 text = "Master Volume"
 vertical_alignment = 1
 
-[node name="MasterSlider" type="HSlider" parent="MainVBox/Scroll/Fields/MasterRow"]
+[node name="MasterSlider" type="HSlider" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/MasterRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 20)
@@ -446,24 +487,24 @@ max_value = 0.0
 step = 1.0
 value = 0.0
 
-[node name="MasterValueLabel" type="Label" parent="MainVBox/Scroll/Fields/MasterRow"]
+[node name="MasterValueLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/MasterRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(55, 0)
 text = "0 dB"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="MusicRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="MusicRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MusicLabel" type="Label" parent="MainVBox/Scroll/Fields/MusicRow"]
+[node name="MusicLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/MusicRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(160, 0)
 text = "Music Volume"
 vertical_alignment = 1
 
-[node name="MusicSlider" type="HSlider" parent="MainVBox/Scroll/Fields/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/MusicRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 20)
@@ -472,24 +513,24 @@ max_value = 0.0
 step = 1.0
 value = -10.0
 
-[node name="MusicValueLabel" type="Label" parent="MainVBox/Scroll/Fields/MusicRow"]
+[node name="MusicValueLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/MusicRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(55, 0)
 text = "-10 dB"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="SfxRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="SfxRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SfxLabel" type="Label" parent="MainVBox/Scroll/Fields/SfxRow"]
+[node name="SfxLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/SfxRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(160, 0)
 text = "SFX Volume"
 vertical_alignment = 1
 
-[node name="SfxSlider" type="HSlider" parent="MainVBox/Scroll/Fields/SfxRow"]
+[node name="SfxSlider" type="HSlider" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/SfxRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 20)
@@ -498,53 +539,94 @@ max_value = 0.0
 step = 1.0
 value = 0.0
 
-[node name="SfxValueLabel" type="Label" parent="MainVBox/Scroll/Fields/SfxRow"]
+[node name="SfxValueLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/SfxRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(55, 0)
 text = "0 dB"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="AccessibilitySectionLabel" type="Label" parent="MainVBox/Scroll/Fields"]
+[node name="AccessibilitySectionLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 text = "— Accessibility —"
 theme_override_colors/font_color = Color(0.85, 0.7, 0.3, 1)
 
-[node name="UIScaleRow" type="HBoxContainer" parent="MainVBox/Scroll/Fields"]
+[node name="UIScaleRow" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="UIScaleLabel" type="Label" parent="MainVBox/Scroll/Fields/UIScaleRow"]
+[node name="UIScaleLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/UIScaleRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
 text = "UI Scale"
 vertical_alignment = 1
 
-[node name="UIScaleOption" type="OptionButton" parent="MainVBox/Scroll/Fields/UIScaleRow"]
+[node name="UIScaleOption" type="OptionButton" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/UIScaleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ActionBar" type="HBoxContainer" parent="MainVBox"]
+[node name="ActionBar" type="HBoxContainer" parent="MainVBox/ContentShell/ContentMargin/ContentVBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 44)
-theme_override_constants/separation = 12
+custom_minimum_size = Vector2(0, 36)
+theme_override_constants/separation = 10
 
-[node name="StatusLabel" type="Label" parent="MainVBox/ActionBar"]
+[node name="ActionHintLabel" type="Label" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/ActionBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = ""
+text = "Audio sliders preview live. Save writes user://mpbt-client.json."
 vertical_alignment = 1
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 
-[node name="SaveButton" type="Button" parent="MainVBox/ActionBar"]
+[node name="SaveButton" type="Button" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/ActionBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(92, 0)
 text = "Save"
 
-[node name="CancelButton" type="Button" parent="MainVBox/ActionBar"]
+[node name="CancelButton" type="Button" parent="MainVBox/ContentShell/ContentMargin/ContentVBox/ActionBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(92, 0)
 text = "Cancel"
+
+[node name="QuickBar" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
+theme_override_constants/separation = 8
+
+[node name="LeftQuickButtons" type="VBoxContainer" parent="MainVBox/QuickBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ComstarQuickButton" type="Button" parent="MainVBox/QuickBar/LeftQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Mail"
+flat = true
+
+[node name="SettingsQuickButton" type="Button" parent="MainVBox/QuickBar/LeftQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Opts"
+flat = true
+
+[node name="QuickBarSpacer" type="Control" parent="MainVBox/QuickBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RightQuickButtons" type="VBoxContainer" parent="MainVBox/QuickBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MechQuickButton" type="Button" parent="MainVBox/QuickBar/RightQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Mech"
+flat = true
+
+[node name="ExitQuickButton" type="Button" parent="MainVBox/QuickBar/RightQuickButtons"]
+custom_minimum_size = Vector2(48, 56)
+layout_mode = 2
+text = "Exit"
+flat = true
 
 [node name="RetailDialog" type="FileDialog" parent="."]
 layout_mode = 1
@@ -606,10 +688,19 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 18
 
-[connection signal="pressed" from="MainVBox/Header/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="MainVBox/ActionBar/SaveButton" to="." method="_on_save_pressed"]
-[connection signal="pressed" from="MainVBox/ActionBar/CancelButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="MainVBox/Scroll/Fields/RetailRow/RetailBrowse" to="." method="_on_retail_browse_pressed"]
-[connection signal="pressed" from="MainVBox/Scroll/Fields/ExtractedRow/ExtractedBrowse" to="." method="_on_extracted_browse_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/HelpButton" to="." method="_on_help_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/TravelButton" to="." method="_on_travel_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/MechButton" to="." method="_on_mech_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/SideButton" to="." method="_on_side_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/StatusButton" to="." method="_on_status_pressed"]
+[connection signal="pressed" from="MainVBox/CommandBar/FightButton" to="." method="_on_fight_pressed"]
+[connection signal="pressed" from="MainVBox/ContentShell/ContentMargin/ContentVBox/ActionBar/SaveButton" to="." method="_on_save_pressed"]
+[connection signal="pressed" from="MainVBox/ContentShell/ContentMargin/ContentVBox/ActionBar/CancelButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/RetailRow/RetailBrowse" to="." method="_on_retail_browse_pressed"]
+[connection signal="pressed" from="MainVBox/ContentShell/ContentMargin/ContentVBox/Scroll/Fields/ExtractedRow/ExtractedBrowse" to="." method="_on_extracted_browse_pressed"]
 [connection signal="dir_selected" from="RetailDialog" to="." method="_on_retail_dir_selected"]
 [connection signal="dir_selected" from="ExtractedDialog" to="." method="_on_extracted_dir_selected"]
+[connection signal="pressed" from="MainVBox/QuickBar/LeftQuickButtons/ComstarQuickButton" to="." method="_on_status_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/LeftQuickButtons/SettingsQuickButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/RightQuickButtons/MechQuickButton" to="." method="_on_mech_pressed"]
+[connection signal="pressed" from="MainVBox/QuickBar/RightQuickButtons/ExitQuickButton" to="." method="_on_help_pressed"]

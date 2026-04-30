@@ -503,6 +503,11 @@ custom_minimum_size = Vector2(24, 0)
 text = "WPN"
 vertical_alignment = 1
 
+[node name="WeaponIcon" type="TextureRect" parent="HUD/BottomPanel/HUDBox"]
+visible = false
+custom_minimum_size = Vector2(60, 18)
+stretch_mode = 5
+
 [node name="WeaponValue" type="Label" parent="HUD/BottomPanel/HUDBox"]
 custom_minimum_size = Vector2(220, 32)
 text = "--"
@@ -589,6 +594,11 @@ offset_bottom = 140.0
 
 [node name="ResultVBox" type="VBoxContainer" parent="HUD/ResultOverlay"]
 alignment = 1
+
+[node name="ResultArt" type="TextureRect" parent="HUD/ResultOverlay/ResultVBox"]
+visible = false
+custom_minimum_size = Vector2(360, 180)
+stretch_mode = 5
 
 [node name="ResultTitle" type="Label" parent="HUD/ResultOverlay/ResultVBox"]
 theme_override_font_sizes/font_size = 42

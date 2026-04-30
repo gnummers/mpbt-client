@@ -2,7 +2,7 @@
 
 Modern **Godot 4** client for **Multiplayer BattleTech: Solaris**, designed to work alongside `mpbt-server` while preserving compatibility with the original retail **MPBT v1.29 client from 1999**.
 
-This repository is currently in the early Godot scaffold stage. See [ROADMAP.md](ROADMAP.md) for the product and technical roadmap, and [PLAN.md](PLAN.md) for the client/server compatibility strategy.
+This repository is now in an active **retail-fidelity implementation** phase rather than an early scaffold stage. See [ROADMAP.md](ROADMAP.md) for the product and technical roadmap, and [PLAN.md](PLAN.md) for the client/server compatibility strategy.
 
 ## Goals
 
@@ -167,7 +167,7 @@ AI upscaling is acceptable for large scenes, map backgrounds, terrain textures, 
 
 ## Current Status
 
-Milestones M0–M13 are complete. The client includes:
+The client is beyond the initial scaffold and currently includes:
 
 - Login, registration, and character creation flow
 - Solaris world shell: room navigation, presence roster, room chat, minimap
@@ -183,6 +183,13 @@ Milestones M0–M13 are complete. The client includes:
 - Diagnostics overlay (F3): FPS, WebSocket/server status, active scene
 - Input rebinding with persistent save to `user://mpbt-client.json`
 - Display mode and resolution control (windowed/fullscreen, 3 presets)
+- Retail extracted-art integration for world/combat/non-combat screens: world shell chrome, district thumbnails, clickable travel map, Mech Bay portraits, ready-room backdrop, and a retail-style standings shell
+- Extracted asset pipeline fixes for palette-correct `ui/` and `combat/` output
+- Retail SFX extraction pipeline that converts raw PCM clips to Godot-friendly WAV, emits logical aliases such as `ui_click.wav` / `ui_hover.wav`, prefers decoded formats over PCM, and refreshes cached streams when the resolved file changes
+
+## Near-Term Focus
+
+The next highest-confidence step is to keep extending the screenshot-driven retail shell pass into the remaining bare non-combat scenes, starting with **ComStar** and then **Settings**, before returning to deeper combat posture/animation fidelity work.
 
 See [docs/PACKAGING.md](docs/PACKAGING.md) for export instructions, code signing, and the release checklist.
 See [docs/MOBILE.md](docs/MOBILE.md) for Android/iOS feasibility details and known limitations.

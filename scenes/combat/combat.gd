@@ -120,6 +120,7 @@ const COMBAT_CHAT_TEAM := "team"
 @onready var _speed_value: Label = $HUD/BottomPanel/HUDBox/SpeedValue
 @onready var _jump_value: Label = $HUD/BottomPanel/HUDBox/JumpValue
 @onready var _posture_value: Label = $HUD/BottomPanel/HUDBox/PostureValue
+@onready var _weapon_icon: TextureRect = $HUD/BottomPanel/HUDBox/WeaponIcon
 @onready var _weapon_value: Label = $HUD/BottomPanel/HUDBox/WeaponValue
 @onready var _status_panel: Panel = $HUD/StatusPanel
 @onready var _status_badge_left: TextureRect = $HUD/StatusPanel/StatusHBox/StatusBadgeLeft
@@ -131,6 +132,7 @@ const COMBAT_CHAT_TEAM := "team"
 @onready var _chat_input: LineEdit = $HUD/ChatPanel/ChatVBox/ChatInput
 @onready var _chat_status: Label = $HUD/ChatPanel/ChatVBox/ChatStatus
 @onready var _result_overlay: PanelContainer = $HUD/ResultOverlay
+@onready var _result_art: TextureRect = $HUD/ResultOverlay/ResultVBox/ResultArt
 @onready var _result_title: Label = $HUD/ResultOverlay/ResultVBox/ResultTitle
 @onready var _result_desc: Label = $HUD/ResultOverlay/ResultVBox/ResultDesc
 
@@ -197,6 +199,9 @@ var _tic_icon_inactive_texture: Texture2D = null
 var _radar_range_textures: Array = []
 var _range_window_left_textures: Array = []
 var _range_window_right_textures: Array = []
+var _weapon_icon_textures: Array = []
+var _result_vict_texture: Texture2D = null
+var _result_lost_texture: Texture2D = null
 
 
 # ─── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -383,10 +388,14 @@ func _apply_hud_art() -> void:
 	_radar_range_textures = []
 	_range_window_left_textures = []
 	_range_window_right_textures = []
+	_weapon_icon_textures = []
+	_result_vict_texture = null
+	_result_lost_texture = null
 	if extracted.is_empty():
 		_update_radar_range_hud()
 		_update_target_range_window_art(-1)
 		_update_tic_hud()
+		_update_weapon_hud()
 		return
 
 	_assign_hud_art(_cockpit_top_art, extracted, ["comt", "cockpit", "top"])
@@ -407,9 +416,14 @@ func _apply_hud_art() -> void:
 	for index in 4:
 		_range_window_left_textures.append(_load_hud_art_texture(extracted, ["lpr%d" % (index + 1), "range", "left"]))
 		_range_window_right_textures.append(_load_hud_art_texture(extracted, ["rpr%d" % (index + 1), "range", "right"]))
+	for type_id in 17:
+		_weapon_icon_textures.append(_load_hud_art_texture(extracted, ["wp%02d" % type_id, "weapon", str(type_id)]))
+	_result_vict_texture = _load_scene_art_texture(extracted, ["vict", "victory"])
+	_result_lost_texture = _load_scene_art_texture(extracted, ["lost", "defeat"])
 	_update_radar_range_hud()
 	_update_target_range_window_art(-1)
 	_update_tic_hud()
+	_update_weapon_hud()
 
 
 func _assign_hud_art(target: TextureRect, extracted_path: String, hints: Array) -> void:
@@ -423,6 +437,11 @@ func _assign_hud_art(target: TextureRect, extracted_path: String, hints: Array) 
 
 func _load_hud_art_texture(extracted_path: String, hints: Array) -> Texture2D:
 	var art_path := AssetRegistry.find_image(extracted_path, ["Combat", "UI"], hints)
+	return AssetRegistry.load_image_texture(art_path)
+
+
+func _load_scene_art_texture(extracted_path: String, hints: Array) -> Texture2D:
+	var art_path := AssetRegistry.find_image(extracted_path, ["Scenes", "UI"], hints)
 	return AssetRegistry.load_image_texture(art_path)
 
 
@@ -817,10 +836,12 @@ func _update_heat_hud() -> void:
 
 func _update_weapon_hud() -> void:
 	if _weapon_type_ids.is_empty():
+		_weapon_icon.visible = false
 		_weapon_value.text = "--"
 		_update_tic_hud()
 		return
 	var type_id: int = _selected_weapon_type_id()
+	_update_weapon_icon(type_id)
 	var text := "%d/%d %s" % [
 		_selected_weapon_slot + 1,
 		_weapon_type_ids.size(),
@@ -842,6 +863,18 @@ func _update_weapon_hud() -> void:
 		text = "%s %s" % [text, _tic_position_text(_selected_tic_index, _selected_weapon_slot)]
 	_weapon_value.text = text
 	_update_tic_hud()
+
+
+func _update_weapon_icon(type_id: int) -> void:
+	if type_id < 0 or type_id >= _weapon_icon_textures.size():
+		_weapon_icon.visible = false
+		return
+	var texture_v: Variant = _weapon_icon_textures[type_id]
+	if texture_v is Texture2D:
+		_weapon_icon.texture = texture_v as Texture2D
+		_weapon_icon.visible = true
+	else:
+		_weapon_icon.visible = false
 
 
 func _update_tic_hud() -> void:
@@ -2710,6 +2743,12 @@ func _on_combat_end(data: Dictionary) -> void:
 	var loser := str(data.get("loser", ""))
 	var local_won := (winner == _username)
 	AudioManager.play_sfx("victory" if local_won else "defeat")
+	var result_texture := _result_vict_texture if local_won else _result_lost_texture
+	if result_texture != null:
+		_result_art.texture = result_texture
+		_result_art.visible = true
+	else:
+		_result_art.visible = false
 
 	_result_title.text = "VICTORY" if local_won else "DEFEAT"
 	_result_title.add_theme_color_override(

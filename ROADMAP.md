@@ -46,6 +46,20 @@ The target is not a literal DirectDraw/Win32 clone. The target is a modern clien
 - Supports modern resolutions through scaling, layout adaptation, and optional enhanced assets.
 - Provides quality-of-life improvements such as better login flow, window management, input remapping, diagnostics, account setup, and clearer error states.
 
+## Current Progress Snapshot
+
+The roadmap below is still directionally correct, but current implementation is already well beyond scaffolding:
+
+- Auth/character flow, Solaris world shell, Mech Bay, arena ready room, standings, ComStar, settings, and a playable 3D combat scene are all in place.
+- Recent retail-fidelity work has focused on extracted art/audio integration: world-shell chrome, combat HUD art, non-combat scene artwork, palette-correct UI/combat extraction, and retail PCM-to-WAV SFX conversion with logical aliasing.
+- The active roadmap focus is now **M8: Retail Fidelity Pass** rather than M0/M1 setup work.
+
+Near-term highest-confidence work:
+
+1. Extend the retail shell/chrome pass into the remaining bare non-combat scenes (`ComStar`, then `Settings`).
+2. Tighten screenshot-driven spacing/layout polish across world and standings.
+3. Return to deeper combat posture/animation fidelity and Cmd70-aligned presentation work.
+
 ## Important Compatibility Notes
 
 Reverse-engineering work indicates the retail v1.29 client is a Win32/x86 C++ program using DirectDraw-era 8-bit surfaces, software blits, palettes, custom image containers, custom terrain/model loaders, and fixed-size 640x480 assumptions.
@@ -183,6 +197,8 @@ Modernization should focus on friction reduction without compromising the Solari
 - Accessibility options for text size, contrast, and audio levels.
 
 ## Milestones
+
+Milestones **M0-M7** are now substantially represented in the client. Current forward progress is concentrated in **M8 Retail Fidelity Pass**, with packaging/mobile still following after fidelity and UX polish.
 
 ### M0: Godot Project Scaffold
 

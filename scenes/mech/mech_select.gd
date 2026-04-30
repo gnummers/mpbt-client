@@ -7,11 +7,22 @@ extends Control
 ## Updates AuthSession.character["mech_id"] locally after a successful save.
 
 const MAIN_SCENE := "res://scenes/main/main.tscn"
+const MECH_PORTRAIT_ALIASES := {
+	"banshee": ["bnc1"],
+	"centurion": ["cn91"],
+	"catapult": ["cplt"],
+	"hunchback": ["hbck"],
+	"jenner": ["jenr"],
+	"orion": ["orio"],
+	"spider": ["sdr1"],
+	"stalker": ["stkr"],
+}
 
 @onready var _current_mech_label: Label  = $MainVBox/Header/CurrentMechLabel
 @onready var _mech_list: ItemList        = $MainVBox/ContentHBox/ListPanel/ListVBox/MechList
 @onready var _desig_label: Label         = $MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/DesigLabel
 @onready var _name_label: Label          = $MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/NameLabel
+@onready var _portrait_art: TextureRect  = $MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/PortraitArt
 @onready var _info_label: Label          = $MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/InfoLabel
 @onready var _weap_label: Label          = $MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/WeapLabel
 @onready var _status_label: Label        = $MainVBox/ContentHBox/DetailPanel/DetailMargin/DetailVBox/StatusLabel
@@ -115,6 +126,8 @@ func _apply_filter() -> void:
 func _clear_detail() -> void:
 	_desig_label.text = "Select a mech from the list"
 	_name_label.text = ""
+	_portrait_art.texture = null
+	_portrait_art.visible = false
 	_info_label.text = ""
 	_weap_label.text = ""
 	_select_button.disabled = true
@@ -167,6 +180,7 @@ func _show_mech(m: Dictionary) -> void:
 		_weap_label.text = "Weapons: --"
 	else:
 		_weap_label.text = "Weapons:\n" + "\n".join(PackedStringArray(armament))
+	_apply_portrait_art(m)
 
 	var cur_id = AuthSession.character.get("mech_id", null)
 	var is_current: bool = cur_id != null and int(cur_id) == int(m.get("id", -1))
@@ -252,3 +266,56 @@ func _compact_int_array(values: Array) -> String:
 	for value in values:
 		parts.append(str(int(value)))
 	return "/".join(parts)
+
+
+func _apply_portrait_art(mech: Dictionary) -> void:
+	var extracted := ClientConfig.asset_extracted_path()
+	if extracted.is_empty():
+		_portrait_art.texture = null
+		_portrait_art.visible = false
+		return
+
+	var portrait_path := AssetRegistry.find_image(extracted, ["UI"], _portrait_hints_for_mech(mech))
+	var portrait_texture := AssetRegistry.load_image_texture(portrait_path)
+	if portrait_texture == null:
+		_portrait_art.texture = null
+		_portrait_art.visible = false
+		return
+	_portrait_art.texture = portrait_texture
+	_portrait_art.visible = true
+
+
+func _portrait_hints_for_mech(mech: Dictionary) -> Array:
+	var hints: Array = []
+	var type_string := str(mech.get("typeString", "")).to_lower()
+	var chassis_name := str(mech.get("name", "")).to_lower()
+	var normalized_type := _normalize_portrait_hint(type_string)
+	var normalized_name := _normalize_portrait_hint(chassis_name)
+
+	if not type_string.is_empty():
+		hints.append(type_string)
+	if not normalized_type.is_empty():
+		hints.append(normalized_type)
+		if normalized_type.length() >= 4:
+			hints.append(normalized_type.substr(0, 4))
+		if normalized_type.length() >= 3:
+			hints.append(normalized_type.substr(0, 3))
+	if not chassis_name.is_empty():
+		hints.append(chassis_name)
+	if not normalized_name.is_empty():
+		hints.append(normalized_name)
+		var aliases: Array = MECH_PORTRAIT_ALIASES.get(normalized_name, [])
+		hints.append_array(aliases)
+	return hints
+
+
+func _normalize_portrait_hint(text: String) -> String:
+	var result := ""
+	for i in text.length():
+		var ch := text.substr(i, 1)
+		var code := ch.unicode_at(0)
+		var is_digit := code >= 48 and code <= 57
+		var is_lower := code >= 97 and code <= 122
+		if is_digit or is_lower:
+			result += ch
+	return result

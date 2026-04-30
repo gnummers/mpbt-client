@@ -4,6 +4,17 @@
 
 Develop `mpbt-server` and the modern `mpbt-client` simultaneously without breaking compatibility with the original retail **MPBT v1.29 client from 1999**.
 
+## Current Status Snapshot
+
+The compatibility model in this document still holds, but the client is now well past the initial scaffold stage. Current local work already includes:
+
+- Login/registration and character flow
+- Solaris world travel shell with presence/chat/travel
+- Mech Bay, arena ready room, standings, ComStar, settings, and 3D combat scenes
+- Screenshot-driven retail-fidelity passes for extracted UI/combat/world art and retail audio integration
+
+The near-term client-forward path is now retail fidelity and UX polish rather than basic scaffolding. The next highest-confidence step is to keep extending the retail world-shell chrome and navigation system into the remaining bare non-combat scenes, starting with **ComStar** and then **Settings**, before returning to deeper combat posture/animation fidelity work.
+
 The modern client will move forward as a **Godot 4** project. This gives the project a first-class 3D engine for the main combat scene while still allowing `mpbt-server` to preserve the retail ARIES protocol path for `MPBTWIN.EXE`.
 
 ## Architecture
