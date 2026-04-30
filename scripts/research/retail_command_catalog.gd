@@ -10,6 +10,15 @@ const FUNCTION_CATALOG_SCRIPT = preload("res://scripts/research/retail_function_
 const FUNCTION_PATTERN := "^(Combat|World)_Cmd[0-9]+_.*_v129$"
 
 const OVERRIDES := {
+	"World_Cmd04_TravelCompassPage_v129": {
+		"summary": "Early-world travel-compass page with one center slot, four surrounding travel slots, and fixed action buttons.",
+		"notes": [
+			"Seeds the page slot and flag tables, installs dedicated keyboard and mouse callbacks, and redraws the five-slot picture layout used by the older travel shell.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_Cmd07_MenuDialog_v129": {
 		"summary": "Server menu dialog renderer.",
 		"godot_targets": [
@@ -18,6 +27,52 @@ const OVERRIDES := {
 		],
 		"research_refs": ["RESEARCH.md:360"],
 	},
+	"World_Cmd05_SetArrowCursor_v129": {
+		"summary": "Restores the retail arrow cursor mode for the world/frontend shell.",
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd06_SetWaitCursor_v129": {
+		"summary": "Enters the retail wait-cursor mode for the world/frontend shell.",
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd09_OpenNumberedTextSelection_v129": {
+		"summary": "Opens the older numbered text-selection modal window from a streamed list of choices.",
+		"notes": [
+			"Carries a small subcommand byte, then a count plus one decoded string per choice when the open path is requested.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd14_PersonnelRecord_v129": {
+		"summary": "Personnel-record / dossier modal page.",
+		"notes": [
+			"Carries a personnel id, battle total, and six text fields that populate the shared modal world text window.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_Cmd15_OpenNumericPrompt_v129": {
+		"summary": "Range-checked numeric input prompt.",
+		"notes": [
+			"Carries a follow-up command id plus minimum and maximum bounds, then opens the shared world numeric prompt for the player to enter a value.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd13_StoreCachedNamedEntry_v129": {
+		"summary": "Stores or refreshes one cached named-entry record for the older world list/prompt family.",
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_Cmd20_ParseTextDialog_v129": {
 		"summary": "Server text dialog / mech-stats page renderer.",
 		"godot_targets": [
@@ -25,6 +80,15 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 		"research_refs": ["RESEARCH.md:361"],
+	},
+	"World_Cmd29_QueueTransientNotice_v129": {
+		"summary": "Queues a transient late-world notice into the shared popup/notice pipeline.",
+		"notes": [
+			"Carries a type1 notice id, two byte-sized mode fields, and a type1 string or resource token, then forwards the resolved text into the shared transient-notice queue.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
 	},
 	"World_Cmd26_ParseMechList_v129": {
 		"summary": "Mech list parser that feeds the mech-selection flow.",
@@ -57,6 +121,15 @@ const OVERRIDES := {
 			"res://scripts/net/standings_client.gd",
 		],
 		"research_refs": ["RESEARCH.md:1123"],
+	},
+	"World_Cmd34_TravelCompassLabelStrip_v129": {
+		"summary": "Travel-compass label-strip updater for the older world travel shell.",
+		"notes": [
+			"Decodes one label string per call and paints it into the next top-strip travel-compass column, clearing the strip and redrawing the shared heading on the first row.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
 	},
 	"World_Cmd36_MessageView_v129": {
 		"summary": "Read-message / reply-enabled ComStar message view.",
@@ -94,6 +167,16 @@ const OVERRIDES := {
 			"res://scripts/net/world_travel_client.gd",
 		],
 		"research_refs": ["RESEARCH.md:6266-6276"],
+	},
+	"World_Cmd47_SetLocationLabelCode_v129": {
+		"summary": "Updates the location-browser label code and refreshes its bitmap when the code changes.",
+		"notes": [
+			"Reads a one-arg label code, stores it in the shared browser-label global, and rebuilds the label bitmap only when the code differs from the previous value.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/world/solaris_map.gd",
+		],
 	},
 	"World_Cmd42_BitmaskSelectionList_v129": {
 		"summary": "Numbered checkbox / multi-select list routed through the older cmd10 bitmask submit path.",
@@ -139,6 +222,15 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_Cmd48_KeyedTripleStringList_v129": {
+		"summary": "Late-world keyed triple-string list dialog with one item id column plus three streamed text columns per row.",
+		"notes": [
+			"Thin wrapper around the shared triple-string list builder that enables the leading numeric key column for each row before the common menu-dialog callbacks take over.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_Cmd49_MapConnectorOverlay_v129": {
 		"summary": "Draws a Solaris map connector/path line between two locations.",
 		"godot_targets": [
@@ -146,6 +238,44 @@ const OVERRIDES := {
 			"res://scripts/world/solaris_map.gd",
 		],
 		"research_refs": ["RESEARCH.md:1140", "RESEARCH.md:6289-6293"],
+	},
+	"World_Cmd50_ClearLocationBrowserSelectionHighlight_v129": {
+		"summary": "Clears the currently latched location-browser selection highlight through the browser window callback.",
+		"notes": [
+			"Thin wrapper that forwards `(browser_window, 0)` into the shared location-browser callback stored at window field `0x508`. This is the same clear phase used before the browser mouse handlers switch to a new selected location.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/world/solaris_map.gd",
+		],
+	},
+	"World_Cmd51_DrawLocationBrowserSelectionHighlight_v129": {
+		"summary": "Redraws the current location-browser selection highlight through the browser window callback.",
+		"notes": [
+			"Thin wrapper that forwards `(browser_window, 1)` into the shared location-browser callback stored at window field `0x508`. This is the same redraw phase used after the browser updates its selected location index.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/world/solaris_map.gd",
+		],
+	},
+	"World_Cmd52_RejectShortcutBinding_v129": {
+		"summary": "Rejects a pending world shortcut binding, removes the optimistic local row, and reports the failure text.",
+		"notes": [
+			"Looks up the pending shortcut entry by `(menu_id, selection_id)`, removes it from the local shortcut table, opens the shared stacked text dialog with the failure message, and refreshes the shortcut UI afterward.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd53_ConfirmShortcutBinding_v129": {
+		"summary": "Confirms a pending world shortcut binding and reports the final `Alt-<key>` assignment text.",
+		"notes": [
+			"Looks up the pending shortcut entry by `(menu_id, selection_id)`, clears its high-bit pending marker on success, opens the shared stacked text dialog with the confirmation string, and refreshes the shortcut UI.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
 	},
 	"World_Cmd56_MapRoomMarkerOverlay_v129": {
 		"summary": "Draws a small highlight box over a room on the Solaris map.",
