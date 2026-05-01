@@ -26,11 +26,34 @@ const SUBSYSTEMS := {
 		],
 		"function_names": [
 			"Combat_MainLoop_v129",
+			"Combat_InitializeCombatHudAndControlState_v129",
 			"Combat_TickLocalActorControlLoop_v129",
 			"Combat_UpdateUpperBodyAimCueAudio_v129",
+			"Combat_OpenJoystickConfigDialog_v129",
+			"Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129",
+			"Combat_InitializeJoystickBindingLookupTables_v129",
 			"Combat_PollJoystickButtonsAndHatBindings_v129",
+			"Combat_PollJoystickAxisState_v129",
+			"Combat_FormatJoystickBindingLabel_v129",
+			"Combat_HasDuplicateJoystickBindings_v129",
+			"Combat_FormatJoystickStatusSummary_v129",
+			"Combat_JoystickBindingDialogProc_v129",
+			"Combat_JoystickConfigDialogProc_v129",
+			"Combat_RebuildJoystickConflictList_v129",
+			"Combat_HasConfiguredJoystickAxisModes_v129",
+			"Combat_SaveJoystickKeymap_v129",
+			"Combat_LoadJoystickKeymap_v129",
+			"Combat_IsEjectConfirmPending_v129",
+			"Combat_ClearPendingEjectConfirm_v129",
+			"Combat_AdvanceEjectConfirmState_v129",
+			"Combat_SendEjectCommandAfterCue_v129",
+			"System_ToggleCaptureLog_v129",
+			"Combat_HandleLocalControlHotkey_v129",
 			"Combat_ProcessMouseThrottleZoneInput_v129",
+			"Combat_ToggleInvertedMouseThrottle_v129",
 			"Combat_ProcessLocalMovementAndJumpInput_v129",
+			"Combat_ToggleStickyViewMode_v129",
+			"Combat_ProcessWeaponBankFilterInput_v129",
 			"Combat_ProcessChassisTurnInput_v129",
 			"Combat_ProcessMouseChassisTurnInput_v129",
 			"Combat_ComputeMouseTurnAxisPercent_v129",
@@ -49,6 +72,7 @@ const SUBSYSTEMS := {
 			"Combat_JumpJetInputTick_v129",
 			"Combat_UpdateLocalThrottleTarget_v129",
 			"Combat_UpdateLocalThrottleFeedbackAudio_v129",
+			"Combat_UpdateCombatStartCountdownHud_v129",
 			"Combat_PlayAudioCue_v129",
 			"Combat_PlayImpactCue_v129",
 			"Combat_PlayCollapseImpactCue_v129",
@@ -98,7 +122,112 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_MainLoop_v129",
+				"to": "Combat_PollJoystickAxisState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Combat_OpenJoystickConfigDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Combat_InitializeJoystickBindingLookupTables_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Combat_HasDuplicateJoystickBindings_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_InitializeJoystickBindingLookupTables_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeJoystickBindingLookupTables_v129",
+				"to": "Combat_LoadJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeJoystickBindingLookupTables_v129",
+				"to": "Combat_SaveJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_OpenJoystickConfigDialog_v129",
+				"to": "Combat_JoystickConfigDialogProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickBindingDialogProc_v129",
+				"to": "Combat_LoadJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickBindingDialogProc_v129",
+				"to": "Combat_FormatJoystickBindingLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickBindingDialogProc_v129",
+				"to": "Combat_SaveJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickConfigDialogProc_v129",
+				"to": "Combat_LoadJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickConfigDialogProc_v129",
+				"to": "Combat_FormatJoystickBindingLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickConfigDialogProc_v129",
+				"to": "Combat_RebuildJoystickConflictList_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RebuildJoystickConflictList_v129",
+				"to": "Combat_FormatJoystickBindingLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JoystickConfigDialogProc_v129",
+				"to": "Combat_SaveJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FormatJoystickStatusSummary_v129",
+				"to": "Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
 				"to": "Combat_PollJoystickButtonsAndHatBindings_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_PollJoystickButtonsAndHatBindings_v129",
+				"to": "Combat_HasConfiguredJoystickAxisModes_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_SendEjectCommandAfterCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "System_ToggleCaptureLog_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -107,8 +236,73 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_HandlePresentationHotkey_v129",
+				"to": "Combat_ToggleInvertedMouseThrottle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_ToggleInvertedMouseThrottle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_PollJoystickButtonsAndHatBindings_v129",
 				"to": "Combat_HandlePresentationHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandlePresentationHotkey_v129",
+				"to": "Combat_HandleLocalControlHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_IsEjectConfirmPending_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_ClearPendingEjectConfirm_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_AdvanceEjectConfirmState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_AdvanceEjectConfirmState_v129",
+				"to": "Combat_UpdateEjectStatusHudIndicator_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SendEjectCommandAfterCue_v129",
+				"to": "Shell_AppendOutboundCommandOpcode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SendEjectCommandAfterCue_v129",
+				"to": "Shell_FlushOutboundCommandBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_ToggleStickyViewMode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeBattlefieldVisualState_v129",
+				"to": "Combat_InitializeCombatHudAndControlState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeCombatHudAndControlState_v129",
+				"to": "Combat_InitializeWeaponSlotHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeCombatHudAndControlState_v129",
+				"to": "Combat_UpdateLocalMovementHudAndAnimation_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -169,6 +363,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_Cmd70_ActorAnimState_v129",
 				"to": "Combat_PlayCollapseImpactCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_UpdateCombatStartCountdownHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessLocalMovementAndJumpInput_v129",
+				"to": "Combat_ProcessWeaponBankFilterInput_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessWeaponBankFilterInput_v129",
+				"to": "Combat_SetWeaponBankFilterState_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -410,7 +619,10 @@ const SUBSYSTEMS := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 		"function_names": [
+			"Combat_HasAnyWeaponSlotEnabledByBankFilter_v129",
 			"Combat_HandlePresentationHotkey_v129",
+			"Combat_SetWeaponBankFilterState_v129",
+			"Combat_DoesWeaponSlotBankFilterStateChange_v129",
 			"Combat_FireCurrentWeaponBank_v129",
 			"Combat_FireWeaponBank_v129",
 			"Combat_RedrawWeaponBankHudReadouts_v129",
@@ -423,6 +635,16 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_HandlePresentationHotkey_v129",
 				"to": "Combat_FireCurrentWeaponBank_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SetWeaponBankFilterState_v129",
+				"to": "Combat_DoesWeaponSlotBankFilterStateChange_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DoesWeaponSlotBankFilterStateChange_v129",
+				"to": "Combat_IsWeaponSlotEnabledByBankFilter_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -459,21 +681,95 @@ const SUBSYSTEMS := {
 	},
 	"combat-weapon-slot-hud": {
 		"title": "Combat Weapon Slot HUD",
-		"summary": "Retail local weapon-slot HUD selection, shared-ammo availability refresh, and initial grid build helpers.",
+		"summary": "Retail local weapon-slot HUD selection, grid/option-cell redraw, range indicators, and shared-ammo availability refresh helpers.",
 		"implementation_status": "metadata-only",
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 			"res://scripts/ui/combat_radar.gd",
 		],
 		"function_names": [
+			"Combat_ActivateWeaponSlotForFire_v129",
+			"Combat_ApplyWeaponRowDamageCode_v129",
 			"Combat_ClearExpiredWeaponSlotIndicators_v129",
+			"Combat_DepleteAmmoPoolDetailEntry_v129",
+			"Combat_DrawWeaponSlotHudOptionCell_v129",
+			"Combat_DrawWeaponSlotRangeIndicator_v129",
+			"Combat_FindNextFireableWeaponSlot_v129",
+			"Combat_IsTargetWithinWeaponMaxRange_v129",
+			"Combat_IsWeaponSlotEnabledByBankFilter_v129",
+			"Combat_IsWeaponSlotFireable_v129",
+			"Combat_PlayWeaponTypeFireCue_v129",
 			"Combat_SelectWeaponSlotHudEntry_v129",
+			"Combat_RedrawWeaponSlotHudWeaponTypeIcons_v129",
+			"Combat_RedrawWeaponSlotHudGrid_v129",
+			"Combat_RemapWeaponSlotsToAmmoPoolIndex_v129",
 			"Combat_SumWeaponTypeAmmoAndSlotCount_v129",
 			"Combat_UpdateWeaponSlotHudAvailability_v129",
+			"Combat_WeaponTypeUsesAmmoPool_v129",
 			"Combat_InitializeWeaponSlotHud_v129",
 			"Frame_SwapPaletteIndicesInRect_v129",
 		],
 		"edges": [
+			{
+				"from": "Combat_ApplyDamageCodeValue_v129",
+				"to": "Combat_ApplyWeaponRowDamageCode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyDamageCodeValue_v129",
+				"to": "Combat_DepleteAmmoPoolDetailEntry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyWeaponRowDamageCode_v129",
+				"to": "Combat_DrawWeaponSlotHudOptionCell_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyWeaponRowDamageCode_v129",
+				"to": "Combat_DrawWeaponSlotRangeIndicator_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyWeaponRowDamageCode_v129",
+				"to": "Combat_UpdateWeaponSlotHudAvailability_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DepleteAmmoPoolDetailEntry_v129",
+				"to": "Combat_UpdateWeaponSlotHudAvailability_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DepleteAmmoPoolDetailEntry_v129",
+				"to": "Combat_DrawWeaponSlotRangeIndicator_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DepleteAmmoPoolDetailEntry_v129",
+				"to": "Combat_DrawWeaponSlotHudOptionCell_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeCombatHudAndControlState_v129",
+				"to": "Combat_RedrawWeaponSlotHudGrid_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawWeaponSlotHudGrid_v129",
+				"to": "Combat_UpdateWeaponSlotHudAvailability_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawWeaponSlotHudGrid_v129",
+				"to": "Combat_RedrawWeaponSlotHudWeaponTypeIcons_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeWeaponSlotHud_v129",
+				"to": "Combat_DrawWeaponSlotHudOptionCell_v129",
+				"kind": "ghidra-callee",
+			},
 			{
 				"from": "Combat_InitializeWeaponSlotHud_v129",
 				"to": "Combat_UpdateWeaponSlotHudAvailability_v129",
@@ -492,6 +788,86 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_UpdateWeaponSlotHudAvailability_v129",
 				"to": "Frame_SwapPaletteIndicesInRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ClearExpiredWeaponSlotIndicators_v129",
+				"to": "Combat_DrawWeaponSlotHudOptionCell_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ClearExpiredWeaponSlotIndicators_v129",
+				"to": "Combat_WeaponTypeUsesAmmoPool_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateWeaponRangeIndicators_v129",
+				"to": "Combat_DrawWeaponSlotRangeIndicator_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateWeaponRangeIndicators_v129",
+				"to": "Combat_IsWeaponSlotEnabledByBankFilter_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateWeaponRangeIndicators_v129",
+				"to": "Combat_WeaponTypeUsesAmmoPool_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_FindNextFireableWeaponSlot_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_IsWeaponSlotFireable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FindNextFireableWeaponSlot_v129",
+				"to": "Combat_IsWeaponSlotEnabledByBankFilter_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_IsWeaponSlotFireable_v129",
+				"to": "Combat_IsWeaponSlotEnabledByBankFilter_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_ActivateWeaponSlotForFire_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_IsTargetWithinWeaponMaxRange_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ActivateWeaponSlotForFire_v129",
+				"to": "Combat_RemapWeaponSlotsToAmmoPoolIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ActivateWeaponSlotForFire_v129",
+				"to": "Combat_IsWeaponSlotEnabledByBankFilter_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ActivateWeaponSlotForFire_v129",
+				"to": "Combat_WeaponTypeUsesAmmoPool_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ActivateWeaponSlotForFire_v129",
+				"to": "Combat_DrawWeaponSlotHudOptionCell_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ActivateWeaponSlotForFire_v129",
+				"to": "Combat_PlayWeaponTypeFireCue_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -795,6 +1171,8 @@ const SUBSYSTEMS := {
 			"Combat_AdjustLasrProfileTempo_v129",
 			"Combat_AdjustLasrSequenceTempo_v129",
 			"Combat_CompareActorRelativeEffectiveness_v129",
+			"Combat_ComputeActorSubsystemEffectivenessTotals_v129",
+			"Combat_ComputeActorWeaponEffectivenessTotals_v129",
 			"Combat_ComputeActorEffectivenessScore_v129",
 			"Combat_EnsureLasrSoundInitialized_v129",
 			"Combat_EnsureLasrMidiOutputOpen_v129",
@@ -810,6 +1188,7 @@ const SUBSYSTEMS := {
 			"Combat_SetLasrSequenceVolume_v129",
 			"Combat_SetLasrSoundState_v129",
 			"Combat_StartLasrSequence_v129",
+			"Combat_ResetLasrRelativeEffectivenessState_v129",
 			"Combat_StepLasrRelativeEffectivenessState_v129",
 			"Combat_StepLasrProfileVolumeTowardTarget_v129",
 			"Combat_StopLasrProfileSequences_v129",
@@ -846,8 +1225,23 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_EnterDropScene_v129",
+				"to": "Combat_ResetLasrRelativeEffectivenessState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_CompareActorRelativeEffectiveness_v129",
 				"to": "Combat_ComputeActorEffectivenessScore_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ComputeActorEffectivenessScore_v129",
+				"to": "Combat_ComputeActorSubsystemEffectivenessTotals_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ComputeActorEffectivenessScore_v129",
+				"to": "Combat_ComputeActorWeaponEffectivenessTotals_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -947,17 +1341,30 @@ const SUBSYSTEMS := {
 			"Combat_Cmd61_SetVoiceTransmissionTuneToChannelId_v129",
 			"Combat_AppendVoiceTransmissionHistoryEntry_v129",
 			"Combat_HandleVoiceTransmissionInput_v129",
+			"Combat_RebuildVoiceTransmissionRosterOrder_v129",
 			"Combat_InitializeVoiceTransmissionHudControls_v129",
+			"Combat_FreeVoiceTransmissionHudControls_v129",
+			"Combat_FreeVoiceAndEffectPresentationResources_v129",
 			"Combat_RedrawVoiceTransmissionHud_v129",
 			"Combat_RedrawVoiceTransmissionHudBlank_v129",
 			"Combat_RedrawVoiceTransmissionHudHistory_v129",
 			"Combat_DrawVoiceTransmissionHudLabel_v129",
 			"Combat_DrawVoiceTransmissionStatusHud_v129",
+			"Combat_FreeVoiceTransmissionHistoryBuffer_v129",
+			"Combat_SelectActiveVoiceTransmissionStatusMessage_v129",
 			"Combat_RedrawVoiceTransmissionHudRoster_v129",
+			"Combat_ScrollVoiceTransmissionHudHistory_v129",
+			"Combat_PresentCollapsedVoiceTransmissionHudPanel_v129",
+			"Combat_TickVoiceTransmissionHudToggleAnimation_v129",
+			"Combat_RefreshOpenVoiceTransmissionHud_v129",
+			"Combat_SetVoiceTransmissionHudControlsEnabled_v129",
+			"Combat_RedrawVoiceTransmissionHudTransitionFrame_v129",
+			"Combat_RedrawVoiceTransmissionCmpStatusIcon_v129",
 			"Combat_SelectVoiceTransmissionTune_v129",
 			"Combat_SendVoiceTransmissionActorState_v129",
 			"Combat_SendVoiceTransmissionTuneToChannelId_v129",
 			"Combat_SendVoiceTransmissionText_v129",
+			"Combat_TickVoiceTransmissionSpeechInState_v129",
 			"Combat_ToggleVoiceTransmissionActorState_v129",
 			"Combat_UpdateVoiceTransmissionStatusStrip_v129",
 		],
@@ -965,6 +1372,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_InitializeBattlefieldVisualState_v129",
 				"to": "Combat_InitializeVoiceTransmissionHudControls_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Combat_FreeVoiceAndEffectPresentationResources_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeVoiceAndEffectPresentationResources_v129",
+				"to": "Combat_FreeVoiceTransmissionHudControls_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Combat_FreeVoiceTransmissionHistoryBuffer_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -995,6 +1417,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_HandleVoiceTransmissionInput_v129",
 				"to": "Combat_AppendVoiceTransmissionHistoryEntry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateLogHudToggle_v129",
+				"to": "Combat_RefreshOpenVoiceTransmissionHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_ScrollVoiceTransmissionHudHistory_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_RefreshOpenVoiceTransmissionHud_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1029,7 +1466,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RedrawVoiceTransmissionHudRoster_v129",
+				"to": "Combat_RebuildVoiceTransmissionRosterOrder_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawVoiceTransmissionHudRoster_v129",
 				"to": "Combat_DrawVoiceTransmissionHudLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawVoiceTransmissionStatusHud_v129",
+				"to": "Combat_SelectActiveVoiceTransmissionStatusMessage_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1039,12 +1486,57 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_MainLoop_v129",
+				"to": "Combat_TickVoiceTransmissionHudToggleAnimation_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
 				"to": "Combat_DrawVoiceTransmissionStatusHud_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_MainLoop_v129",
+				"to": "Combat_TickVoiceTransmissionSpeechInState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
 				"to": "Combat_UpdateVoiceTransmissionStatusStrip_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ScrollVoiceTransmissionHudHistory_v129",
+				"to": "Combat_RedrawVoiceTransmissionHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RefreshOpenVoiceTransmissionHud_v129",
+				"to": "Combat_RedrawVoiceTransmissionHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RefreshOpenVoiceTransmissionHud_v129",
+				"to": "Combat_SetVoiceTransmissionHudControlsEnabled_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_TickVoiceTransmissionHudToggleAnimation_v129",
+				"to": "Combat_SetVoiceTransmissionHudControlsEnabled_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_TickVoiceTransmissionHudToggleAnimation_v129",
+				"to": "Combat_RedrawVoiceTransmissionHudTransitionFrame_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawVoiceTransmissionHudTransitionFrame_v129",
+				"to": "Combat_PresentCollapsedVoiceTransmissionHudPanel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateCmpHudToggle_v129",
+				"to": "Combat_RedrawVoiceTransmissionCmpStatusIcon_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -1167,6 +1659,12 @@ const SUBSYSTEMS := {
 		"function_names": [
 			"Combat_MainLoop_v129",
 			"Combat_RenderActorWorldMarkers_v129",
+			"Combat_DrawFrameRateOverlay_v129",
+			"Combat_DrawCombatHelpOverlay_v129",
+			"Combat_SelectNextTrackedActor_v129",
+			"Combat_DrawTrackedActorScreenBracket_v129",
+			"Combat_DrawTrackedActorInfoLabel_v129",
+			"Combat_DrawWeaponAimCursor_v129",
 			"Combat_RenderTacticalRadarPanel_v129",
 			"Combat_BuildTacticalRadarContactMarker_v129",
 			"Combat_TickRemoteActorPresentationState_v129",
@@ -1174,13 +1672,38 @@ const SUBSYSTEMS := {
 		],
 		"edges": [
 			{
+				"from": "Combat_HandlePresentationHotkey_v129",
+				"to": "Combat_SelectNextTrackedActor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_RenderActorWorldMarkers_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawFrameRateOverlay_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawCombatHelpOverlay_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawWeaponAimCursor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
 				"to": "Combat_RenderTacticalRadarPanel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawTrackedActorScreenBracket_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1191,6 +1714,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_RenderActorWorldMarkers_v129",
 				"to": "Combat_RenderTerrainSceneryProjection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActorWorldMarkers_v129",
+				"to": "Combat_DrawTrackedActorInfoLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawTrackedActorScreenBracket_v129",
+				"to": "Combat_DrawTrackedActorInfoLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawWeaponAimCursor_v129",
+				"to": "Combat_HasAnyWeaponSlotEnabledByBankFilter_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1399,6 +1937,7 @@ const SUBSYSTEMS := {
 			"Combat_Cmd72_InitLocalActor_v129",
 			"Combat_ResetActorAnimationCache_v129",
 			"Combat_AllocateActorAnimationInstance_v129",
+			"Combat_FindActorAnimationTrackByStateTag_v129",
 			"Combat_AllocateTransformAnimation_v129",
 			"Combat_FreeTransformAnimation_v129",
 			"Combat_FreeActorAnimationInstance_v129",
@@ -1415,8 +1954,18 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_Cmd64_AddActor_v129",
+				"to": "Combat_FindActorAnimationTrackByStateTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_Cmd72_InitLocalActor_v129",
 				"to": "Combat_AllocateActorAnimationInstance_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd72_InitLocalActor_v129",
+				"to": "Combat_FindActorAnimationTrackByStateTag_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1785,6 +2334,10 @@ const SUBSYSTEMS := {
 			"Combat_ComputeTerrainSceneryFaceHeightAtCoord_v129",
 			"Combat_FindContactMechAtCoord_v129",
 			"Combat_IntersectSegmentWithTerrainSceneryFace_v129",
+			"Combat_NormalizeVector3InPlace_v129",
+			"Combat_IntersectRayWithPlane_v129",
+			"Combat_ComputeActorBearingToActor_v129",
+			"Combat_ComputeVelocityMagnitude3_v129",
 			"Combat_IsActorSegmentClearOfTerrainScenery_v129",
 		],
 		"edges": [
@@ -1804,6 +2357,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_ProcessLocalMechContact_v129",
+				"to": "Combat_ComputeActorBearingToActor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessLocalMechContact_v129",
+				"to": "Combat_ComputeVelocityMagnitude3_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_QueryTerrainScenerySupportAtCoord_v129",
 				"to": "Combat_FindTerrainSceneryInstanceAtCoord_v129",
 				"kind": "ghidra-callee",
@@ -1816,6 +2379,16 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_IsActorSegmentClearOfTerrainScenery_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_IntersectSegmentWithTerrainSceneryFace_v129",
+				"to": "Combat_NormalizeVector3InPlace_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_IntersectSegmentWithTerrainSceneryFace_v129",
+				"to": "Combat_IntersectRayWithPlane_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2109,6 +2682,12 @@ const SUBSYSTEMS := {
 			"Shell_RunWorldStateTick_v129",
 			"Shell_RunCombatStateTick_v129",
 			"Shell_HandleReceivedMessage_v129",
+			"Shell_LoadMessageCatalog_v129",
+			"Shell_FreeMessageCatalog_v129",
+			"Shell_SelectMessageCatalog_v129",
+			"Shell_SelectMessageCatalogSection_v129",
+			"Shell_GetActiveMessageCatalogIndex_v129",
+			"Shell_GetActiveMessageCatalogLine_v129",
 			"Shell_ResetFrontendTransientState_v129",
 			"Shell_ResetHeartbeatState_v129",
 			"Shell_SelectInboundCommandTable_v129",
@@ -2124,6 +2703,7 @@ const SUBSYSTEMS := {
 			"Shell_TickScrollingStatusMarquee_v129",
 			"World_TickAnimatedShellBitmaps_v129",
 			"Shell_HandlePostVersionBannerLine_v129",
+			"System_ToggleCaptureLog_v129",
 			"Shell_HandlePreVersionBannerLine_v129",
 			"Shell_ClassifyBannerLine_v129",
 			"Shell_AppendEscDelimitedStreamChunk_v129",
@@ -2141,6 +2721,26 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_RunFrontendMain_v129",
 				"to": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_LoadMessageCatalog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_SelectMessageCatalog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_SelectMessageCatalogSection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_FreeMessageCatalog_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2171,6 +2771,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_HandlePostVersionBannerLine_v129",
 				"to": "Shell_SelectInboundCommandTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_HandlePostVersionBannerLine_v129",
+				"to": "System_ToggleCaptureLog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ToggleCaptureLog_v129",
+				"to": "Shell_GetActiveMessageCatalogLine_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_FreeMessageCatalog_v129",
+				"to": "Shell_GetActiveMessageCatalogIndex_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2502,9 +3117,16 @@ const SUBSYSTEMS := {
 			"Frame_CreateWindow_v129",
 			"Frame_DecodeBitmapRleData_v129",
 			"Frame_DispatchMouseEventToWindowStack_v129",
+			"Frame_TranslateKeyMessageToNormalizedKey_v129",
+			"Frame_UpdateModifierKeyState_v129",
+			"Frame_HandleCtrlShiftDebugToggleChord_v129",
 			"Frame_DispatchNormalizedKeyToActiveWindow_v129",
 			"Frame_DestroyWindow_v129",
 			"Frame_GetCachedBitmapBuffer_v129",
+			"Frame_InitializeBitmapLookupTableCache_v129",
+			"Frame_GetBitmapLookupTablePair_v129",
+			"Frame_GetOrCreateBitmapLookupTable_v129",
+			"Frame_FreeBitmapLookupTableCache_v129",
 			"Frame_LoadBitmapBufferFromArchive_v129",
 			"Frame_LoadBitmapFromFile_v129",
 			"Frame_LoadMwPictureArchivesAndTables_v129",
@@ -2740,6 +3362,41 @@ const SUBSYSTEMS := {
 			{
 				"from": "Frame_DrawCenteredStringInWidth_v129",
 				"to": "Frame_DrawStringAt_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Frame_InitializeBitmapLookupTableCache_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Frame_FreeBitmapLookupTableCache_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_TranslateKeyMessageToNormalizedKey_v129",
+				"to": "Frame_UpdateModifierKeyState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_TranslateKeyMessageToNormalizedKey_v129",
+				"to": "Frame_HandleCtrlShiftDebugToggleChord_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_InitializeBitmapLookupTableCache_v129",
+				"to": "Frame_GetBitmapLookupTablePair_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_GetBitmapLookupTablePair_v129",
+				"to": "Frame_GetOrCreateBitmapLookupTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_LoadBitmapBufferFromArchive_v129",
+				"to": "Frame_GetBitmapLookupTablePair_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3167,10 +3824,34 @@ const SUBSYSTEMS := {
 			"Combat_RenderAttachmentMeshListAndTrackCursorHit_v129",
 			"Combat_RenderActiveEffectsPass_v129",
 			"Combat_RenderModelAttachments_v129",
+			"Combat_SetAttachmentSubtreeHiddenStateByTag_v129",
+			"Combat_IsAttachmentTagHidden_v129",
+			"Combat_GetAttachmentTrailColorByTag_v129",
+			"Combat_GetAttachmentLocalOffsetByTag_v129",
+			"Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
 			"Combat_RenderEffectModelAndCheckCursorHit_v129",
 			"Combat_RenderEffectModel_v129",
 			"Combat_RenderEffectModelHitProxy_v129",
+			"Combat_CollectVisibleEffectSprites_v129",
+			"Combat_SpawnEffectSprite_v129",
 			"Combat_RenderEffectSprite_v129",
+			"Combat_InitializeActiveEffectRenderPools_v129",
+			"Combat_ResetActiveEffectRenderPools_v129",
+			"Combat_FreeActiveEffectRenderPools_v129",
+			"Combat_ResetEffectSpriteEntries_v129",
+			"Combat_ResetEffectHitProxyModelEntries_v129",
+			"Combat_AllocateEffectModelEntries_v129",
+			"Combat_FreeEffectModelEntries_v129",
+			"Combat_ResetEffectModelEntries_v129",
+			"Combat_AllocateEffectTrailStripEntries_v129",
+			"Combat_FreeEffectTrailStripEntries_v129",
+			"Combat_ResetEffectTrailStripEntries_v129",
+			"Combat_CollectVisibleEffectHitProxyModels_v129",
+			"Combat_CollectVisibleEffectTrailStrips_v129",
+			"Combat_SpawnEffectTrailStripBurst_v129",
+			"Combat_SpawnEffectTrailStrip_v129",
+			"Combat_UpdateEffectTrailStripState_v129",
+			"Combat_SpawnTerrainSceneryImpactTrailBursts_v129",
 			"Combat_RenderEffectTrailStrip_v129",
 			"Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129",
 			"Combat_RenderWeaponEffectModelOrFallback_v129",
@@ -3182,6 +3863,8 @@ const SUBSYSTEMS := {
 			"Combat_InitializeActiveProjectileEffectSlots_v129",
 			"Combat_UpdateActiveProjectileEffects_v129",
 			"Combat_UpdateProjectileEffectState_v129",
+			"Combat_CollectVisibleActorRenderEntries_v129",
+			"Combat_CacheActorRenderDistance_v129",
 		],
 		"edges": [
 			{
@@ -3235,6 +3918,46 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_InitializeActiveEffectRenderPools_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeActiveEffectRenderPools_v129",
+				"to": "Combat_AllocateEffectTrailStripEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeActiveEffectRenderPools_v129",
+				"to": "Combat_AllocateEffectModelEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeActiveEffectRenderPools_v129",
+				"to": "Combat_ResetActiveEffectRenderPools_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetActiveEffectRenderPools_v129",
+				"to": "Combat_ResetEffectSpriteEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetActiveEffectRenderPools_v129",
+				"to": "Combat_ResetEffectHitProxyModelEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetActiveEffectRenderPools_v129",
+				"to": "Combat_ResetEffectTrailStripEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetActiveEffectRenderPools_v129",
+				"to": "Combat_ResetEffectModelEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
 				"to": "Combat_RenderSkyAndGroundBackdrop_v129",
 				"kind": "ghidra-callee",
@@ -3242,6 +3965,26 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
 				"to": "Combat_UpdateActiveProjectileEffects_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CollectVisibleActorRenderEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CollectVisibleEffectSprites_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CollectVisibleEffectHitProxyModels_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CollectVisibleEffectTrailStrips_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3256,7 +3999,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CacheActorRenderDistance_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActiveEffectsPass_v129",
 				"to": "Combat_RenderEffectModelAndCheckCursorHit_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderEffectModelAndCheckCursorHit_v129",
+				"to": "Combat_GetAttachmentLocalOffsetByTag_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3290,6 +4043,26 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Combat_FreeVoiceAndEffectPresentationResources_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeVoiceAndEffectPresentationResources_v129",
+				"to": "Combat_FreeActiveEffectRenderPools_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeActiveEffectRenderPools_v129",
+				"to": "Combat_FreeEffectTrailStripEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeActiveEffectRenderPools_v129",
+				"to": "Combat_FreeEffectModelEntries_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RenderEffectModelHitProxy_v129",
 				"to": "Combat_RenderAttachmentMeshListAndTrackCursorHit_v129",
 				"kind": "ghidra-callee",
@@ -3310,8 +4083,33 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_IsAttachmentTagHidden_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_GetAttachmentLocalOffsetByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_UpdateActiveProjectileEffects_v129",
 				"to": "Combat_UpdateProjectileEffectState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateActiveProjectileEffects_v129",
+				"to": "Combat_GetAttachmentTrailColorByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateActiveProjectileEffects_v129",
+				"to": "Combat_SpawnEffectSprite_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateActiveProjectileEffects_v129",
+				"to": "Combat_SpawnEffectTrailStripBurst_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3321,7 +4119,57 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_GetAttachmentTrailColorByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_SpawnEffectSprite_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_SpawnEffectTrailStripBurst_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
 				"to": "Combat_ResolveProjectileImpactDamage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_CollectVisibleEffectTrailStrips_v129",
+				"to": "Combat_UpdateEffectTrailStripState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnEffectTrailStripBurst_v129",
+				"to": "Combat_SpawnEffectTrailStrip_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
+				"to": "Combat_SpawnTerrainSceneryImpactTrailBursts_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
+				"to": "Combat_GetAttachmentLocalOffsetByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
+				"to": "Combat_GetAttachmentTrailColorByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
+				"to": "Combat_SpawnEffectSprite_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
+				"to": "Combat_SpawnEffectTrailStripBurst_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3342,6 +4190,31 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_ResolveProjectileImpactDamage_v129",
 				"to": "Combat_ApplyDamageCodeValue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResolveProjectileImpactDamage_v129",
+				"to": "Combat_SpawnTerrainSceneryImpactTrailBursts_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnInternalStructureDestructionEffect_v129",
+				"to": "Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnInternalStructureDestructionEffect_v129",
+				"to": "Combat_SetAttachmentSubtreeHiddenStateByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
+				"to": "Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
+				"to": "Combat_GetAttachmentTrailColorByTag_v129",
 				"kind": "ghidra-callee",
 			},
 		],

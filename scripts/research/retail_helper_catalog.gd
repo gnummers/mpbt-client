@@ -67,6 +67,28 @@ const OVERRIDES := {
 		],
 		"research_refs": ["RESEARCH.md:3592"],
 	},
+	"Combat_ComputeActorBearingToActor_v129": {
+		"family": "Movement",
+		"summary": "Computes the retail planar bearing from one actor to another in the engine's signed heading units.",
+		"notes": [
+			"Builds the target-minus-source planar delta from the actor world positions, handles the vertical-axis special case, and otherwise converts the slope through the retail arctangent helper into the same heading scale used by local chassis facing. Combat_ProcessLocalMechContact_v129 uses it to align the local actor's rebound orientation against the contacted mech.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeVelocityMagnitude3_v129": {
+		"family": "Movement",
+		"summary": "Returns the magnitude of a 3-axis retail velocity vector.",
+		"notes": [
+			"Computes `sqrt(x*x + y*y + z*z)` for the supplied fixed-point motion components. Combat_ProcessLocalMechContact_v129 uses it for both the local actor and the contacted mech when scaling the rebound impulse after a collision.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_TickRemoteActorPresentationState_v129": {
 		"family": "CombatOverlay",
 		"summary": "Advances one remote actor's presentation state and rebuilds the render matrices used by the combat overlay passes.",
@@ -283,6 +305,17 @@ const OVERRIDES := {
 		"summary": "Allocates one retail actor animation instance, reusing cached animation object/state resources when available.",
 		"notes": [
 			"Used by both combat actor-add and local-actor init paths. Allocates the per-instance matrices and pose buffers, seeds default scale to `0x20000`, loads or reuses the shared animation object/state pair for the requested actor animation id, and attaches a freshly allocated transform-animation table through Combat_AllocateTransformAnimation_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FindActorAnimationTrackByStateTag_v129": {
+		"family": "Animation",
+		"summary": "Returns one actor-animation track record from a retail animation instance by state tag.",
+		"notes": [
+			"Walks the instance's state-tag table and returns the matching 10-byte track record from the instance-local track array. The local and remote actor init paths use it to cache the special state-tag records for tags `0x1f` and `0x01` immediately after Combat_AllocateActorAnimationInstance_v129 succeeds.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -680,7 +713,29 @@ const OVERRIDES := {
 		"family": "TerrainScenery",
 		"summary": "Intersects a world-space segment against the currently selected terrain-scenery face and returns the hit point when the segment crosses that polygon.",
 		"notes": [
-			"Rebuilds the candidate face plane from the owning scenery instance's transformed vertex table, normalizes the face basis vectors, and solves the segment/plane intersection only when the current face index resolves to a polygonal face.",
+			"Rebuilds the candidate face plane from the owning scenery instance's transformed vertex table, normalizes the segment direction through Combat_NormalizeVector3InPlace_v129, and solves the segment/plane intersection through Combat_IntersectRayWithPlane_v129 only when the current face index resolves to a polygonal face.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_NormalizeVector3InPlace_v129": {
+		"family": "TerrainScenery",
+		"summary": "Normalizes a 3D vector in place and reports failure when the input vector is effectively zero-length.",
+		"notes": [
+			"Computes the vector magnitude from the three double-precision components, rejects vectors shorter than the retail epsilon in `DAT_00479068`, and otherwise divides each component by the magnitude. Combat_IntersectSegmentWithTerrainSceneryFace_v129 uses it to normalize the candidate segment direction before solving the face-plane hit.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_IntersectRayWithPlane_v129": {
+		"family": "TerrainScenery",
+		"summary": "Intersects a ray with a plane equation and returns both the hit point and the parametric distance when the ray faces the plane.",
+		"notes": [
+			"Treats the final parameter as a plane normal plus plane-distance term, computes the ray/plane denominator, and rejects parallel or back-facing hits through the status flag output. Combat_IntersectSegmentWithTerrainSceneryFace_v129 uses it after rebuilding a candidate terrain-scenery face plane.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -719,6 +774,90 @@ const OVERRIDES := {
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_DrawCombatHelpOverlay_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the retail combat help overlay bitmap onto the main combat frame when the help latch is active.",
+		"notes": [
+			"Blits the `CHLP` bitmap resource loaded by Combat_LoadVisualResourceTables_v129 at the fixed top-left combat overlay origin `(0x50, 0x00)`. Combat_MainLoop_v129 only calls it while the movement-input path keeps the combat help latch `DAT_004e4f60` active.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawFrameRateOverlay_v129": {
+		"family": "CombatOverlay",
+		"summary": "Updates the rolling retail framerate sample and draws the FPS overlay string on the combat frame.",
+		"notes": [
+			"Accumulates a 30-frame timing window, converts the elapsed tick delta into a localized `XX.XX` fps string, and draws that debug readout at `(0x14, 0x55)` on the main combat surface. Combat_MainLoop_v129 calls it while the Ctrl+Shift debug-toggle latch keeps the framerate bit armed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawTrackedActorScreenBracket_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the retail screen-space bracket around the currently tracked actor and, when enabled, its adjacent info label.",
+		"notes": [
+			"Uses the selected actor's projected world-marker bounds to draw a colored rectangle on the main combat surface, expands to a double frame for the locked presentation state, and calls Combat_DrawTrackedActorInfoLabel_v129 when the label toggle is enabled.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SelectNextTrackedActor_v129": {
+		"family": "CombatOverlay",
+		"summary": "Cycles the tracked-actor selection to the next eligible retail contact for the current presentation mode.",
+		"notes": [
+			"Called from Combat_HandlePresentationHotkey_v129 for the tracked-target hotkeys. Advances the shared tracked-actor index `DAT_004f6a58` through the eight actor slots, keeps only entries with the required active/visible flag set, and marks the chosen actor's presentation state so the bracket and label HUD redraw against the new tracked target.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawTrackedActorInfoLabel_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the tracked actor's three-line retail info label beside a world marker or screen bracket.",
+		"notes": [
+			"Formats the localized prefix string from message id `0xf8`, then prints the tracked actor's callsign, pilot/name line, and trailing status line at the supplied screen position when the label toggle flag is enabled.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawWeaponAimCursor_v129": {
+		"family": "CombatOverlay",
+		"summary": "Updates the live combat aim-cursor screen position and draws the retail cursor bitmap when the current weapon filter leaves a local slot enabled.",
+		"notes": [
+			"Centers the cursor around the live shake-adjusted HUD point, stores that screen coordinate into the shared cursor-hit globals reused by Combat_RenderAttachmentMeshListAndTrackCursorHit_v129, and suppresses the bitmap entirely when Combat_HasAnyWeaponSlotEnabledByBankFilter_v129 reports that the active bank filter would disable every local slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_UpdateCombatStartCountdownHud_v129": {
+		"family": "CombatHud",
+		"summary": "Updates the retail combat-start countdown HUD readout and releases the local actor when the countdown expires.",
+		"notes": [
+			"Called from Combat_MainLoop_v129 while the combat-start countdown flag is armed. Formats the absolute start time seeded by Combat_Cmd62_StartCombat_v129 into an `MM:SS` string at `(0x14, 0x19)` and, once the timer reaches zero, calls Combat_ResetLocalMotionAndRefreshAnimation_v129 unless the pre-start hold bit is still set.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
 		],
 	},
 	"Combat_RenderTacticalRadarPanel_v129": {
@@ -934,6 +1073,18 @@ const OVERRIDES := {
 		],
 		"research_refs": ["RESEARCH.md:3624-3626"],
 	},
+	"Combat_ToggleStickyViewMode_v129": {
+		"family": "UpperBodyControl",
+		"summary": "Toggles the retail sticky-view mode latch used by the local aim and weapon-filter controls.",
+		"notes": [
+			"Flips the same `DAT_0048a484` flag that the main loop advertises through the `Sticky View Mode` overlay. Combat_ProcessWeaponBankFilterInput_v129 reads this latch to preserve the neutral selector state when directional bank-filter input is released.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_TickLocalActorControlLoop_v129": {
 		"family": "Movement",
 		"summary": "Ticks the local actor control loop around movement/jump handling.",
@@ -1136,6 +1287,55 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_IsEjectConfirmPending_v129": {
+		"family": "CombatControl",
+		"summary": "Returns whether the retail local eject flow is waiting for its confirming hotkey press.",
+		"notes": [
+			"Reads the shared eject-status byte `DAT_0047d2b0` and returns true only for state `1`, the intermediate armed state entered after the first eject hotkey press. Combat_HandleLocalControlHotkey_v129 uses it to decide whether a non-eject key should cancel the pending confirm or whether a second eject key press should advance the sequence.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ClearPendingEjectConfirm_v129": {
+		"family": "CombatControl",
+		"summary": "Cancels a pending local eject confirmation and redraws the retail eject-status HUD strip.",
+		"notes": [
+			"Resets `DAT_0047d2b0` back to the idle state and immediately refreshes the `EJE*` HUD indicator through Combat_UpdateEjectStatusHudIndicator_v129. Combat_HandleLocalControlHotkey_v129 calls it whenever some other hotkey interrupts the armed one-press eject confirmation state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_AdvanceEjectConfirmState_v129": {
+		"family": "CombatControl",
+		"summary": "Advances the retail two-step local eject confirmation state and starts the warning/audio phase on the second press.",
+		"notes": [
+			"State `0` moves to the armed confirmation state and redraws the `EJE*` indicator. State `1` resets local motion, advances to the live eject phase, refreshes the HUD indicator again, stops the earlier cue if needed, plays the eject warning cues, and sets the pending-send bit in `DAT_0047cbc0` so Combat_SendEjectCommandAfterCue_v129 can transmit the actual command when the warning finishes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SendEjectCommandAfterCue_v129": {
+		"family": "CombatControl",
+		"summary": "Flushes the retail local eject opcode once the armed warning cue finishes playing.",
+		"notes": [
+			"Checks the pending eject-send bit in `DAT_0047cbc0`, waits for cue `0x1c` to stop, clears the bit, appends outbound opcode `0x05`, and flushes the retail command buffer immediately. Combat_MainLoop_v129 calls it each frame after Combat_AdvanceEjectConfirmState_v129 has armed the send latch.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
 	"Combat_UpdateCmbHudToggle_v129": {
 		"family": "CombatPresentation",
 		"summary": "Updates the retail `CMB1`-`CMB4` HUD toggle strip and its paired presentation-mode bit.",
@@ -1298,6 +1498,17 @@ const OVERRIDES := {
 		"summary": "Processes the retail mouse throttle zone and updates the local throttle target while the actor is grounded and not jump-active.",
 		"notes": [
 			"Supports both absolute and stepped zone modes, and clears the throttle target back to neutral when the zone is unavailable or local state blocks mouse throttle ownership.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ToggleInvertedMouseThrottle_v129": {
+		"family": "MouseControl",
+		"summary": "Toggles the retail inverted-mouse-throttle latch used by the mouse throttle zone.",
+		"notes": [
+			"Flips the sign latch `DAT_0048af24` when mouse throttle is active, causing Combat_ProcessMouseThrottleZoneInput_v129 to negate the computed throttle target. Passing a nonzero argument clears the latch back to normal, which the presentation reset path uses when combat visual/control state is rebuilt.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1642,6 +1853,28 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_ComputeActorSubsystemEffectivenessTotals_v129": {
+		"family": "CombatAudio",
+		"summary": "Accumulates one actor's non-weapon subsystem effectiveness totals and returns both the baseline total and the missing amount.",
+		"notes": [
+			"Walks the fixed-length subsystem value block on the actor record alongside the corresponding chassis-definition values, sums the current and maximum subsystem effectiveness points, and returns the lost-point deficit as the second out parameter. Combat_ComputeActorEffectivenessScore_v129 uses that deficit as one of the non-armor penalties in the LASR effectiveness model.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeActorWeaponEffectivenessTotals_v129": {
+		"family": "CombatAudio",
+		"summary": "Accumulates one actor's weapon effectiveness totals and returns both the baseline value and the unavailable-weapon deficit.",
+		"notes": [
+			"Iterates the chassis weapon list, sums each slot's effectiveness weight from the retail weapon-value table, and separately accumulates only the currently usable weapons after checking slot presence/ammo state on the actor record. Combat_ComputeActorEffectivenessScore_v129 subtracts the resulting unavailable-weapon deficit when deriving the LASR relative-effectiveness score.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_CompareActorRelativeEffectiveness_v129": {
 		"family": "CombatAudio",
 		"summary": "Compares two actors by normalized remaining combat effectiveness and returns a scaled ratio.",
@@ -1650,6 +1883,18 @@ const OVERRIDES := {
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetLasrRelativeEffectivenessState_v129": {
+		"family": "CombatAudio",
+		"summary": "Resets the stored LASR relative-effectiveness ratio and state latch to their drop-scene defaults.",
+		"notes": [
+			"Seeds the prior relative-effectiveness ratio back to `1000` and clears the companion state word that Combat_StepLasrRelativeEffectivenessState_v129 uses when smoothing the next combat-relative advantage transition. Shell_EnterDropScene_v129 calls it before the next combat/bootstrap sequence begins.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
 			"res://scenes/combat/combat.gd",
 		],
 	},
@@ -1912,6 +2157,160 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129": {
+		"family": "JoystickControl",
+		"summary": "Probes the retail joystick device, refreshes cached capability/calibration state, and clears unsupported axis-mode assignments.",
+		"notes": [
+			"Runs the `joyGetPosEx` / `joyGetDevCaps` detection sequence, chooses the first working joystick device, retries once after the retail first-pass load when the device strings/caps are incomplete, caches the live center/range values for the supported axes, and clears the saved per-axis mode bytes `DAT_0047f8e5/e9/ed/f1` when no valid joystick/capability set is available. Shell_InitializeFrontendResourcesAndAudio_v129 calls it during startup, and the nearby joystick-status formatter reuses the same refresh path before reporting device availability.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Combat_InitializeJoystickBindingLookupTables_v129": {
+		"family": "JoystickControl",
+		"summary": "Loads or migrates the retail joystick keymap when needed, then rebuilds the runtime lookup tables used to resolve bound joystick actions.",
+		"notes": [
+			"Ensures the joystick keymap cache is loaded, performs the one-time registry-backed migration for the legacy binding sentinel, clears the four reverse-lookup tables under `DAT_004e4b60`-`DAT_004e5170`, and repopulates them from the active binding records in `DAT_004e8860` according to each binding's category bits. Shell_RunFrontendMain and Combat_ResetPresentationStateAndLoadVisualOptions_v129 both call it before any joystick-driven control handling so the runtime can translate incoming joystick codes back to bound retail actions.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_OpenJoystickConfigDialog_v129": {
+		"family": "JoystickControl",
+		"summary": "Opens the modal retail joystick-configuration dialog from the shell frontend.",
+		"notes": [
+			"Thin wrapper around `DialogBoxParamA(..., resource 0x71, Combat_JoystickConfigDialogProc_v129, 0)`. Shell_RunFrontendMain_v129 and the nearby unnamed shell/options path both reuse it when the player opens the combat joystick setup surface.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_PollJoystickAxisState_v129": {
+		"family": "JoystickControl",
+		"summary": "Refreshes the cached retail joystick axis state when the current device and capability flags permit it.",
+		"notes": [
+			"Runs from Combat_MainLoop_v129 before higher-level joystick input handling. Rebuilds the JOYINFOEX flag mask from the detected capability bits in `DAT_004e91d0`, rate-limits polling through `DAT_0047d000`, and stores the latest axis-position snapshot in the shared joystick state block used by the movement and aim control paths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FormatJoystickBindingLabel_v129": {
+		"family": "JoystickControl",
+		"summary": "Formats a retail joystick binding code into the human-readable label shown by the joystick dialogs.",
+		"notes": [
+			"Builds an optional binding-category prefix from the `0x100/0x200/0x400` flag bits, then appends either a known symbolic label from the retail joystick-name table or a formatted fallback code string for anonymous inputs. Combat_JoystickConfigDialogProc_v129 and Combat_RebuildJoystickConflictList_v129 both use it to paint the current binding text shown in the joystick setup dialogs.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_HasDuplicateJoystickBindings_v129": {
+		"family": "JoystickControl",
+		"summary": "Returns whether the active retail joystick action-binding table contains any duplicate assignments.",
+		"notes": [
+			"Scans the live `DAT_004e8860` action-binding table for repeated nonzero bindings and returns immediately when a duplicate is found. Shell_RunFrontendMain_v129 calls it after Combat_InitializeJoystickBindingLookupTables_v129 so startup can force the joystick configuration flow when duplicate bindings are present.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FormatJoystickStatusSummary_v129": {
+		"family": "JoystickControl",
+		"summary": "Builds the localized retail joystick status string for the combat-controls/options UI and returns the availability state code.",
+		"notes": [
+			"Refreshes device capabilities through Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129, then writes one of three localized status strings into the caller-supplied buffer: `0` for a detected joystick with its formatted name/capability flags, `1` when no joysticks are attached, and `2` when a joystick exists but no usable active device was selected. The unnamed joystick-options UI callers reuse this formatter whenever the control-options surface needs to repaint its current device status line.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_JoystickBindingDialogProc_v129": {
+		"family": "JoystickControl",
+		"summary": "Handles the retail joystick binding-assignment dialog for buttons, POV directions, and axis channels.",
+		"notes": [
+			"On `WM_INITDIALOG` it clones the live button/POV and axis binding tables into a working buffer, populates the action list plus the available joystick inputs/axis channels, and then services reassignment, per-action reset, defaults restore, apply, and cancel commands. The dialog writes the chosen binding label into the preview control and persists changes through Combat_SaveJoystickKeymap_v129 only when the user confirms the dialog.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_JoystickConfigDialogProc_v129": {
+		"family": "JoystickControl",
+		"summary": "Handles the retail joystick-configuration dialog lifecycle, selection changes, assignment edits, and apply/reset actions.",
+		"notes": [
+			"On `WM_INITDIALOG` it clones the live joystick binding tables into a working buffer, resolves the key controls, and populates the list widgets. Later message branches handle list-selection changes, live assignment capture, reset/default actions, apply/cancel, and the final validation/persist step through the nearby joystick-table helpers before the dialog closes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RebuildJoystickConflictList_v129": {
+		"family": "JoystickControl",
+		"summary": "Recomputes the retail joystick binding-conflict list and repopulates the dialog list box with the duplicate assignments.",
+		"notes": [
+			"Clones the working joystick binding table, scans it for repeated action assignments, stores the conflicting slot ids into the dialog scratch array at `DAT_0048f058`, and formats each duplicate as `action : binding` text for the target list box. Combat_JoystickConfigDialogProc_v129 calls it after init, reassignment, reset, and revert actions so the conflict list always mirrors the current working keymap.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_HasConfiguredJoystickAxisModes_v129": {
+		"family": "JoystickControl",
+		"summary": "Returns whether any of the retail joystick axis-control channels currently has an active mode assignment.",
+		"notes": [
+			"Checks the four saved axis-mode bytes that back upper-body horizontal/vertical control, chassis turning, and throttle, and returns true when any channel uses the active retail mode values `1` or `2`. Combat_PollJoystickButtonsAndHatBindings_v129 uses the predicate to skip the button/POV polling path when no joystick-driven axis control mode is configured.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SaveJoystickKeymap_v129": {
+		"family": "JoystickControl",
+		"summary": "Writes the current retail joystick/keymap tables to `keymap.bin` and returns whether every table write succeeded.",
+		"notes": [
+			"Opens `keymap.bin`, writes the retail `'b'` file marker, then serializes the small axis-mode table, the two-word axis-direction block, the button/POV binding table, and the main action-binding table in that order. Combat_JoystickConfigDialogProc_v129 uses the boolean result to decide whether to show the save-failure warning after the player applies joystick-config changes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_LoadJoystickKeymap_v129": {
+		"family": "JoystickControl",
+		"summary": "Loads the retail joystick/keymap tables from `keymap.bin`, falling back to the built-in defaults when the file is absent or malformed.",
+		"notes": [
+			"Seeds the caller's main action-binding table from the built-in defaults, then tries to read the version byte plus the axis-mode, axis-direction, button/POV, and action-binding tables from `keymap.bin`. Any open/read/version failure restores the retail default tables before marking the joystick config cache as initialized, which is why Combat_JoystickConfigDialogProc_v129 can treat the helper as both cache warm-up and file load.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_BuildCameraShakeOffsets_v129": {
 		"family": "CombatEffects",
 		"summary": "Builds signed screen-shake offsets for the active combat shake mode.",
@@ -2002,6 +2401,292 @@ const OVERRIDES := {
 			"res://scripts/net/arena_client.gd",
 		],
 		"research_refs": ["RESEARCH.md:4738", "RESEARCH.md:4985"],
+	},
+	"Combat_SetAttachmentSubtreeHiddenStateByTag_v129": {
+		"family": "CombatEffects",
+		"summary": "Recursively sets or clears the hidden-state bit for one attachment tag and all of its child attachments.",
+		"notes": [
+			"Walks the model attachment hierarchy rooted at the requested tag and toggles the bitmask stored at `model + 0x54`. Combat_RenderModelAttachments_v129 skips any attachment whose bit is set, and the internal-structure destruction path uses this helper to propagate that state across a whole attachment subtree.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_IsAttachmentTagHidden_v129": {
+		"family": "CombatEffects",
+		"summary": "Returns whether an actor's attachment tag is currently hidden in the retail attachment-state bitmask.",
+		"notes": [
+			"Looks up the actor's active model, finds the requested attachment tag, and checks the corresponding bit in the model visibility mask at `model + 0x54`. Combat_UpdateProjectileEffectState_v129 uses it to stop tracking an impact attachment once that attachment has been hidden or detached.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_GetAttachmentTrailColorByTag_v129": {
+		"family": "CombatEffects",
+		"summary": "Returns the retail trail-strip color associated with one attachment tag.",
+		"notes": [
+			"Walks the model attachment table and returns the packed color/material value stored alongside the requested tag. Retail impact and projectile paths feed that value directly into Combat_SpawnEffectTrailStripBurst_v129 so attachment-based effects inherit the attachment's color.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_GetAttachmentLocalOffsetByTag_v129": {
+		"family": "CombatEffects",
+		"summary": "Returns the local attachment offset for one attachment tag in model space.",
+		"notes": [
+			"Reads the attachment's local XYZ offset from the model attachment transform table and copies it into the caller buffer. Retail projectile tracking, impact-effect placement, and effect-model rendering all use this helper before transforming the point into world or camera space.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129": {
+		"family": "CombatEffects",
+		"summary": "Recursively spawns detached effect-model entries for one attachment subtree rooted at the requested tag.",
+		"notes": [
+			"Finds the requested attachment tag, transforms its local offset into world space, recurses through child attachments, marks the subtree hidden in the model visibility bitmask, allocates render-type `8` effect-model entries, and seeds matching trail-strip bursts using Combat_GetAttachmentTrailColorByTag_v129. Combat_SpawnInternalStructureDestructionEffect_v129 uses it to turn a damaged internal-structure subtree into detached effect models.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CollectVisibleActorRenderEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Advances active actor presentation state, rebuilds actor poses, and queues visible actor records for the retail effect/render pass.",
+		"notes": [
+			"Called from Combat_RenderActiveEffectsPass_v129 after terrain-scenery and projectile collectors fill the transient render list. Rebuilds each active actor pose through Combat_BuildActorAnimationPose_v129, refreshes the remote presentation state when the actor is flagged for it, and appends actor records with an active model into the shared visible-object list at `DAT_004f5130`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CacheActorRenderDistance_v129": {
+		"family": "CombatEffects",
+		"summary": "Caches the current camera distance on one actor record for the retail effect/render pass.",
+		"notes": [
+			"Used only by Combat_RenderActiveEffectsPass_v129 for actor entries in the transient visible-object list. Stores the just-computed camera distance into the actor's encoded render-distance slot before the pass dispatches that actor through the per-type rendering path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_InitializeActiveEffectRenderPools_v129": {
+		"family": "CombatEffects",
+		"summary": "Allocates and clears the retail combat effect render pools used by the active-effects pass.",
+		"notes": [
+			"Called from Combat_ResetPresentationStateAndLoadVisualOptions_v129 during combat visual bootstrap. Ensures the sprite, hit-proxy model, trail-strip, and model-effect pools are allocated, then clears their active flags through Combat_ResetActiveEffectRenderPools_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetActiveEffectRenderPools_v129": {
+		"family": "CombatEffects",
+		"summary": "Clears the live-entry flags across the retail combat effect render pools without freeing their storage.",
+		"notes": [
+			"Resets the sprite-effect pool, the type-6 hit-proxy model pool, the trail-strip pool, and the model-effect pool so a new combat presentation pass starts with no active transient entries.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeActiveEffectRenderPools_v129": {
+		"family": "CombatEffects",
+		"summary": "Releases the retail combat effect render pools during combat visual teardown.",
+		"notes": [
+			"Frees the two smaller transient-effect pools directly, then delegates the trail-strip and model-effect pool teardown to their dedicated free helpers. Called from the higher-level combat visual shutdown path after other effect state is released.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetEffectSpriteEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Clears the active-state flags across the retail transient effect-sprite pool.",
+		"notes": [
+			"Walks the 60-entry `DAT_0047f844` pool and clears both the queued-for-render and active bits on each sprite-effect record. Combat_ResetActiveEffectRenderPools_v129 uses it when combat visual state is reinitialized.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetEffectHitProxyModelEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Clears the active-state flags across the retail type-6 effect hit-proxy model pool.",
+		"notes": [
+			"Walks the 60-entry `DAT_0047f848` pool and clears both the queued-for-render and active bits on each hit-proxy model record. Combat_ResetActiveEffectRenderPools_v129 uses it when combat visual state is reinitialized.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_AllocateEffectModelEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Allocates the fixed retail pool of transient effect-model entries.",
+		"notes": [
+			"Creates the 60-entry `DAT_0047f0bc` pool used by render type `8` model effects. Combat_InitializeActiveEffectRenderPools_v129 calls it during bootstrap before the pool is cleared by Combat_ResetEffectModelEntries_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeEffectModelEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Frees the fixed retail pool of transient effect-model entries.",
+		"notes": [
+			"Releases `DAT_0047f0bc` and clears the pool pointer. Combat_FreeActiveEffectRenderPools_v129 uses it during combat visual teardown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetEffectModelEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Clears the active-state flags across the retail transient effect-model pool.",
+		"notes": [
+			"Walks the 60-entry `DAT_0047f0bc` pool and clears both the queued-for-render and active bits on each model-effect record. Combat_ResetActiveEffectRenderPools_v129 uses it when combat visual state is reinitialized.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_AllocateEffectTrailStripEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Allocates the fixed retail pool of transient trail-strip effect entries.",
+		"notes": [
+			"Creates the 120-entry `DAT_00481080` pool used by render type `4` trail-strip effects. Combat_InitializeActiveEffectRenderPools_v129 calls it during bootstrap before the pool is cleared by Combat_ResetEffectTrailStripEntries_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeEffectTrailStripEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Frees the fixed retail pool of transient trail-strip effect entries.",
+		"notes": [
+			"Releases `DAT_00481080` and clears the pool pointer. Combat_FreeActiveEffectRenderPools_v129 uses it during combat visual teardown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetEffectTrailStripEntries_v129": {
+		"family": "CombatEffects",
+		"summary": "Clears the active-state flags across the retail transient trail-strip pool.",
+		"notes": [
+			"Walks the 120-entry `DAT_00481080` pool and clears both the queued-for-render and active bits on each trail-strip record. Combat_ResetActiveEffectRenderPools_v129 uses it when combat visual state is reinitialized.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CollectVisibleEffectHitProxyModels_v129": {
+		"family": "CombatEffects",
+		"summary": "Queues the active type-6 effect model entries that are rendered through the retail hit-proxy path.",
+		"notes": [
+			"Walks the fixed 60-slot `DAT_0047f848` pool, retires expired entries, and appends still-live records into the shared visible-object list at `DAT_004f5130`. In Combat_RenderActiveEffectsPass_v129 those queued entries are dispatched through Combat_RenderEffectModelHitProxy_v129 rather than the normal visible model renderer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CollectVisibleEffectSprites_v129": {
+		"family": "CombatEffects",
+		"summary": "Queues the active timed sprite effects that are still alive for the retail effect/render pass.",
+		"notes": [
+			"Walks the fixed 60-slot sprite-effect pool rooted at `DAT_0047f844`, clears expired entries, and appends still-live sprite records into the shared visible-object list at `DAT_004f5130`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SpawnEffectSprite_v129": {
+		"family": "CombatEffects",
+		"summary": "Allocates one timed retail effect sprite entry at a world position.",
+		"notes": [
+			"Claims a free record from the sprite-effect pool, writes render type `2`, seeds the start time and expiry, chooses the sprite resource through `FUN_00435630`, and marks the entry active so Combat_CollectVisibleEffectSprites_v129 can queue it for rendering.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CollectVisibleEffectTrailStrips_v129": {
+		"family": "CombatEffects",
+		"summary": "Advances the active trail-strip effects and queues the live ones for the retail effect/render pass.",
+		"notes": [
+			"Walks the 120-slot trail-strip pool rooted at `DAT_00481080`, updates each live entry through Combat_UpdateEffectTrailStripState_v129 while it remains unexpired, and appends the still-active strip records into the shared visible-object list at `DAT_004f5130`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SpawnEffectTrailStripBurst_v129": {
+		"family": "CombatEffects",
+		"summary": "Spawns a retail burst of multiple trail-strip effects around one world position.",
+		"notes": [
+			"Loops the requested burst count and delegates each strip to Combat_SpawnEffectTrailStrip_v129 with the same origin, spacing the initial velocity seed from the supplied magnitude. Retail uses this burst helper for internal-structure destruction and several projectile/impact fallout paths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SpawnEffectTrailStrip_v129": {
+		"family": "CombatEffects",
+		"summary": "Allocates one retail trail-strip effect entry and seeds its initial point chain, velocity, and transform.",
+		"notes": [
+			"Claims a free record from the trail-strip pool, writes render type `4`, seeds three local control points, randomizes the initial velocity vector around the supplied bias, and initializes the strip transform so Combat_UpdateEffectTrailStripState_v129 and Combat_RenderEffectTrailStrip_v129 can advance and draw it.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_UpdateEffectTrailStripState_v129": {
+		"family": "CombatEffects",
+		"summary": "Advances one active retail trail-strip effect and damps its motion until the strip collapses.",
+		"notes": [
+			"Refreshes the cached point chain and orientation vectors every 5 ms, integrates the strip's position and velocity, and decays the motion parameters toward zero. When the strip runs out of lift and motion, it clears the active point chain so Combat_CollectVisibleEffectTrailStrips_v129 can retire the entry.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SpawnTerrainSceneryImpactTrailBursts_v129": {
+		"family": "CombatEffects",
+		"summary": "Spawns the paired retail trail-strip bursts used when an impact hits a qualifying terrain-scenery instance.",
+		"notes": [
+			"Validates the target scenery instance in the `DAT_0047f728` terrain-scenery pool, checks the retail impact-capable flag on that instance, and emits the two fixed-color trail-strip bursts at the supplied world coordinate. Called from both Combat_SpawnImpactEffectAtAttachmentOrCoord_v129 and Combat_ResolveProjectileImpactDamage_v129 when the impact lands on scenery instead of an attachment-driven effect path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
 	},
 	"Combat_RenderActiveEffectsPass_v129": {
 		"family": "CombatEffects",
@@ -2128,6 +2813,19 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_HandleLocalControlHotkey_v129": {
+		"family": "CombatPresentation",
+		"summary": "Dispatches the retail combat local-control hotkeys for weapon slots, fire controls, movement shortcuts, and voice-panel subcontrols.",
+		"notes": [
+			"Installed as the combat frame's local hotkey callback and also reached from Combat_HandlePresentationHotkey_v129. Routes the retail control opcodes into weapon-slot selection and fire paths, throttle and targeting-mode shortcuts, presentation-toggle refreshes, and the roster/tune/history controls used by the voice-transmission panel.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_ProcessMouseUpperBodyAimZones_v129": {
 		"family": "MouseControl",
 		"summary": "Maps configured mouse control zones into torso-yaw and upper-body pitch deltas when direct aim input is idle.",
@@ -2210,6 +2908,246 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_RedrawWeaponSlotHudGrid_v129": {
+		"family": "WeaponHud",
+		"summary": "Redraws the static local weapon-slot HUD grid and refreshes every slot's availability state.",
+		"notes": [
+			"Called from the combat HUD/control bootstrap after the root combat frame is ready. Rebuilds the per-row slot boxes and header strip when requested, reapplies the presentation highlight treatment for occupied rows, and then runs Combat_UpdateWeaponSlotHudAvailability_v129 across each visible weapon slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_RedrawWeaponSlotHudWeaponTypeIcons_v129": {
+		"family": "WeaponHud",
+		"summary": "Redraws the retail weapon-type icon strip down the local weapon-slot HUD rows.",
+		"notes": [
+			"Called from Combat_RedrawWeaponSlotHudGrid_v129. Walks the visible weapon rows, looks up each row's retail weapon-type bitmap, blits those icons into the left side of the slot grid, and presents the shared icon column rectangle when the compact presentation mode permits immediate redraws.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawWeaponSlotHudOptionCell_v129": {
+		"family": "WeaponHud",
+		"summary": "Draws one retail weapon-slot option cell bitmap for the requested slot row and option column.",
+		"notes": [
+			"Used by weapon-slot bootstrap, expiry refresh, and the local-control hotkey toggles for the three per-slot option columns. Chooses the active, inactive, or unavailable retail bitmap according to the slot's stored toggle bit and availability flag, blits it into the matching HUD cell rectangle, and presents that cell when the compact presentation mode allows immediate redraws.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawWeaponSlotRangeIndicator_v129": {
+		"family": "WeaponHud",
+		"summary": "Draws the local weapon-slot range-bracket indicator for one slot against the current target distance.",
+		"notes": [
+			"Clears the slot's range-indicator rectangle, checks whether the selected slot is populated and presently usable, compares the supplied target distance against the retail min/short/medium/long thresholds for that weapon type, and then draws the matching bracket glyph before presenting the row strip when appropriate.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_FindNextFireableWeaponSlot_v129": {
+		"family": "WeaponHud",
+		"summary": "Finds the next local weapon slot that is presently eligible to fire.",
+		"notes": [
+			"Starts from the current selection when available, scans the local weapon rows circularly, and returns the first slot whose weapon is present, not cooling down, enabled by the current option-column filter, and backed by whatever ammo pool state the weapon type requires. The local-control hotkey path uses it for the next/previous slot fallback and for post-fire reselection.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_IsTargetWithinWeaponMaxRange_v129": {
+		"family": "WeaponHud",
+		"summary": "Returns whether the current target lies within the retail maximum range for a weapon type.",
+		"notes": [
+			"Rejects the sentinel `-1` target id immediately, then compares the current actor-to-target distance against the weapon type's max-range threshold from the retail weapon table. Combat_FireWeaponBank_v129 and the local direct-fire hotkey path use this predicate before choosing the target-lock source for spawned effects.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_IsWeaponSlotEnabledByBankFilter_v129": {
+		"family": "WeaponHud",
+		"summary": "Returns whether one local weapon slot is enabled by the active retail weapon-bank filter state.",
+		"notes": [
+			"Evaluates the current bank/filter bits in `DAT_004f6428` against the slot's retail category flags and bank selector fields. The slot-availability drawer, next-fireable-slot scan, and slot-fire activation helper all use this predicate to suppress rows that are filtered out of the current fire mode.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_IsWeaponSlotFireable_v129": {
+		"family": "WeaponHud",
+		"summary": "Returns whether one local weapon slot is presently eligible to fire.",
+		"notes": [
+			"Checks the slot index bounds, verifies that the slot is populated and not cooling down, confirms the local option-column filter permits the slot, and then enforces the retail ammo-pool requirement when the weapon type consumes shared ammo. The local-control hotkey dispatcher uses this predicate before direct slot fire and option toggles proceed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_RemapWeaponSlotsToAmmoPoolIndex_v129": {
+		"family": "WeaponHud",
+		"summary": "Reassigns all local weapon slots of one weapon type to the matching shared-ammo pool index.",
+		"notes": [
+			"Walks the retail trailing ammo/detail rows to find a live ammo pool for the requested weapon type and then rewrites the per-slot ammo-pool index for every matching weapon row. Combat_ActivateWeaponSlotForFire_v129 uses it after a shared-ammo pool is depleted so the remaining rows move onto the next compatible pool if one exists.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_WeaponTypeUsesAmmoPool_v129": {
+		"family": "WeaponHud",
+		"summary": "Returns whether the supplied retail weapon type consumes shared ammo-pool entries.",
+		"notes": [
+			"Tests the weapon-type metadata table entry at `DAT_0047aaf0` and returns true when that type expects a positive shared-ammo pool count. The range-indicator, expiry refresh, and weapon-slot fire paths all use this predicate before consulting the slot's current ammo-pool index.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ActivateWeaponSlotForFire_v129": {
+		"family": "WeaponHud",
+		"summary": "Commits one local weapon slot into its retail fire/cooldown state and refreshes the dependent HUD cells.",
+		"notes": [
+			"Validates the slot's current fireability, decrements the bound shared-ammo pool when the weapon type uses one, remaps matching slots onto a replacement ammo pool when the current pool runs dry, starts the slot cooldown timer from the retail cadence tables, redraws the option cells, and plays the weapon-type fire cue. Combat_FireWeaponBank_v129 relies on the returned success flag before spawning effects for that slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ApplyWeaponRowDamageCode_v129": {
+		"family": "WeaponHud",
+		"summary": "Applies a higher retail damage code to one weapon-detail row and refreshes the matching local weapon-slot HUD state.",
+		"notes": [
+			"Used by Combat_ApplyDamageCodeValue_v129 for mech-detail section 3 weapon rows. Stores the stronger weapon damage code when it increases, then refreshes the local option cells, range indicator, and availability state for that slot when the damaged actor is the local mech.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DepleteAmmoPoolDetailEntry_v129": {
+		"family": "WeaponHud",
+		"summary": "Zeros one retail ammo-pool detail entry and refreshes all local weapon slots that share that ammo pool's weapon type.",
+		"notes": [
+			"Used by Combat_ApplyDamageCodeValue_v129 for mech-detail section 4 ammo/detail rows. Clears the selected ammo-pool count, walks every local weapon slot whose weapon type matches that pool, refreshes availability/range/option cells for those rows, redraws the weapon-bank readouts, and plays the shared depletion cue.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_PlayWeaponTypeFireCue_v129": {
+		"family": "WeaponHud",
+		"summary": "Plays the retail fire audio cue associated with a weapon type.",
+		"notes": [
+			"Maps the supplied weapon type id onto the corresponding retail fire cue id and plays that cue through Combat_PlayAudioCue_v129. Combat_ActivateWeaponSlotForFire_v129 calls this after committing the slot's cooldown/ammo state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_HasAnyWeaponSlotEnabledByBankFilter_v129": {
+		"family": "WeaponFire",
+		"summary": "Returns whether the current retail weapon-bank filter leaves any local weapon slot enabled.",
+		"notes": [
+			"Scans the visible local weapon rows and returns true as soon as Combat_IsWeaponSlotEnabledByBankFilter_v129 accepts one slot. An unnamed main-loop HUD helper uses it to suppress the bank-filter reticle bitmap when the active filter would disable every local slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SetWeaponBankFilterState_v129": {
+		"family": "WeaponFire",
+		"summary": "Applies one retail weapon-bank filter selection and updates the slot highlight rectangles whose filter eligibility changed.",
+		"notes": [
+			"Maps the incoming retail selector code plus the two boolean modifier flags onto the composite bank-filter bits in `DAT_004f6428`. When the new state differs from `DAT_004f6a60`, it walks every local slot, uses Combat_DoesWeaponSlotBankFilterStateChange_v129 to find rows whose enabled state changed, flips those slot highlight rectangles, and then commits the new filter state as the steady-state bank filter.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DoesWeaponSlotBankFilterStateChange_v129": {
+		"family": "WeaponFire",
+		"summary": "Returns whether one local weapon slot would change enabled/highlight state under the pending retail bank filter.",
+		"notes": [
+			"Evaluates the slot against both the current bank-filter state and the pending state staged in `DAT_004f6428`, rejecting slots that are absent or cooling down. Combat_SetWeaponBankFilterState_v129 uses this predicate to decide which slot rectangles need their palette-swapped highlight refreshed during a filter change.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ProcessWeaponBankFilterInput_v129": {
+		"family": "WeaponFire",
+		"summary": "Processes the local directional weapon-bank filter inputs and updates the derived retail filter selection state.",
+		"notes": [
+			"Consumes the six-button input cluster staged by Combat_ProcessLocalMovementAndJumpInput_v129, converts the directional combination through the retail selector-angle table, preserves the sticky neutral state when the view-lock flag is active, and forwards the resulting selector plus modifier flags into Combat_SetWeaponBankFilterState_v129. It also toggles the same local command bit that retail uses to reflect whether the filter input cluster is currently active.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ApplyDetailRowDamageCode_v129": {
+		"family": "CombatDamage",
+		"summary": "Applies a higher retail damage code to one non-weapon mech-detail row and triggers the coupled local HUD/state fallout.",
+		"notes": [
+			"Used by Combat_ApplyDamageCodeValue_v129 for the general mech-detail section returned as row class 0. Raises the stored detail damage code when it worsens, then updates whichever local state that detail metadata controls, including movement shutdown/fallover side effects, throttle resets, and the `EQ1`-`EQ4` indicator redraw paths for the local mech.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SpawnInternalStructureDestructionEffect_v129": {
+		"family": "CombatEffects",
+		"summary": "Spawns the retail destruction effect for a fully depleted internal-structure row.",
+		"notes": [
+			"Called from Combat_ApplyDamageCodeValue_v129 only when an internal-structure condition value falls to zero. Maps the destroyed internal row to the corresponding mech section id, emits the matching destruction effect through the combat effect path, and triggers the local-player companion effect when the destroyed actor is the local mech.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
 		],
 	},
 	"Combat_DampenLocalMotionState_v129": {
@@ -2303,6 +3241,19 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_InitializeCombatHudAndControlState_v129": {
+		"family": "CombatInit",
+		"summary": "Installs the retail combat HUD/control callbacks and seeds the initial in-scene HUD state after the battlefield visuals are ready.",
+		"notes": [
+			"Called from Combat_InitializeBattlefieldVisualState_v129 after the root combat frame exists. Installs the combat frame callback table, resets transient local-control state, initializes the weapon-slot HUD, redraws the steady-state combat HUD strips, seeds the compact voice status strip, and applies the initial presentation-toggle state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_LoadVisualResourceTables_v129": {
 		"family": "CombatInit",
 		"summary": "Opens COMBAT.DAT and bulk-loads the combat bitmap/resource tables required by the retail HUD and effect surfaces.",
@@ -2326,6 +3277,78 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 			"res://scripts/net/server_bridge.gd",
 			"res://scripts/audio/audio_manager.gd",
+		],
+	},
+	"Shell_LoadMessageCatalog_v129": {
+		"family": "ShellUI",
+		"summary": "Loads an `END`-delimited retail message catalog file into one frontend catalog slot and optionally selects an initial section.",
+		"notes": [
+			"Parses the source text file into grouped sections split by literal `END` lines, allocates packed line-length, pointer, and text buffers for the chosen slot, and records the caller-supplied user value alongside the parsed section table. Shell_RunFrontendMain_v129 uses it to load `mpbt.msg` before selecting the active startup catalog/section.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_FreeMessageCatalog_v129": {
+		"family": "ShellUI",
+		"summary": "Frees one loaded retail message-catalog slot and clears the active selection when that same slot was selected.",
+		"notes": [
+			"Releases the catalog slot's packed section descriptor, pointer table, and backing text buffer, zeroes the slot's section count, and resets the global active catalog pointers when the freed slot matches Shell_GetActiveMessageCatalogIndex_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_SelectMessageCatalog_v129": {
+		"family": "ShellUI",
+		"summary": "Selects one loaded retail message-catalog slot as the active shell text source.",
+		"notes": [
+			"Validates the requested slot and points the global active catalog/section pointers at that slot's root descriptor so later shell, world, and combat text helpers read from the chosen message file.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_SelectMessageCatalogSection_v129": {
+		"family": "ShellUI",
+		"summary": "Selects one section inside a loaded retail message catalog and updates the active section pointer.",
+		"notes": [
+			"Validates the catalog slot and zero-based section index, then repoints that slot's current-section descriptor and the shared active-section pointer so Shell_GetActiveMessageCatalogLine_v129 returns lines from the chosen block.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_GetActiveMessageCatalogIndex_v129": {
+		"family": "ShellUI",
+		"summary": "Returns the currently active retail message-catalog slot index, or `-1` when no catalog is selected.",
+		"notes": [
+			"Computes the slot index from the global active-catalog descriptor pointer used by the shell text system. Shell_FreeMessageCatalog_v129 uses it to decide whether freeing a slot also needs to clear the active selection.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_GetActiveMessageCatalogLine_v129": {
+		"family": "ShellUI",
+		"summary": "Returns one 1-based line from the active retail message-catalog section, falling back to the explicit `\"Bad message!\"` sentinel when unavailable.",
+		"notes": [
+			"Reads the selected section's pointer table and cached line-length table, trims the trailing newline in place, and returns the resulting string buffer for the caller. The helper is reused broadly for startup/status strings, capture-log feedback, menu text, world dialogs, and combat presentation labels.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
 		],
 	},
 	"Shell_ServiceNetworkStateLoop_v129": {
@@ -2817,6 +3840,29 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_FreeVoiceTransmissionHistoryBuffer_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Frees the retail combat voice-transmission history buffer during teardown.",
+		"notes": [
+			"Releases the heap buffer that stores the 100-entry voice/transmission history ring. Combat_Cmd63_ResultSceneInit_v129 uses it when combat exits into the result scene and clears the old runtime voice HUD state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SelectActiveVoiceTransmissionStatusMessage_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Selects the currently visible retail voice/status message and advances the compact status-strip queue.",
+		"notes": [
+			"Walks the voice history ring's timed display indices, advances expired entries, copies the newly active text into a working buffer, and returns the cached text/style pair used by Combat_DrawVoiceTransmissionStatusHud_v129. When the full voice history panel is not open, it also refreshes the per-entry expiry timer for the compact status-strip presentation window.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
 	"Combat_UpdateVoiceTransmissionStatusStrip_v129": {
 		"family": "VoiceTransmission",
 		"summary": "Updates the compact combat voice-transmission status strip bitmaps and talkback meter.",
@@ -2826,6 +3872,18 @@ const OVERRIDES := {
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RebuildVoiceTransmissionRosterOrder_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Rebuilds the retail roster-display order used by the voice-transmission roster HUD.",
+		"notes": [
+			"Walks the active actors by retail voice-channel/tune grouping and writes the visible roster order plus inverse lookup tables used by Combat_RedrawVoiceTransmissionHudRoster_v129. The roster redraw refreshes this ordering lazily when the cached roster map is stale.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
 		],
 	},
 	"Combat_InitializeVoiceTransmissionHudControls_v129": {
@@ -2838,6 +3896,106 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_FreeVoiceTransmissionHudControls_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Releases the retail combat voice-transmission HUD control surface and clears the panel flags.",
+		"notes": [
+			"Disposes the off-screen voice HUD surface allocated by Combat_InitializeVoiceTransmissionHudControls_v129 and clears the cached voice-panel mode flags. Retail calls it during combat/result teardown before rebuilding the non-combat presentation state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_PresentCollapsedVoiceTransmissionHudPanel_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Presents the cached collapsed retail voice-transmission HUD panel region.",
+		"notes": [
+			"Updates only the fixed lower panel rectangle `(0x000,0x0f0)-(0x27f,0x1df)` on the main frame without redrawing the voice panel contents. Combat_RedrawVoiceTransmissionHudTransitionFrame_v129 uses it for the fully collapsed stage of the open/close animation.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ScrollVoiceTransmissionHudHistory_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Scrolls the retail combat voice-transmission history view and redraws the voice HUD.",
+		"notes": [
+			"Handles the voice-panel history up/down hotkeys (`0x2c` / `0x2d`). Updates the bounded history offset in the 100-entry voice log, wrapping or clamping as needed, and then immediately redraws the active voice-transmission HUD variant.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_TickVoiceTransmissionHudToggleAnimation_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Ticks the retail expand/collapse animation for the combat voice-transmission HUD.",
+		"notes": [
+			"Called from Combat_MainLoop_v129. Advances the panel through the staged open/close heights every 10 ticks, redraws each transition frame through Combat_RedrawVoiceTransmissionHudTransitionFrame_v129, and flips the voice-panel control enable state once the animation reaches its fully open or fully closed endpoint.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RefreshOpenVoiceTransmissionHud_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Refreshes the currently open retail voice-transmission HUD variant and re-enables its controls.",
+		"notes": [
+			"Only acts when the voice panel is already open. Redraws the active voice HUD view through Combat_RedrawVoiceTransmissionHud_v129 and then re-enables the registered voice controls through Combat_SetVoiceTransmissionHudControlsEnabled_v129 so the panel stays interactive after log/roster mode changes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetVoiceTransmissionHudControlsEnabled_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Enables or disables the registered retail voice-transmission HUD controls for the current panel mode.",
+		"notes": [
+			"Walks the frame control table and toggles the hotkeys/buttons bound to the voice panel. The helper treats the history scroll controls specially and only enables the roster-specific controls when the roster mode bit is active in `DAT_0047fecc`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeVoiceAndEffectPresentationResources_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Frees the retail voice HUD surface and active-effect presentation pools during combat/result teardown.",
+		"notes": [
+			"Calls Combat_FreeVoiceTransmissionHudControls_v129 and Combat_FreeActiveEffectRenderPools_v129 back-to-back, then marks the shared presentation resource state as unloaded. Combat_Cmd63_ResultSceneInit_v129 uses this helper while tearing down the live combat presentation before the result scene comes up.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RedrawVoiceTransmissionHudTransitionFrame_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Redraws one staged transition frame for the retail voice-transmission HUD open/close animation.",
+		"notes": [
+			"Builds the intermediate panel height for stages `0..3`, blits the shared frame chrome, redraws the active voice HUD contents, and presents only the rectangle affected by that animation stage. The fully collapsed stage delegates to a tiny present-only helper instead of redrawing the voice contents.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RedrawVoiceTransmissionCmpStatusIcon_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Redraws the small CMP-status icon embedded in the retail voice-transmission HUD.",
+		"notes": [
+			"Blits one of the two CMP status bitmaps into the voice panel surface and presents just that icon rectangle when the HUD is already stable. Combat_UpdateCmpHudToggle_v129 uses it to keep the voice panel's CMP indicator in sync with the main CMP toggle.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
 		],
 	},
 	"Combat_SelectVoiceTransmissionTune_v129": {
@@ -2857,6 +4015,18 @@ const OVERRIDES := {
 		"summary": "Toggles one actor's combat voice-transmission enabled state from the roster-style voice panel.",
 		"notes": [
 			"Maps the selected visible roster row back to the underlying actor id, flips that actor's local enabled state, and forwards the change through Combat_SendVoiceTransmissionActorState_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_TickVoiceTransmissionSpeechInState_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Ticks the retail combat speech-in capture state, talkback meter, and outbound voice packet path.",
+		"notes": [
+			"Called from Combat_MainLoop_v129. Applies the signed talkback delta to the compact voice meter, starts or stops the KSND speech-in stream according to the selected tune/state flags, forwards captured packets through SendTCPSound, and raises the retail warning cue when the speech-in path stops or cannot continue.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4121,11 +5291,63 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_InitializeBitmapLookupTableCache_v129": {
+		"family": "FrameBlit",
+		"summary": "Initializes the shared retail bitmap lookup-table cache used by buffered bitmap loads.",
+		"notes": [
+			"Allocates the small eight-record cache backing the x-axis and y-axis bitmap lookup tables, splits it into two four-entry banks, and seeds the default table pairs needed by the combat presentation reset path. Combat_ResetPresentationStateAndLoadVisualOptions_v129 calls it before bitmap-backed presentation assets are loaded.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_GetBitmapLookupTablePair_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the cached retail x-axis and y-axis lookup tables for a bitmap buffer descriptor, allocating them on demand.",
+		"notes": [
+			"Maintains two four-entry lookup-table banks keyed by bitmap width and height/stride parameters. It resolves each axis through Frame_GetOrCreateBitmapLookupTable_v129, and Frame_LoadBitmapBufferFromArchive_v129 uses the resulting pair to attach reusable lookup tables to each loaded bitmap buffer descriptor instead of rebuilding the wrapped row/column offsets every time.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_GetOrCreateBitmapLookupTable_v129": {
+		"family": "FrameBlit",
+		"summary": "Looks up or allocates one bitmap lookup table inside the shared retail lookup-table cache.",
+		"notes": [
+			"Searches the selected four-entry lookup-table bank for a record matching the requested dimensions, allocates a new lookup buffer if no match exists, and fills the table with the wrapped row or column offsets used by retail bitmap blitters. Frame_GetBitmapLookupTablePair_v129 calls it twice to obtain the x-axis and y-axis tables for a bitmap buffer descriptor.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_FreeBitmapLookupTableCache_v129": {
+		"family": "FrameBlit",
+		"summary": "Frees the shared retail bitmap lookup-table cache and clears both lookup-table banks.",
+		"notes": [
+			"Releases every allocated lookup-table payload hanging off the eight cache records, then frees the cache header itself and clears the global bank pointers. Combat_Cmd63_ResultSceneInit_v129 uses it during combat presentation teardown, and Frame_InitializeBitmapLookupTableCache_v129 also falls back to it if seeding the default tables fails.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"Frame_LoadBitmapBufferFromArchive_v129": {
 		"family": "FrameBlit",
 		"summary": "Loads a bitmap resource from an opened retail archive into a heap buffer descriptor.",
 		"notes": [
-			"Opens the named bitmap entry, decodes the retail bitmap payload, allocates a destination buffer plus descriptor, computes the scaled dimensions, and copies the full pixel payload through Frame_CopyBitmapPixelsToBuffer_v129.",
+			"Opens the named bitmap entry, decodes the retail bitmap payload, allocates a destination buffer plus descriptor, requests the matching lookup tables through Frame_GetBitmapLookupTablePair_v129, and copies the full pixel payload through Frame_CopyBitmapPixelsToBuffer_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4424,6 +5646,45 @@ const OVERRIDES := {
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_TranslateKeyMessageToNormalizedKey_v129": {
+		"family": "FrameControl",
+		"summary": "Translates a packed retail key message into the normalized key code used by frame callbacks and text-entry handling.",
+		"notes": [
+			"Consumes the retail key-message scancode/flag packing, updates the cached modifier state through Frame_UpdateModifierKeyState_v129, maps Shift/Ctrl/Alt variants through the retail translation tables, and suppresses disallowed repeats before returning the normalized key id. The helper is the keyboard-side counterpart to Frame_DispatchMouseEventToWindowStack_v129 for shared shell/combat input dispatch.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_UpdateModifierKeyState_v129": {
+		"family": "FrameControl",
+		"summary": "Updates the cached retail modifier-key state from Shift/Ctrl/Alt make-break scan codes.",
+		"notes": [
+			"Recognizes the left/right Shift, Ctrl, and Alt scan codes in the incoming retail key message stream, updates their bitfields in `DAT_004e4f64`, and returns zero for those pure modifier events so higher-level key translation can stop early.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_HandleCtrlShiftDebugToggleChord_v129": {
+		"family": "FrameControl",
+		"summary": "Handles the retail Ctrl+Shift debug chords that arm the FPS overlay and capture-log toggles.",
+		"notes": [
+			"Only acts while both Ctrl and Shift are held. Maps `X` to the framerate-overlay bit and `.` to the capture-log toggle bit inside `DAT_004e4f68`, returning nonzero when one of those debug chords was consumed so Frame_TranslateKeyMessageToNormalizedKey_v129 can suppress normal key dispatch.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
 		],
 	},
 	"Frame_DispatchMouseEventToWindowStack_v129": {
@@ -5557,6 +6818,18 @@ const OVERRIDES := {
 		"summary": "Advances the shared retail LCG seed and returns a modulo-bounded pseudo-random value.",
 		"notes": [
 			"Updates the global seed with the retail `seed * 0x41C64E6D + 0xBDF` linear-congruential step modulo `0x7FFFFFFF`, returns zero for a zero bound, and otherwise returns `seed % bound`. Used by both combat-side random placement/noise helpers and world-side signed jitter builders.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_ToggleCaptureLog_v129": {
+		"family": "SystemRuntime",
+		"summary": "Toggles the shared retail capture log file and posts the corresponding begin/end status lines.",
+		"notes": [
+			"Opens or closes `btcap_log`, flips the active capture bit in `DAT_0047a040`, posts the localized success/error status message through the shared shell/combat text path, and writes the timestamped `BEGIN/END capture` banner lines. Combat_MainLoop_v129 uses it when the Ctrl+Shift+`.` debug chord arms the capture bit, while Shell_HandlePostVersionBannerLine_v129 uses the same helper to close an active capture during the post-version/drop transition.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
