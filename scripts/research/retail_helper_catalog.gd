@@ -31,6 +31,80 @@ const OVERRIDES := {
 		],
 		"research_refs": ["RESEARCH.md:3588-3595"],
 	},
+	"Combat_SetJumpJetAnimationState_v129": {
+		"family": "Animation",
+		"summary": "Switches an actor animation controller into the jump-jet / airborne start state.",
+		"notes": [
+			"Thin wrapper over Combat_SetActorAnimationState_v129 with retail state id `4`.",
+			"Combat_JumpJetInputTick_v129 uses it for the local actor, and Combat_Cmd70_ActorAnimState_v129 reuses the same wrapper for remote actor state updates.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClearAirborneFlagsAndSetIdleAnimation_v129": {
+		"family": "Animation",
+		"summary": "Clears the retail airborne state bits on an actor record and returns its animation controller to idle.",
+		"notes": [
+			"Clears the actor runtime flags at bit `0x80` and bit `0x01` on the owning mech record before delegating to Combat_SetActorAnimationState_v129 with state id `0`.",
+			"Used when landing / ground-contact handling or the remote cmd70 state machine needs to exit the airborne path without starting the collapse animation branch.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetGroundedIdleAnimation_v129": {
+		"family": "Animation",
+		"summary": "Marks the actor grounded in the runtime record and switches the animation controller to idle.",
+		"notes": [
+			"Refreshes the keyed ground-contact field at actor offset `0x35e`, then delegates to Combat_SetActorAnimationState_v129 with retail state id `0`.",
+			"Retail uses it as the callback target after several remote cmd70 stop-transition wrappers complete their intermediate settle animations.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetGroundedMovementAnimation_v129": {
+		"family": "Animation",
+		"summary": "Marks the actor grounded in the runtime record and switches the animation controller into the ordinary movement loop.",
+		"notes": [
+			"Refreshes the keyed ground-contact field at actor offset `0x35e`, then delegates to Combat_SetActorAnimationState_v129 with retail state id `1`.",
+			"Combat_Cmd70_ActorAnimState_v129 uses it for remote state updates, while Combat_UpdateLocalMovementHudAndAnimation_v129 drives the same state id directly for the local actor when forward speed is non-zero.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetAnimationNodeStatePoseDisabledByTag_v129": {
+		"family": "Animation",
+		"summary": "Sets or clears the per-node flag that suppresses state-pose interpolation for the tagged animation node.",
+		"notes": [
+			"Looks up the node index from the controller's tag table and toggles the bit in controller mask `+0x58` for that node.",
+			"Combat_BuildAnimationNodePoseRecursive_v129 checks that mask before calling Combat_FindAnimationStateDefinitionById_v129; when the bit is set, the node skips the state's interpolated Euler/translation triplets and uses only its baked local transform plus any enabled runtime rotation offset.",
+			"Combat_UpdateLocalMovementHudAndAnimation_v129 and Combat_CollectVisibleActorRenderEntries_v129 use it to suppress selected node-state poses while live movement / presentation overrides are active.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129": {
+		"family": "Animation",
+		"summary": "Sets or clears the per-node flag that applies the controller's additive rotation-offset triplet to the tagged animation node.",
+		"notes": [
+			"Looks up the node index from the controller's tag table and toggles the bit in controller mask `+0x5c` for that node.",
+			"Combat_BuildAnimationNodePoseRecursive_v129 checks that mask before applying the node matrix; when enabled, it adds the node's runtime Euler offset from the controller table at `+0x30` onto the interpolated state-pose angles.",
+			"Combat_AccumulateTorsoYawOffset_v129, Combat_AccumulateUpperBodyPitchOffset_v129, Combat_RecenterUpperBodyAimOffsets_v129, Combat_ProcessWeaponBankFilterInput_v129, and Combat_CollectVisibleActorRenderEntries_v129 use it to gate live torso / upper-body orientation overrides per node tag.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_StartFallDownAnim_SetRecoveryBlock_v129": {
 		"family": "Animation",
 		"summary": "Starts the fall-down animation path and sets the recovery block.",
@@ -79,6 +153,20 @@ const OVERRIDES := {
 			"res://scripts/net/arena_client.gd",
 		],
 	},
+	"Combat_SendLocalMotionUpdate_v129": {
+		"family": "CombatWire",
+		"summary": "Packages the periodic retail local-motion update after the local actor pose has been integrated for the current combat tick.",
+		"notes": [
+			"Called from Combat_MainLoop_v129 immediately after Combat_IntegrateActorMotion_v129 finishes updating the local actor state for the tick.",
+			"Rate-limits outbound movement frames, computes the current forward-speed component, and then appends either opcode `0x08` or opcode `0x09` depending on whether the encoded pose needs the extra attitude fields.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+			"res://scripts/net/ws_client.gd",
+		],
+	},
 	"Combat_ComputeActorBearingToActor_v129": {
 		"family": "Movement",
 		"summary": "Computes the retail planar bearing from one actor to another in the engine's signed heading units.",
@@ -101,6 +189,18 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_ComputeArcTanDegreesFromScaledRatio_v129": {
+		"family": "CombatMath",
+		"summary": "Converts a signed slope ratio scaled by 1000 into a signed degree angle with the retail arctangent lookup table.",
+		"notes": [
+			"Uses the monotonic word table at `DAT_00480540` to approximate arctangent and returns a signed degree value in the `[-90, 90]` range, saturating when the absolute scaled ratio exceeds the table domain.",
+			"Combat_ComputeActorBearingToActor_v129 uses it for planar bearing recovery, and Combat_ComputeEffectAimAnglesToPoint_v129 uses it for both pitch and yaw before scaling the result into the engine's `0xb6` angle units.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_TickRemoteActorPresentationState_v129": {
 		"family": "CombatOverlay",
 		"summary": "Advances one remote actor's presentation state and rebuilds the render matrices used by the combat overlay passes.",
@@ -116,7 +216,7 @@ const OVERRIDES := {
 		"family": "UpperBodyControl",
 		"summary": "Reads mouse displacement and feeds the local torso-yaw and upper-body pitch accumulators.",
 		"notes": [
-			"Recent v1.29 decomp shows it recenters the cursor after applying deltas into the same +/-0x1ffe accumulators used for outbound upper-body motion fields.",
+			"Recent v1.29 decomp shows it hides the active cursor, reads the raw screen-space displacement, applies those deltas into the same +/-0x1ffe accumulators used for outbound upper-body motion fields, and then warps the pointer back to the fixed `(0x140, 0x0f0)` aim origin through Frame_SetCursorScreenPos_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -547,6 +647,162 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_WriteClampedSpriteScaleTableRow_v129": {
+		"family": "AnimationIO",
+		"summary": "Quantizes one generated sprite-scale table row to bytes, clamps it to the requested scale bound, and writes it to the open `.scl` file.",
+		"notes": [
+			"Converts each generated sample through `__ftol`, stores the byte in the caller-provided row buffer, clamps values above `scale_id - 1`, and writes the final byte stream one element at a time.",
+			"Combat_GenerateSpriteScaleTableFile_v129 uses it for every generated row before the sprite-scale cache is reused by the combat effect-animation loader.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_GenerateSpriteScaleTableFile_v129": {
+		"family": "AnimationIO",
+		"summary": "Builds one sprite-scale table in memory and serializes it as `spr_%d.scl` when the cache file is missing.",
+		"notes": [
+			"Opens the requested `.scl` file for write, chooses the generated row count from the scale id, writes the 6-byte table header, builds the in-memory triangular scale table, and streams each row through Combat_WriteClampedSpriteScaleTableRow_v129.",
+			"Combat_GetOrCreateSpriteScaleTable_v129 falls back to this helper when the cached scale file is absent or unreadable.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_AllocateSpriteScaleTableBuffers_v129": {
+		"family": "AnimationIO",
+		"summary": "Allocates the triangular byte buffer and per-row pointer table for one sprite-scale table.",
+		"notes": [
+			"Allocates `(rows + 1) * rows / 2` bytes for the triangular table payload, then allocates the row-pointer array and seeds each row pointer to the correct offset inside the packed payload buffer.",
+			"Both Combat_LoadSpriteScaleTableFile_v129 and Combat_GenerateSpriteScaleTableFile_v129 rely on it before they fill or persist the table contents.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_LoadSpriteScaleTableFile_v129": {
+		"family": "AnimationIO",
+		"summary": "Loads one cached sprite-scale table from an open `.scl` file into the packed runtime buffers.",
+		"notes": [
+			"Reads the 6-byte header, validates the version field, allocates the packed table buffers through Combat_AllocateSpriteScaleTableBuffers_v129, and then reads the triangular byte payload into the allocated row storage.",
+			"Combat_GetOrCreateSpriteScaleTable_v129 uses it on the hot path when a previously generated `spr_%d.scl` file is already present on disk.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_GetOrCreateSpriteScaleTable_v129": {
+		"family": "AnimationIO",
+		"summary": "Returns the cached sprite-scale table for one scale id, loading `spr_%d.scl` or generating it on first use.",
+		"notes": [
+			"Searches the small in-memory sprite-scale cache first, then opens the `spr_%d.scl` file for the requested scale id and loads it through Combat_LoadSpriteScaleTableFile_v129 when available.",
+			"If the file is missing or invalid it regenerates the table through Combat_GenerateSpriteScaleTableFile_v129, caches the finished table, and returns the new record to the combat effect-animation loader.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClearSpriteScaleTableCache_v129": {
+		"family": "AnimationIO",
+		"summary": "Frees every cached sprite-scale table and resets the small in-memory `.scl` cache.",
+		"notes": [
+			"Walks the compact sprite-scale cache rooted at `DAT_004e82d0`, frees both the triangular payload buffer and the row-pointer array for each populated entry, clears the entry fields, and then resets the active cache count.",
+			"Combat_FreeDefaultEffectAnimations_v129 calls it during result-scene teardown after the default combat effect animations are released.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_InitializeEffectAnimationCaches_v129": {
+		"family": "AnimationIO",
+		"summary": "Allocates and zeroes the retail combat effect-animation caches before default effect assets are loaded.",
+		"notes": [
+			"Allocates the global effect-frame, effect-slot, and active-instance tables, zeroes the newly allocated buffers, and reports the retail allocation failures through the shared BTERR path when any buffer cannot be created.",
+			"Combat_Cmd72_InitLocalActor_v129 calls it immediately before Combat_LoadDefaultEffectAnimations_v129 during local combat scene bootstrap.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeEffectAnimationCaches_v129": {
+		"family": "AnimationIO",
+		"summary": "Frees the three global combat effect-animation cache buffers and clears their pointers.",
+		"notes": [
+			"Releases the global effect-frame, effect-slot, and active-instance buffers allocated by Combat_InitializeEffectAnimationCaches_v129 when they are present, then nulls each shared pointer.",
+			"Combat_Cmd63_ResultSceneInit_v129 calls it during result-scene teardown after the default effect animations themselves have been released.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeDefaultEffectAnimations_v129": {
+		"family": "AnimationIO",
+		"summary": "Releases the cached default combat effect animations and clears the shared sprite-scale cache.",
+		"notes": [
+			"Frees effect-animation slots `0`, `1`, and `3`, which are the default explosion, smoke, and acknowledgement-burst animations loaded during combat init, then drops the cached sprite-scale tables through Combat_ClearSpriteScaleTableCache_v129.",
+			"Combat_Cmd63_ResultSceneInit_v129 uses it while tearing down the previous combat presentation state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_LoadDefaultEffectAnimations_v129": {
+		"family": "AnimationIO",
+		"summary": "Loads the default combat explosion, smoke, and acknowledgement-burst effect animations into the retail effect-animation slots.",
+		"notes": [
+			"Builds the three fixed animation paths for `boom64.anm`, `smoke64.anm`, and `ack64.anm`, loads them into slots `0`, `1`, and `3` through Combat_LoadEffectAnimationSlot_v129, and clears their optional slot-link pointers afterward.",
+			"Combat_Cmd72_InitLocalActor_v129 calls it after Combat_InitializeEffectAnimationCaches_v129 so the baseline combat effect assets are ready before the battle scene starts.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_LoadEffectAnimationSlot_v129": {
+		"family": "AnimationIO",
+		"summary": "Loads one `.anm` effect animation file into the requested retail effect-animation slot.",
+		"notes": [
+			"Reads the fixed-size animation header into the chosen slot record, allocates the palette/pixel payload buffers sized by the file header, reads both payload blocks from disk, and resolves the referenced sprite-scale table through Combat_GetOrCreateSpriteScaleTable_v129.",
+			"Combat_LoadDefaultEffectAnimations_v129 uses it for the three baseline combat effect animations seeded during local-actor initialization.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FreeEffectAnimationSlot_v129": {
+		"family": "AnimationIO",
+		"summary": "Frees the palette and pixel payload buffers owned by one retail effect-animation slot.",
+		"notes": [
+			"Checks the slot index against the ten-entry effect-animation cache, frees the slot's two owned payload buffers when present, and clears the stored pointers afterward.",
+			"Combat_FreeDefaultEffectAnimations_v129 uses it on slots `0`, `1`, and `3` during result-scene teardown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetEffectAnimationSlotScaleLinks_v129": {
+		"family": "AnimationIO",
+		"summary": "Sets the smaller/larger scale-neighbor links used when an effect animation slot needs to swap to a better size variant.",
+		"notes": [
+			"Stores optional neighbor pointers on one effect-animation slot record so the renderer can walk toward a smaller-scale variant when the projected size is tiny or toward a larger-scale variant when the projected size outgrows the current frames.",
+			"Combat_LoadDefaultEffectAnimations_v129 currently clears both links for the default explosion, smoke, and acknowledgement-burst slots.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_InitializeTerrainSceneryField_v129": {
 		"family": "TerrainScenery",
 		"summary": "Builds the retail terrain-scenery field for the current combat map and clears the shared indexed-directory cache afterward.",
@@ -717,6 +973,18 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_FreeTerrainSceneryPlacementBlockerTable_v129": {
+		"family": "TerrainScenery",
+		"summary": "Frees the decoded terrain-scenery placement blocker table and clears its shared pointer.",
+		"notes": [
+			"Releases the heap buffer rooted at `DAT_0047f764`, which Combat_DecodeTerrainSceneryConfig_v129 allocates as the decoded `(x, y, radius)` blocker-circle table used by Combat_PlaceTerrainSceneryInstanceWithoutOverlap_v129.",
+			"Combat_Cmd63_ResultSceneInit_v129 calls it during combat/result teardown before the next terrain-scenery config is decoded.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_DecodeTerrainProjectionOutlinePoints_v129": {
 		"family": "TerrainScenery",
 		"summary": "Decodes the capped local-actor terrain projection outline point list used by the retail tactical projection overlay.",
@@ -846,12 +1114,51 @@ const OVERRIDES := {
 		"family": "CombatOverlay",
 		"summary": "Projects and draws the active terrain-scenery field into either the main combat camera or the tactical radar view.",
 		"notes": [
-			"The second parameter selects between the world camera surface (`DAT_004e6f20`) and the player-centered radar surface (`DAT_004e5fc0`). In both modes the helper rotates a shared basis, fills the destination panel, rasterizes the projected terrain outline list, and then renders each active scenery instance through the cached 3d object record path.",
+			"The second parameter selects between the world camera surface (`DAT_004e6f20`) and the player-centered radar surface (`DAT_004e5fc0`). In both modes the helper rotates a shared basis, fills the destination panel, rasterizes the projected terrain outline list, and then renders each active scenery instance through Combat_RenderTerrainSceneryObjectRecord_v129.",
+			"Combat_InitializeSharedRenderProjectionContexts_v129 seeds both projection-surface descriptors during combat presentation reset so the world-marker and tactical-radar paths can share the same fixed retail panel bounds and projection constants.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawTerrainProjectionOutline_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the closed outline for the already-projected terrain projection polygon on the target overlay surface.",
+		"notes": [
+			"Consumes the projected `(x, y)` point list built by Combat_RenderTerrainSceneryProjection_v129, wraps the last point back to the first, and emits one edge segment per pair by building a thin screen-space quad and submitting it to Combat_RasterizeFlatPolygon_v129.",
+			"Combat_RenderTerrainSceneryProjection_v129 calls it with palette index `0x26` after projecting the stored terrain outline points so both the radar view and main combat overlay share the same closed boundary rendering.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_RasterizeFlatPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Fills one screen-space polygon with a uniform palette index through the retail flat-polygon rasterizer.",
+		"notes": [
+			"Consumes the six-word-per-vertex screen-space polygon payload, clips the polygon bounds to the destination surface, walks the upper and lower scanline edges, and writes the constant palette byte stored in vertex field `2` across each covered span.",
+			"Combat_DrawTerrainProjectionOutline_v129 uses it directly for the thin projected outline quads, and the same primitive matches the retail uniform-color polygon fill path referenced by the higher-level flat-shaded combat render helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_RasterizeGouraudPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Fills one screen-space polygon while linearly interpolating an 8-bit shade value across each span.",
+		"notes": [
+			"Consumes the same six-word-per-vertex screen-space polygon payload as Combat_RasterizeFlatPolygon_v129, but treats vertex field `2` as the per-vertex shade term and linearly interpolates that byte across both polygon edges and horizontal spans before writing to the destination surface.",
+			"No direct callers remain in the current xref graph, but the routine forms the companion interpolated-shade raster path beside the uniform-color filler and matches the same clipped scanline setup structure.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
 		],
 	},
 	"Combat_RenderActorWorldMarkers_v129": {
@@ -945,6 +1252,19 @@ const OVERRIDES := {
 		"notes": [
 			"Returns unless the panel-mode byte `DAT_0047d2c4` selects either the local actor (`1`) or the current tracked target (`2`); in target mode it also requires the selected contact to remain active and visible before any rows are emitted.",
 			"Builds the colored status rows for the torso, arm, leg, and detail sections, formats the header as either `MY %s` or `TARGET: %s`, appends the `Jets: %d Sinks: %d` summary plus the active weapon/detail rows, and forwards the resulting text layout through Combat_DrawOverlayTextLine_v129 on the fixed combat side-panel coordinates.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_GetActorPanelInterferenceLevel_v129": {
+		"family": "CombatPreview",
+		"summary": "Returns the current actor-panel interference level from the encoded local-actor combat state.",
+		"notes": [
+			"Called only by Combat_MainLoop_v129 immediately after Combat_DrawActorStatusPanel_v129. It XOR-decodes the local actor word at offset `0x1ae` using the current presentation-state seed `DAT_004f6c14`, then uses the resulting small integer as the interference level for the actor status and preview panels.",
+			"Combat_MainLoop_v129 treats value `0` as the clean path, value `1` as the rolling partial-static path driven by Combat_FillRectWithRandomInterferenceRuns_v129, and values `>= 2` as the full static replacement path for the status / preview surfaces.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1048,6 +1368,86 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scripts/net/arena_client.gd",
 			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_InitializeExecutableChecksumTable_v129": {
+		"family": "SystemRuntime",
+		"summary": "Builds the 256-entry reflected checksum table used by the retail executable self-check.",
+		"notes": [
+			"Generates the lookup table at `DAT_00498e00` one byte value at a time using the reflected CRC32 polynomial step that the nearby executable verifier reuses for each file chunk.",
+			"System_VerifyExecutableChecksum_v129 calls it once before scanning the live `mpbtwin.exe` image on disk.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_VerifyExecutableChecksum_v129": {
+		"family": "SystemRuntime",
+		"summary": "Verifies the retail executable checksum before the frontend continues through startup.",
+		"notes": [
+			"Initializes the dedicated executable-checksum table and then delegates the actual on-disk scan to System_VerifyExecutableChecksumFromDisk_v129 while keeping the startup callsite narrow.",
+			"It compares the computed value against the stored checksum dword at `DAT_0047febc`; Shell_RunFrontendMain_v129 aborts startup and reports the localized frontend error when this verifier returns false.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_VerifyExecutableChecksumFromDisk_v129": {
+		"family": "SystemRuntime",
+		"summary": "Opens the running retail executable from disk, skips the embedded checksum block, and verifies the remaining bytes against the stored checksum word.",
+		"notes": [
+			"Loads the current module path, opens that file through System_OpenFileDescriptor_v129, and rejects obviously short images before allocating the 16KB scratch buffer used for chunked reads.",
+			"It hashes the protected prefix `[0, DAT_0047feb8)`, seeks past the embedded 16-byte checksum block at `DAT_0047feb8 + 0x10` through System_SeekFileDescriptor_v129, continues hashing the remainder of the file through System_UpdateExecutableChecksumSegment_v129, and finally compares the accumulator against `DAT_0047febc`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_UpdateExecutableChecksumSegment_v129": {
+		"family": "SystemRuntime",
+		"summary": "Updates the executable self-check accumulator over one caller-selected byte segment.",
+		"notes": [
+			"Starts from the caller-supplied accumulator, advances into `buffer + offset`, and folds the requested byte count through the dedicated reflected checksum table at `DAT_00498e00`.",
+			"System_VerifyExecutableChecksumFromDisk_v129 uses it repeatedly on the 16KB scratch buffer so the retail verifier can hash the prefix and post-checksum tail in chunks without loading the whole executable at once.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_GetFileLengthByPath_v129": {
+		"family": "SystemRuntime",
+		"summary": "Opens one file path in binary mode, returns its byte length, and closes it immediately.",
+		"notes": [
+			"Thin helper over System_OpenFileStream_v129, the retail file-length query, and System_CloseFileStream_v129. System_LoadFileIntoBuffer_v129 uses it first so callers can either allocate the exact file-sized buffer or validate a caller-supplied one.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_LoadFileIntoBuffer_v129": {
+		"family": "SystemRuntime",
+		"summary": "Loads an entire file into a caller-supplied buffer or allocates a new one sized to the file.",
+		"notes": [
+			"Queries the file length through System_GetFileLengthByPath_v129, optionally allocates an exact-fit heap buffer through System_AllocateHeapBlock_v129 when the caller passes `NULL`, then reopens the file through System_OpenFileStream_v129, reads the full payload in one pass, and closes the stream through System_CloseFileStream_v129.",
+			"Combat_LoadLasrSequenceData_v129 uses it for raw LASR sequence bytes, while Frame_LoadBitmapFontDescriptor_v129 uses it to pull TFONT descriptor blobs from disk before caching glyph advances.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
 		],
 	},
 	"Combat_DrawWeaponAimCursor_v129": {
@@ -1167,7 +1567,8 @@ const OVERRIDES := {
 		"family": "CombatBackdrop",
 		"summary": "Renders the retail ambient ground-detail sprites at their randomized world anchors using the cached `GRD0` / `GRD1` bitmaps.",
 		"notes": [
-			"Uses the detail level selected through `DAT_0047a048` to choose how many anchors to sample, expands the indexed support mesh through Combat_ExpandIndexedPolygonVertexList_v129, clips it with Combat_ClipPolygonToViewVolume_v129, and draws the selected GRD bitmap only for anchors that remain near enough to the active view.",
+			"Uses the detail level selected through `DAT_0047a048` to choose how many anchors to sample, expands the indexed support mesh through Combat_ExpandIndexedPolygonVertexList_v129, clips it with Combat_ClipPolygonToViewVolume_v129, projects the surviving textured vertices through Combat_ProjectClippedPolygonToTexturedRenderVertices_v129, and draws the selected GRD bitmap only for anchors that remain near enough to the active view.",
+			"The surviving linked render vertices are handed directly to Combat_RasterizeTexturedPolygon_v129 together with the caller-specific textured-span state block for the chosen ground-detail bitmap.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1178,7 +1579,7 @@ const OVERRIDES := {
 		"family": "CombatBackdrop",
 		"summary": "Draws the retail `SKY0` backdrop, the main ground plane quads, and any enabled ambient ground-detail sprites behind the active combat effects.",
 		"notes": [
-			"Called from Combat_RenderActiveEffectsPass_v129 when the main 3d scene is being drawn. The pass conditionally renders the `SKY0` backdrop when the matching visual toggle is enabled, clips and projects the transformed ground quads through Combat_ClipPolygonToViewVolume_v129 and Combat_ProjectClippedPolygonToScreen_v129, and then delegates the optional GRD sprite layer to Combat_RenderAmbientGroundDetail_v129.",
+			"Called from Combat_RenderActiveEffectsPass_v129 when the main 3d scene is being drawn. The pass conditionally renders the `SKY0` backdrop when the matching visual toggle is enabled, clips the transformed ground quads through Combat_ClipPolygonToViewVolume_v129, projects their textured vertices through Combat_ProjectClippedPolygonToTexturedRenderVertices_v129, and then dispatches those linked render vertices through Combat_RasterizeTexturedPolygon_v129 before delegating the optional GRD sprite layer to Combat_RenderAmbientGroundDetail_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1256,6 +1657,117 @@ const OVERRIDES := {
 		"summary": "Clips a two-point line segment against the retail combat view volume and writes the surviving endpoints back in place.",
 		"notes": [
 			"Thin wrapper over Combat_ClipPolygonToViewVolume_v129 that seeds a two-vertex scratch polygon, runs the shared clipper, and rewrites the caller's endpoints from the surviving segment. Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129 uses it for the beam-style fallback branch before projecting the clipped muzzle-to-impact line.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ProjectClippedPolygonToTexturedRenderVertices_v129": {
+		"family": "CombatRender3d",
+		"summary": "Projects a clipped polygon into the linked textured-render vertex buffer used by the retail textured polygon rasterizer.",
+		"notes": [
+			"Used directly by Combat_RenderSkyAndGroundBackdrop_v129 and Combat_RenderAmbientGroundDetail_v129, and by Combat_RenderTexturedPolygonGroup_v129 after the source polygon group is clipped. The helper emits the doubly linked render-vertex records expected by Combat_RasterizeTexturedPolygon_v129 while scaling the stored UV payload by the source bitmap dimensions and reciprocal depth.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeVisibleAttachmentViewVariantIndex_v129": {
+		"family": "CombatRender3d",
+		"summary": "Computes the visible attachment view-variant index from the current transformed attachment basis.",
+		"notes": [
+			"Used only by Combat_RenderAttachmentMeshListAndTrackCursorHit_v129. It evaluates three sign tests from the current transformed attachment basis and packs them into the 0..7 index used to select one pre-sorted attachment polygon-group variant.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RenderLitClippedPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Clips, lights, projects, and rasterizes one uniformly shaded polygon through the retail flat-polygon path.",
+		"notes": [
+			"Called by Combat_RenderEffectTrailStrip_v129 after the trail strip chooses its active normal basis. The helper clips the polygon, applies Combat_ComputeClampedLightDotShadeOffset_v129 to the supplied base shade, projects the result through Combat_ProjectClippedPolygonToScreen_v129, and submits the screen-space polygon to the retail flat rasterizer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RenderTexturedPolygonGroup_v129": {
+		"family": "CombatRender3d",
+		"summary": "Expands, clips, projects, and rasterizes one textured polygon group from a retail mesh record.",
+		"notes": [
+			"Used by Combat_RenderAttachmentMeshListAndTrackCursorHit_v129 and the terrain-scenery projection wrapper. It expands the indexed polygon group through Combat_ExpandIndexedPolygonVertexList_v129, clips it, projects the surviving textured vertices through Combat_ProjectClippedPolygonToTexturedRenderVertices_v129, and then hands the linked render vertices to Combat_RasterizeTexturedPolygon_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RasterizeTexturedPolygonToSurface_v129": {
+		"family": "CombatRender3d",
+		"summary": "Thin wrapper that extracts a destination surface's pitch and pixel pointer before invoking the retail textured polygon rasterizer.",
+		"notes": [
+			"Reads the destination surface descriptor fields from the caller-supplied frame/surface record and forwards them to Combat_RasterizeTexturedPolygon_v129 together with the linked textured-render vertex list, raster state block, callback count, and raster flags.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RasterizeTexturedPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Rasterizes one linked textured polygon into the destination surface using the retail software span-walker path.",
+		"notes": [
+			"Consumes the linked render-vertex list emitted by Combat_ProjectClippedPolygonToTexturedRenderVertices_v129, walks the polygon from top to bottom, computes the left/right edge slopes plus reciprocal-depth-adjusted UV increments, and dispatches the caller-supplied raster state block across each scanline span.",
+			"Combat_RenderTexturedPolygonGroup_v129, Combat_RenderSkyAndGroundBackdrop_v129, and Combat_RenderAmbientGroundDetail_v129 all call it directly with state blocks that point at the active texture bitmap and the self-patching span routine rooted at `FUN_0046a764`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RenderFlatShadedPolygonGroup_v129": {
+		"family": "CombatRender3d",
+		"summary": "Expands, clips, projects, and rasterizes one flat-shaded polygon group from a retail mesh record.",
+		"notes": [
+			"Used by Combat_RenderAttachmentMeshListAndTrackCursorHit_v129 and the terrain-scenery projection wrapper for polygon groups without a textured-face payload. When the face flag requests lighting, it applies Combat_ComputeClampedLightDotShadeOffset_v129 to the polygon normal before projecting the group through Combat_ProjectClippedPolygonToScreen_v129 and submitting it to the flat rasterizer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeClampedLightDotShadeOffset_v129": {
+		"family": "CombatRender3d",
+		"summary": "Computes a clamped lighting shade offset from the dot product of two fixed-point render vectors.",
+		"notes": [
+			"Used by Combat_RenderLitClippedPolygon_v129 and Combat_RenderFlatShadedPolygonGroup_v129. It scales the fixed-point dot product into the retail shade domain and clamps the result to the signed `+/-0x60000` range before the caller adds it to the polygon's base shade.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RenderTerrainSceneryObjectRecord_v129": {
+		"family": "CombatRender3d",
+		"summary": "Transforms and renders one cached terrain-scenery object record through the retail polygon-group render path.",
+		"notes": [
+			"Called only by Combat_RenderTerrainSceneryProjection_v129 after each active scenery instance's transform is rebuilt into camera space. It transforms the record's cached vertex list into the shared scratch buffer and then dispatches each polygon group through Combat_RenderTexturedPolygonGroup_v129 or Combat_RenderFlatShadedPolygonGroup_v129 based on the group's face flags.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetEnvironmentLightDirectionAngles_v129": {
+		"family": "CombatRender3d",
+		"summary": "Stores the shared combat light-direction angles and rebuilds the derived lighting vector used by the retail shading helpers.",
+		"notes": [
+			"Called by Combat_InitializeBattlefieldVisualState_v129 with the default battlefield light angles. It caches the supplied heading/elevation pair and recomputes the fixed-point direction vector later consumed by Combat_ComputeClampedLightDotShadeOffset_v129 and the terrain/effect shading paths.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1959,6 +2471,7 @@ const OVERRIDES := {
 		"summary": "Computes the retail pitch/yaw effect angles that face from one world point toward another.",
 		"notes": [
 			"Zeros the roll component, derives pitch from the vertical delta over the horizontal range, and derives yaw from the XY deltas with the same quadrant correction the retail actor/effect code uses before scaling into the `0xb6` angle units stored on active effect slots.",
+			"Both the pitch and yaw paths route through Combat_ComputeArcTanDegreesFromScaledRatio_v129 before the final fixed-angle conversion.",
 			"Combat_BuildWeaponEffectSpawnGeometry_v129 uses it when seeding newly spawned weapon effects, and Combat_UpdateProjectileEffectState_v129 reruns it whenever an effect is still tracking a live attachment target.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -1972,6 +2485,18 @@ const OVERRIDES := {
 		"notes": [
 			"Shifts the XYZ deltas down by five bits before squaring, runs the shared integer square-root helper, and then shifts the result back up so the caller gets a world-space distance without risking overflow on large coordinate deltas.",
 			"Used by the local fire path, replicated cmd68 effect spawns, and Combat_UpdateProjectileEffectState_v129 when converting origin/impact coordinates into projectile travel lengths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeVectorMagnitude3_v129": {
+		"family": "CombatEffects",
+		"summary": "Returns the Euclidean magnitude of a supplied 3-axis combat-space delta vector.",
+		"notes": [
+			"Computes `sqrt(x*x + y*y + z*z)` through System_IntegerSquareRoot_v129 without applying the overflow-safe pre-scaling used by Combat_ComputePointDistance_v129.",
+			"Combat_RenderActiveEffectsPass_v129 and Combat_RenderModelAttachments_v129 use it after building camera-relative XYZ deltas to rank nearby effect entries and attachment meshes by distance.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -2226,6 +2751,34 @@ const OVERRIDES := {
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scripts/audio/audio_manager.gd",
+		],
+	},
+	"Combat_SetAudioCue0NameVolumeAndPriority_v129": {
+		"family": "CombatAudio",
+		"summary": "Primes audio cue slot 0 with a KSND sound name plus optional volume and priority overrides before playback.",
+		"notes": [
+			"Copies the supplied sound name into the cue-0 runtime block at `DAT_004810d4`, optionally writes parameter id `0` on that named sound through KSND_C_setParamName, and can also raise parameter id `2` toward `0x7f` when the caller requests a priority bump.",
+			"Shell_PlayUiRejectCue_v129 uses it with the named sound `alm4` and the current frontend SFX slider value before calling Combat_PlayAudioCue_v129(0).",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClearAudioCue0RuntimeHandle_v129": {
+		"family": "CombatAudio",
+		"summary": "Clears the stored runtime handle for audio cue slot 0.",
+		"notes": [
+			"Writes zero to `DAT_004810f5`, the handle field for cue slot `0` inside the shared retail audio-cue runtime block.",
+			"Shell_PlayUiRejectCue_v129 calls it immediately after Combat_PlayAudioCue_v129(0) so the shared UI reject sound leaves no live cue-0 handle behind in the combat audio wrapper state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
 		],
 	},
 	"Combat_ResetLasrSoundState_v129": {
@@ -2692,12 +3245,51 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_SelectActorAnimationStateRecord_v129": {
+		"family": "CombatPreview",
+		"summary": "Selects one raw actor animation-state record by id and resets the preview controller counters without running the full transition path.",
+		"notes": [
+			"Clears the transition-in-progress bit on the animation controller, searches the controller's state-record table for the requested id, swaps the active record pointer, marks the controller dirty, and zeroes the two progress counters used by Combat_BuildActorAnimationPose_v129.",
+			"Combat_RenderActorPreviewPanel_v129 uses it to snap the preview controller to state `0` before building the neutral preview pose.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_FillRectWithRandomInterferenceRuns_v129": {
+		"family": "CombatPreview",
+		"summary": "Paints randomized opaque span runs into a combat panel rect to create the retail interference/static effect.",
+		"notes": [
+			"Called only by Combat_MainLoop_v129 after the caller clears the destination rect with palette value `0x0c`. The helper walks the rect a row at a time, seeds random 4-pixel span runs with `0xffffffff`, and can either cover every row or just a moving striped band depending on the stride arguments.",
+			"Combat_MainLoop_v129 uses the full-rect mode when the actor-panel interference level is severe and the striped mode when Combat_GetActorPanelInterferenceLevel_v129 returns the lighter rolling-static state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_UpdateActorPreviewSectionStatusColors_v129": {
 		"family": "CombatPreview",
 		"summary": "Updates the combat actor preview model's per-section status colors from the current armor and internal structure values.",
 		"notes": [
 			"Walks the eleven mech detail rows, compares the live armor/internal values in the actor block against the decoded mech record and the internal-structure maxima, chooses one of four hard-coded status colors, and writes that color onto the matching preview-model section entry through the private mesh-color setter at `FUN_00436420`.",
 			"Called from Combat_MainLoop_v129 immediately before both self and target Combat_RenderActorPreviewPanel_v129 draws so the preview mesh reflects current section damage without rebuilding the panel layout.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SetActorPreviewSectionStatusColor_v129": {
+		"family": "CombatPreview",
+		"summary": "Writes one color override into the tagged preview-model section entry used by the actor preview panel.",
+		"notes": [
+			"Searches the preview model's section-tag table for the requested row tag and stores the supplied color value into the per-section record at offset `+6`.",
+			"Combat_UpdateActorPreviewSectionStatusColors_v129 calls it once per active preview section after choosing the red/orange/green/destroyed color for that mech detail row.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3331,6 +3923,42 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_BuildActiveEffectsCameraTransform_v129": {
+		"family": "CombatEffects",
+		"summary": "Builds the local active-effects camera transform, applying screen shake and the current local actor pose before the render pass runs.",
+		"notes": [
+			"Seeds the render-context timestamp, copies the local actor camera-angle fields into the temporary view basis, applies any active screen-shake offsets, rebuilds the local actor pose, and pulls the camera node transform for state tag `1`.",
+			"It then rotates and translates that camera basis into world space, builds the inverse affine matrix stored in the active render context, and mirrors the resulting transform back into the local actor block at `+0xe0`. Combat_RenderActiveEffectsPass_v129 calls it before terrain, actor, and effect collection begins.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CollectVisibleEffectModels_v129": {
+		"family": "CombatEffects",
+		"summary": "Queues the active type-8 model-effect entries that are still alive for the retail effect/render pass.",
+		"notes": [
+			"Walks the fixed 60-slot `DAT_0047f0bc` pool, retires expired entries, advances moving entries through Combat_UpdateEffectModelEntryMotion_v129, refreshes their camera-relative transform, and appends still-live records into the shared visible-object list at `DAT_004f5130`.",
+			"Combat_RenderActiveEffectsPass_v129 dispatches those queued records through Combat_RenderEffectModelAndCheckCursorHit_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_UpdateEffectModelEntryMotion_v129": {
+		"family": "CombatEffects",
+		"summary": "Advances one active transient effect-model entry's spin, velocity, and height with the retail damped-falloff rules.",
+		"notes": [
+			"Ticks the entry's local rotation matrix on a 5-centisecond cadence from the stored Euler rates, integrates its position from the fixed-point velocity triplet, and applies the vertical acceleration term stored on the entry.",
+			"When the entry drops below height `1`, retail damps the vertical speed, horizontal drift, and spin rates toward zero; once both vertical terms reach zero it clears the motion-duration field so Combat_CollectVisibleEffectModels_v129 stops updating that entry.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_CollectVisibleEffectSprites_v129": {
 		"family": "CombatEffects",
 		"summary": "Queues the active timed sprite effects that are still alive for the retail effect/render pass.",
@@ -3353,11 +3981,35 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_AllocateEffectSpriteAnimationInstance_v129": {
+		"family": "CombatEffects",
+		"summary": "Claims one live effect-sprite animation instance slot, seeds its timers, and returns the generation-tagged handle.",
+		"notes": [
+			"Scans the 100-entry live animation-instance pool for an expired record, binds it to the requested effect-animation slot, seeds the expiry and next-frame deadlines from the slot metadata, stores the caller-supplied initial frame index and restart flag, and returns the retail `(generation << 8) | slot_index` handle.",
+			"Combat_SpawnEffectSprite_v129 uses it for both the ordinary fixed-slot path and the special case that randomizes the initial smoke frame through MakeRandomModulo.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_CollectVisibleEffectTrailStrips_v129": {
 		"family": "CombatEffects",
 		"summary": "Advances the active trail-strip effects and queues the live ones for the retail effect/render pass.",
 		"notes": [
 			"Walks the 120-slot trail-strip pool rooted at `DAT_00481080`, updates each live entry through Combat_UpdateEffectTrailStripState_v129 while it remains unexpired, and appends the still-active strip records into the shared visible-object list at `DAT_004f5130`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CollectVisibleSpriteTrailAndHitProxyEffects_v129": {
+		"family": "CombatEffects",
+		"summary": "Queues the non-model transient effect pools that retail renders after the visible model-effect pass.",
+		"notes": [
+			"Bundles the three subordinate collectors for render types `2`, `4`, and `6` by calling Combat_CollectVisibleEffectSprites_v129, Combat_CollectVisibleEffectHitProxyModels_v129, and Combat_CollectVisibleEffectTrailStrips_v129 in sequence.",
+			"Combat_RenderActiveEffectsPass_v129 calls it immediately after Combat_CollectVisibleEffectModels_v129 so all transient sprite, trail-strip, and hit-proxy entries land in the shared visible-object list at `DAT_004f5130` before the distance-sorted render walk begins.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3412,7 +4064,8 @@ const OVERRIDES := {
 		"family": "CombatEffects",
 		"summary": "Runs the retail combat effect render pass: updates active effects, depth-sorts the visible ones, and dispatches type-specific draw helpers.",
 		"notes": [
-			"Called from Combat_MainLoop_v129 after the camera basis is prepared. The pass also resets the transient effect hit-test globals before drawing and feeds the visible-effect list through the per-type sprite, trail, and model renderers.",
+			"Called from Combat_MainLoop_v129 after the camera basis is prepared. It begins by rebuilding the active-effects camera transform through Combat_BuildActiveEffectsCameraTransform_v129, then resets the transient effect hit-test globals before drawing and feeds the visible-effect list through the per-type sprite, trail, and model renderers.",
+			"Combat_InitializeSharedRenderProjectionContexts_v129 preloads the fixed world, radar, and effect-panel projection descriptors consumed by the backdrop draw, terrain collection, and hit-proxy rendering paths inside this pass.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3435,7 +4088,7 @@ const OVERRIDES := {
 		"family": "CombatEffects",
 		"summary": "Renders one attachment's active mesh list and updates the retail cursor-hit globals when the attachment is selected.",
 		"notes": [
-			"Chooses the visible attachment view variant from the current transform, draws each polygon group through the low-level triangle/quad routines, and merges the resulting projected bounds back into the caller's screen-space extents.",
+			"Chooses the visible attachment view variant through Combat_ComputeVisibleAttachmentViewVariantIndex_v129, draws each polygon group through Combat_RenderTexturedPolygonGroup_v129 or Combat_RenderFlatShadedPolygonGroup_v129, and merges the resulting projected bounds back into the caller's screen-space extents.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3475,11 +4128,35 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_RenderEffectSpriteAnimationInstance_v129": {
+		"family": "CombatEffects",
+		"summary": "Validates, advances, scale-selects, and draws one live effect-sprite animation instance.",
+		"notes": [
+			"Validates the generation-tagged animation-instance handle, advances the active frame when its cadence timer elapses, retires non-restarting instances at the last frame, and walks the smaller/larger slot links when the projected sprite size no longer fits the current animation frames.",
+			"After clipping the projected quad to the active viewport it delegates the actual scaled blit to Combat_BlitScaledEffectSpriteFrame_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_BlitScaledEffectSpriteFrame_v129": {
+		"family": "CombatEffects",
+		"summary": "Blits one scaled effect-sprite frame into the combat backbuffer through the retail sprite-scale table.",
+		"notes": [
+			"Uses the selected sprite-scale table row to map destination pixels back into the source frame, skips transparent source bytes, and writes the scaled frame into the active combat backbuffer stride.",
+			"When the source rows repeat, it reuses the temporary row buffer at `DAT_0047efe4` so repeated scaled rows can be emitted more cheaply before Combat_RenderEffectSpriteAnimationInstance_v129 resumes normal clipping and timing.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_RenderEffectTrailStrip_v129": {
 		"family": "CombatEffects",
 		"summary": "Builds and renders the polygon strip used by retail trail-style combat effects.",
 		"notes": [
-			"Reconstructs the effect's sampled trail points relative to the current camera, chooses the forward or reverse basis from the stored trail normals, then submits the strip through the generic clipped polygon renderer.",
+			"Reconstructs the effect's sampled trail points relative to the current camera, chooses the forward or reverse basis from the stored trail normals, then submits the strip through Combat_RenderLitClippedPolygon_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3514,6 +4191,7 @@ const OVERRIDES := {
 		"summary": "Draws the retail fallback visual for weapon effects when no dedicated model resource is present.",
 		"notes": [
 			"Chooses between a short-lived projectile sprite and a muzzle-to-impact beam/quad based on the source weapon class recovered from the actor's mech record.",
+			"The beam branch clips the muzzle-to-impact segment through Combat_ClipLineSegmentToViewVolume_v129 before both endpoints are forwarded through Combat_ProjectWorldPointToScreenVertex_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3976,6 +4654,17 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_InitializeIdentityByteLookupTable_v129": {
+		"family": "CombatInit",
+		"summary": "Resets the shared combat byte lookup table to the identity mapping `0..255`.",
+		"notes": [
+			"Called by Combat_Cmd72_InitLocalActor_v129 near the end of the local-actor bootstrap path. It rewrites `DAT_004e9340` so each entry contains its own byte index, rebuilding a clean identity lookup table before steady-state local actor updates begin.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_FreeVisualResourcesAndLocationMap_v129": {
 		"family": "CombatInit",
 		"summary": "Releases the currently loaded combat visual resource tables and cached world location map before combat visuals are rebuilt.",
@@ -3993,7 +4682,7 @@ const OVERRIDES := {
 		"family": "CombatInit",
 		"summary": "Closes the active combat tagged archives and frees the cached retail combat bitmap tables.",
 		"notes": [
-			"Closes the pair of active tagged archives, frees the bitmap arrays rooted at `DAT_004e7cd0` and `DAT_004e7a90`, zeroes those slots, and then runs the final visual cleanup helper at `FUN_00439340`.",
+			"Closes the pair of active tagged archives, frees the bitmap arrays rooted at `DAT_004e7cd0` and `DAT_004e7a90`, zeroes those slots, and then runs Frame_FreeWorldShellDialogBitmapTables_v129 for the additional shared frontend/world bitmap groups.",
 			"Called from both Combat_FreeVisualResourcesAndLocationMap_v129 during combat reinitialization and Shell_ShutdownFrontendResourcesAndAudio_v129 during full frontend teardown.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -4009,6 +4698,20 @@ const OVERRIDES := {
 		"notes": [
 			"Called from Shell_EnterDropScene_v129 before the combat scene is fully entered. Clears many transient presentation globals, restores the saved detail level from `DAT_0047f898`, maps the persisted display-flag bits from `DAT_0047f89c` into `DAT_0047a044`, and resets the screen-shake state before steady-state rendering begins.",
 			"Before the steady-state flags are restored it tears down any prior actor presentation table, conditionally decodes the previously seeded presentation globals, captures a fresh time-based seed, rebuilds the active eight-slot actor presentation table, and re-encodes the shared presentation globals around that new seed.",
+			"It also reseeds the fixed render/projection context blocks through Combat_InitializeSharedRenderProjectionContexts_v129 so the backdrop, terrain-projection, tactical-radar, and active-effects passes all restart from the retail default panel bounds.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_InitializeSharedRenderProjectionContexts_v129": {
+		"family": "CombatInit",
+		"summary": "Initializes the shared combat render/projection context blocks used by the backdrop, terrain projection, tactical radar, and active-effects passes.",
+		"notes": [
+			"Called only from Combat_ResetPresentationStateAndLoadVisualOptions_v129 during combat presentation reset. It clears and seeds the fixed world-camera panel descriptor at `DAT_004e6f20`, the player-centered radar/projection descriptor at `DAT_004e5fc0`, and the companion effect-panel descriptor rooted at `DAT_004e6ba0` from the active root surface pointer in `DAT_0047d4b0 + 0x4c`.",
+			"It finishes by restoring the shared render limit globals through `FUN_00469e29(0x8000, 0)`, after which Combat_RenderSkyAndGroundBackdrop_v129, Combat_RenderTerrainSceneryProjection_v129, and Combat_RenderActiveEffectsPass_v129 all consume those same default retail bounds and projection constants.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4108,7 +4811,7 @@ const OVERRIDES := {
 		"family": "CombatInit",
 		"summary": "Initializes the battlefield-facing visual runtime after combat resources are loaded, including terrain palette state, scenery, backdrop layers, and projectile effect slots.",
 		"notes": [
-			"Called directly from Combat_InitializeVisualResourcesAndHudState_v129. Applies the terrain palette overrides, installs the active terrain palette table, initializes terrain scenery, sky and ground detail layers, allocates the active projectile/effect slot pool, redraws the root window stack, seeds the default steady-state render mode globals, and then emits outbound combat cmd19.",
+			"Called directly from Combat_InitializeVisualResourcesAndHudState_v129. Applies the terrain palette overrides, installs the active terrain palette table, initializes terrain scenery, sky and ground detail layers, allocates the active projectile/effect slot pool, redraws the root window stack, seeds the default steady-state render mode globals, initializes the default environment light direction through Combat_SetEnvironmentLightDirectionAngles_v129, and then emits outbound combat cmd19.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4133,7 +4836,7 @@ const OVERRIDES := {
 		"family": "CombatInit",
 		"summary": "Opens COMBAT.DAT and bulk-loads the combat bitmap/resource tables required by the retail HUD and effect surfaces.",
 		"notes": [
-			"Walks the tagged COMBAT.DAT archive, loads many bitmap resources into fixed global tables through ResourceArchive_SeekTaggedEntry_v129 and Frame_LoadBitmapFromFile_v129, then derives an additional run-length/mask buffer from one loaded surface before releasing the temporary bitmap objects.",
+			"Walks the tagged COMBAT.DAT archive, loads many bitmap resources into fixed global tables through ResourceArchive_SeekTaggedEntry_v129 and Frame_LoadBitmapFromFile_v129, then derives an additional masked span-run table through Frame_EncodeMaskedSpanRuns_v129 before releasing the temporary bitmap objects.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4145,7 +4848,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Main retail frontend entry path that initializes the client windowing/network stack, runs the shell message loop, and shuts down on exit.",
 		"notes": [
-			"Performs the single-instance check, resolves the working directory, initializes the cached shell version banner through Shell_InitializeVersionString_v129, creates the Win32 shell window and message queue, sets up the frontend bootstrap through Shell_InitializeFrontendResourcesAndAudio_v129, then services inbound shell/network frames until shutdown.",
+			"Performs the single-instance check, resolves the working directory, initializes the cached shell version banner through Shell_InitializeVersionString_v129, creates the Win32 shell window and message queue, initializes the DirectDraw display path through System_InitializeDirectDrawDisplay_v129, unlocks the software rasterizer span code through System_InitializeSoftwareRasterizerSpanCode_v129, sets up the frontend bootstrap through Shell_InitializeFrontendResourcesAndAudio_v129, then services inbound shell/network frames until shutdown.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4154,11 +4857,596 @@ const OVERRIDES := {
 			"res://scripts/audio/audio_manager.gd",
 		],
 	},
+	"System_DetectDirectXCapabilityLevel_v129": {
+		"family": "System",
+		"summary": "Probes the OS plus DirectDraw and DirectInput runtime support and returns the retail DirectX capability level code used by frontend startup.",
+		"notes": [
+			"Splits the Win9x and NT-era paths with GetVersionExA, then verifies the availability of DirectDraw, the DirectDraw2 upgrade path, DirectInputCreateA, cooperative-level setup, and a temporary surface/format query before returning capability codes such as `0x200`, `0x300`, or `0x501` through the first out-parameter.",
+			"Shell_RunFrontendMain_v129 uses it purely as a startup gate and only continues into System_InitializeDirectDrawDisplay_v129 when the detected capability level comes back above `0x2ff`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_InitializeDirectDrawDisplay_v129": {
+		"family": "System",
+		"summary": "Initializes the retail DirectDraw display path, including the palette state and the primary frontend rendering surfaces.",
+		"notes": [
+			"Called only from Shell_RunFrontendMain_v129 after System_DetectDirectXCapabilityLevel_v129 accepts the runtime. It creates the DirectDraw object, configures the cooperative/display mode path, snapshots the system palette into `DAT_00498580`, seeds the retail palette payload, creates the primary rendering surfaces and clipper chain, and marks the frontend display-active flag `DAT_0047fdec = 1` on success.",
+			"Any DirectDraw failure is translated through System_GetDirectDrawErrorString_v129 and reported via System_ReportBterrorEvent_v129 before frontend startup aborts.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_InitializeSoftwareRasterizerSpanCode_v129": {
+		"family": "System",
+		"summary": "Unlocks and seeds the retail software-rasterizer span code used by the combat polygon fill routines.",
+		"notes": [
+			"Called only from Shell_RunFrontendMain_v129 after System_InitializeDirectDrawDisplay_v129 succeeds. Uses VirtualProtect on the self-patching rasterizer block rooted at `FUN_0046a764` so the inner span code can update its embedded surface and step constants at runtime.",
+			"It also precomputes the reciprocal step constant `DAT_004859b8 = 1.0 / DAT_004859b4`; the span walker at `FUN_0046d8f4` consumes that value when the textured path expands its 16-pixel interpolation increments.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_GetSoftwareRasterizerSpanCodeSize_v129": {
+		"family": "System",
+		"summary": "Returns the byte size of the self-patching software-rasterizer span-code block.",
+		"notes": [
+			"Currently returns the fixed size `0x30ac`, which System_InitializeSoftwareRasterizerSpanCode_v129 passes to VirtualProtect when unlocking the span-code region rooted at `FUN_0046a764`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_FreeHeapBlock_v129": {
+		"family": "SystemRuntime",
+		"summary": "Frees one retail heap block when the supplied pointer is non-null.",
+		"notes": [
+			"Thin wrapper around `HeapFree(DAT_004f70c4, 0, ptr)` guarded by a null check, so higher-level teardown paths can release owned buffers without repeating the process-heap handle lookup.",
+			"Used broadly by shell queue teardown, message-catalog shutdown, frame/window cleanup, resource-archive release, and multiple combat visual/cache free helpers whenever one owned heap payload needs to be discarded.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_AllocateHeapBlock_v129": {
+		"family": "SystemRuntime",
+		"summary": "Allocates one retail heap block using the default retry/failure-handler mode.",
+		"notes": [
+			"Thin wrapper over System_AllocateHeapBlockWithRetry_v129 that supplies the global retry-mode flag `DAT_00485f5c`, making it the default owned-buffer allocator shared by retail subsystems.",
+			"System_LoadFileIntoBuffer_v129, Shell_LoadMessageCatalog_v129, Frame_LoadBitmapFontDescriptor_v129, World_LoadLocationMapDataFile_v129, and multiple combat effect/cache initializers all route their heap allocations through this helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_AllocateHeapBlockWithRetry_v129": {
+		"family": "SystemRuntime",
+		"summary": "Attempts a retail heap allocation and optionally retries after invoking the allocation-failure handler.",
+		"notes": [
+			"Rejects requests above `0xffffffe0`, coerces zero-byte requests to a one-byte allocation, and then loops on System_AllocateHeapBlockRaw_v129 until it succeeds or the retry path declines another attempt.",
+			"When the caller-supplied retry flag is non-zero and one raw allocation fails, it calls System_InvokeAllocationFailureHandler_v129 with the requested size; a non-zero callback result restarts the allocation loop, while zero returns failure immediately.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_AllocateHeapBlockRaw_v129": {
+		"family": "SystemRuntime",
+		"summary": "Calls `HeapAlloc` on the cached retail process heap handle for one requested size.",
+		"notes": [
+			"Direct wrapper around `HeapAlloc(DAT_004f70c4, 0, size)` with no retry logic or bookkeeping of its own.",
+			"Used only by System_AllocateHeapBlockWithRetry_v129 as the raw allocation primitive underneath the higher-level retry/new-handler policy.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_InvokeAllocationFailureHandler_v129": {
+		"family": "SystemRuntime",
+		"summary": "Invokes the retail allocation-failure callback for one requested heap size.",
+		"notes": [
+			"Calls the optional function pointer stored at `DAT_004e4948` with the requested allocation size and returns non-zero only when that callback asks the caller to retry.",
+			"System_AllocateHeapBlockWithRetry_v129 uses it after one raw `HeapAlloc` failure so the runtime can run its installed low-memory recovery hook before deciding whether to try again.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_SplitPathComponents_v129": {
+		"family": "SystemRuntime",
+		"summary": "Splits one path string into retail drive, directory, filename, and extension buffers.",
+		"notes": [
+			"Behavior matches the classic `_splitpath` family: optional drive extraction for `X:`, slash-aware directory slicing, basename capture, and extension capture into the caller-provided output buffers.",
+			"Shell_BuildExecutableDirectoryPath_v129 uses it after `GetModuleFileNameA` so frontend startup can recover just the install drive-and-directory prefix rather than the full executable filename.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"System_CloseFileStream_v129": {
+		"family": "SystemRuntime",
+		"summary": "Flushes, closes, and tears down one retail `FILE*` stream.",
+		"notes": [
+			"Calls the CRT flush/free-buffer/close sequence for the supplied `FILE*`, clears the stream flags, and frees any temporary filename buffer through System_FreeHeapBlock_v129 before returning the close status.",
+			"Used by the shared file-length, file-load, manifest verification, capture-log, joystick keymap, location-map, and resource-archive helpers wherever one temporary retail file stream needs to be closed cleanly.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_OpenFileStream_v129": {
+		"family": "SystemRuntime",
+		"summary": "Opens one retail file stream with the requested mode string and the shared frontend file-sharing policy.",
+		"notes": [
+			"Thin wrapper around `__fsopen(path, mode, 0x40)`, so retail file helpers consistently open files with the same share mode rather than calling the CRT directly.",
+			"Used by the shared file-length/load helpers, manifest verification, capture logging, joystick keymap persistence, resource-archive open/close, and multiple combat/world asset loaders.",
+			"It first claims or reuses one `FILE` structure through System_AllocateFileStreamSlot_v129 before binding the requested descriptor/mode state into that stream object.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_ReallocateHeapBlock_v129": {
+		"family": "SystemRuntime",
+		"summary": "Reallocates one retail heap block, allocating on null and freeing on zero size.",
+		"notes": [
+			"When the incoming pointer is null it delegates to System_AllocateHeapBlock_v129, when the new size is zero it frees through System_FreeHeapBlock_v129, and otherwise it loops on `HeapReAlloc` with the shared low-memory retry callback until it succeeds or the retry policy declines.",
+			"Used by multiple string/UI helpers that grow owned buffers in place, including the compose-editor reset path and joystick capability summary formatting helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_AllocateZeroedHeapBlock_v129": {
+		"family": "SystemRuntime",
+		"summary": "Allocates one zero-initialized retail heap block sized as `count * bytes_per_item`.",
+		"notes": [
+			"Computes the total byte size from the caller's element count and stride, coerces a zero-byte request to one byte, and then calls `HeapAlloc(..., HEAP_ZERO_MEMORY, bytes)` with the same low-memory retry callback policy used by the other shared heap wrappers.",
+			"Used by editable-text, mech-record, bitmap-file, message-view, and LASR/profile loaders when the retail runtime needs freshly zeroed owned storage.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_InitializeProcessHeap_v129": {
+		"family": "SystemRuntime",
+		"summary": "Creates the dedicated retail process heap used by the shared allocation wrappers.",
+		"notes": [
+			"Calls `HeapCreate(1, 0x1000, 0)` and stores the resulting heap handle in `DAT_004f70c4`, which System_AllocateHeapBlockRaw_v129 and System_FreeHeapBlock_v129 later reuse for all shared owned-buffer allocations.",
+			"Called directly from the startup entry path before higher-level shell, file, and combat initialization begins.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_InitializeFpmathDispatchTable_v129": {
+		"family": "SystemRuntime",
+		"summary": "Initializes the retail floating-point helper dispatch table used by the CRT fpmath runtime.",
+		"notes": [
+			"Seeds the shared function-pointer slots at `0x486198`-`0x4861ac` with the x87/fdiv helper entry points selected for the active CPU/runtime path.",
+			"Called only from `__fpmath` after the processor test path decides which floating-point helper implementations should be installed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_SetCrtRandomSeed_v129": {
+		"family": "SystemRuntime",
+		"summary": "Stores the seed used by the retail CRT `_rand` generator.",
+		"notes": [
+			"Writes the caller-provided seed into `DAT_00485a00`, the same runtime global that `_rand` reads and advances on each subsequent pseudo-random draw.",
+			"Combat_LoadLasrSequenceProfiles_v129 and Combat_InitializeAmbientGroundDetail_v129 both seed the CRT generator with `_time(NULL)` through this helper before they fan out into `_rand`-driven retail selection logic.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_CloseFileDescriptor_v129": {
+		"family": "SystemRuntime",
+		"summary": "Closes one retail low-level file descriptor and clears its CRT descriptor-table slot.",
+		"notes": [
+			"Validates the descriptor index against the CRT descriptor table, closes the underlying OS handle unless it aliases the shared stdout/stderr console handle pair, and then clears the live/open flag for that slot through System_ClearFileDescriptorSlot_v129.",
+			"System_VerifyExecutableChecksumFromDisk_v129, Combat_LoadCached3dObjectRecord_v129, Combat_LoadAnimationKeyframeSet_v129, Combat_Load3dObjectDefinition_v129, Combat_BuildTerrainSceneryField_v129, and Mech_LoadRecordIntoBufferById_v129 all use it after raw descriptor-based reads complete.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_ReadFileDescriptorBytes_v129": {
+		"family": "SystemRuntime",
+		"summary": "Reads bytes from one retail low-level file descriptor into a caller buffer.",
+		"notes": [
+			"Uses `ReadFile` on the OS handle associated with the descriptor-table slot and returns the byte count on success while surfacing CRT-style error codes on failure.",
+			"When the descriptor is flagged as text mode it also performs the retail CRLF-to-LF translation and honors `0x1A` as end-of-file, which is why the same helper can back both checksum/asset reads and text-oriented runtime paths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_QuickSort_v129": {
+		"family": "SystemRuntime",
+		"summary": "Sorts an array of fixed-size records with the retail quicksort implementation.",
+		"notes": [
+			"Implements the classic in-place quicksort partition loop over `count` records of `stride` bytes using the caller-supplied comparison callback.",
+			"For partitions of eight elements or fewer it falls back to System_ShortSort_v129, and World_EnsureLocationMapIndex_v129 uses it to order its cached location-map index records.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_ShortSort_v129": {
+		"family": "SystemRuntime",
+		"summary": "Sorts a tiny fixed-size record range with the retail short-sort fallback used by quicksort.",
+		"notes": [
+			"Walks the current small partition, selects the greatest record under the caller comparator, and swaps it into the tail position until the range is ordered.",
+			"Used only by System_QuickSort_v129 for the final small partitions where the full quicksort stack would be wasteful.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_SeekFileDescriptor_v129": {
+		"family": "SystemRuntime",
+		"summary": "Moves one retail low-level file descriptor to a new byte offset.",
+		"notes": [
+			"Validates the descriptor slot, resolves the backing OS handle, performs `SetFilePointer(handle, offset, NULL, origin)`, and clears the CRT end-of-file flag on success so later reads resume from the new position.",
+			"Used by System_VerifyExecutableChecksumFromDisk_v129 to skip the embedded checksum block, by Combat_SeekIndexedAssetById_v129 for raw indexed asset positioning, and by the descriptor open path when append/text-mode startup needs to probe or move the underlying file cursor.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_WriteFileDescriptorBytes_v129": {
+		"family": "SystemRuntime",
+		"summary": "Writes bytes from one caller buffer into a retail low-level file descriptor.",
+		"notes": [
+			"Uses `WriteFile` on the descriptor's backing OS handle, honoring text-mode newline expansion and append-mode cursor behavior before returning the effective source-byte count written.",
+			"System_SetFileDescriptorLength_v129 uses it to extend a file with zero-filled blocks, while the CRT flush/write paths reuse it for ordinary descriptor-backed output.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_CloseAllFileStreams_v129": {
+		"family": "SystemRuntime",
+		"summary": "Closes every retail `FILE` stream beyond the standard stdin/stdout/stderr trio.",
+		"notes": [
+			"Walks the shared stream table rooted at `DAT_004f70d4`, calls System_CloseFileStream_v129 for each live stream whose flags show an open or buffered handle, and counts how many closes succeed.",
+			"When a stream slot was backed by a heap-allocated `0x20`-byte `FILE` structure rather than the static startup table, the helper also frees that storage through System_FreeHeapBlock_v129 before clearing the slot pointer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_MapLocaleStringA_v129": {
+		"family": "SystemRuntime",
+		"summary": "Applies locale-aware `LCMapStringA`-style transforms to a multibyte source string.",
+		"notes": [
+			"Prefers the direct ANSI `LCMapStringA` path when the host runtime supports it, but otherwise converts the caller string to wide characters, maps it through `LCMapStringW`, and converts the result back to the requested code page.",
+			"The retail CRT `_tolower`, `__toupper_lk`, and `__strlwr` wrappers all call it for locale-aware case mapping once the active locale has been initialized.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_InitializeFileDescriptorTable_v129": {
+		"family": "SystemRuntime",
+		"summary": "Builds the retail CRT file-descriptor table from startup info and standard handles.",
+		"notes": [
+			"Allocates the first `0x20` descriptor slots, seeds every slot with the default invalid-handle state, then expands the table further when `GetStartupInfoA` exposes inherited handle data for more descriptors.",
+			"Finishes by binding stdin/stdout/stderr to the current process standard handles when they were not inherited explicitly, making it the descriptor-table bootstrap that runs directly from the retail `entry` path before argument parsing.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_InitializeEnvironmentPointerTable_v129": {
+		"family": "SystemRuntime",
+		"summary": "Builds the retail `environ` pointer table from the copied process environment block.",
+		"notes": [
+			"Counts the NUL-terminated environment strings already staged in `DAT_00485f3c`, skipping entries that begin with `=`, then allocates the pointer table at `DAT_00485f18` and duplicates each surviving string into its own heap buffer.",
+			"Called from the startup `entry` path immediately after System_LoadEnvironmentStringsA_v129 and before `__cinit`, matching the CRT environment bootstrap sequence.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_LoadEnvironmentStringsA_v129": {
+		"family": "SystemRuntime",
+		"summary": "Loads the process environment block as a heap-owned ANSI string bundle.",
+		"notes": [
+			"Prefers `GetEnvironmentStringsW` and converts the wide block to ANSI with `WideCharToMultiByte`, but falls back to `GetEnvironmentStringsA` when only the ANSI block is available.",
+			"The retail startup `entry` path stores its result in `DAT_00485f3c`, and System_InitializeEnvironmentPointerTable_v129 later walks that copied bundle to build `environ`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ReportRuntimeErrorMessage_v129": {
+		"family": "SystemRuntime",
+		"summary": "Reports one retail CRT runtime-error message to stderr or a modal dialog.",
+		"notes": [
+			"Looks up the requested runtime error code in the shared message table at `DAT_00486408`, writes the message to the active stderr handle in console mode, or builds the `Runtime Error!` message-box body in GUI mode.",
+			"`__amsg_exit` and `__FF_MSGBANNER` route their visible runtime-failure reporting through this helper before the CRT terminates the process.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_CommitFileDescriptor_v129": {
+		"family": "SystemRuntime",
+		"summary": "Commits one retail file descriptor by flushing its underlying OS handle buffers.",
+		"notes": [
+			"Validates the descriptor slot, resolves the backing OS handle with `__get_osfhandle`, and calls `FlushFileBuffers`, translating failure into the same runtime error globals used by the descriptor layer.",
+			"`_fflush` uses it for descriptor-backed streams whose flags request a hard OS-level commit after the buffered CRT flush completes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_MapWin32ErrorToRuntimeError_v129": {
+		"family": "SystemRuntime",
+		"summary": "Maps one Win32 `GetLastError` code into the retail runtime error globals.",
+		"notes": [
+			"Stores the original OS error in `DAT_00485ef4`, translates known Win32 error codes through the retail lookup table and fallback ranges, and writes the corresponding runtime error code into `DAT_00485ef0`.",
+			"Used by the descriptor open/read/write/seek/close helpers when a raw Win32 file API call fails and the runtime needs a CRT-style error result.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_AllocateFileDescriptorSlot_v129": {
+		"family": "SystemRuntime",
+		"summary": "Claims one free retail file-descriptor slot, growing the descriptor table on demand.",
+		"notes": [
+			"Scans the active descriptor-table blocks for one slot whose open flag is clear; if none exists it allocates a new 32-slot block through System_AllocateHeapBlock_v129, initializes the default per-slot state, and returns the first slot in that new block.",
+			"System_OpenFileDescriptorWithShareMode_v129 uses it before binding a new OS handle into the runtime descriptor table.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ClearFileDescriptorSlot_v129": {
+		"family": "SystemRuntime",
+		"summary": "Clears one retail file-descriptor slot after its OS handle has been closed or detached.",
+		"notes": [
+			"Resets the stored handle to `-1` and, when the runtime is tracking redirected standard handles, also clears the matching Win32 `STDIN` / `STDOUT` / `STDERR` handle through `SetStdHandle`.",
+			"System_CloseFileDescriptor_v129 calls it after the underlying OS handle is no longer needed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_SetFileDescriptorLength_v129": {
+		"family": "SystemRuntime",
+		"summary": "Truncates or extends one retail low-level file descriptor to a caller-selected byte length.",
+		"notes": [
+			"Captures the current file position, compares it against the requested target length, truncates with `SetEndOfFile` when shrinking, or extends the file by writing zero-filled blocks through System_WriteFileDescriptorBytes_v129 when growing.",
+			"Always restores the original file position through System_SeekFileDescriptor_v129 before returning, matching the behavior expected by the CRT `_chsize` path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_AllocateFileStreamSlot_v129": {
+		"family": "SystemRuntime",
+		"summary": "Claims or reuses one retail `FILE` stream structure from the shared stream table.",
+		"notes": [
+			"Scans the global stream pointer table rooted at `DAT_004f70d4` for an unused or fully idle stream entry, allocating a new `0x20`-byte stream structure through System_AllocateHeapBlock_v129 when necessary.",
+			"`__fsopen` uses it before binding a low-level descriptor plus mode flags into the returned `FILE` object, which is why System_OpenFileStream_v129 depends on it indirectly.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ScanFormatCore_v129": {
+		"family": "SystemRuntime",
+		"summary": "Shared retail scanf-style parsing core used by the CRT scan wrappers.",
+		"notes": [
+			"Parses the caller-supplied scan format string, consumes bytes from the active stream/buffer source, applies width and conversion rules, and writes the matched results into the caller-provided argument list.",
+			"Called by `_sscanf`, making it the common scanf engine in the same way System_FormatPrintfCore_v129 backs the printf-style formatters.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_TestFdivAcrossProcessors_v129": {
+		"family": "SystemRuntime",
+		"summary": "Runs the retail Pentium FDIV/self-test across the available processor affinity masks.",
+		"notes": [
+			"Checks the current CPU with the low-level FDIV probe first, then queries process/thread affinity APIs from `KERNEL32` and repeats the probe across each available processor bit when the process can run on multiple CPUs.",
+			"`__fpmath` uses the result to decide whether the runtime must install the slower fallback floating-point helper dispatch table for the active machine.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_OpenFileDescriptor_v129": {
+		"family": "SystemRuntime",
+		"summary": "Opens one retail low-level file descriptor with the default share mode used by raw asset readers.",
+		"notes": [
+			"Thin wrapper over System_OpenFileDescriptorWithShareMode_v129 that fixes the share-mode argument to `0x40`, matching the default descriptor-open policy used by the retail asset and checksum loaders.",
+			"System_VerifyExecutableChecksumFromDisk_v129, Combat_LoadCached3dObjectRecord_v129, Combat_LoadAnimationKeyframeSet_v129, Combat_Load3dObjectDefinition_v129, Combat_BuildTerrainSceneryField_v129, and Mech_LoadRecordIntoBufferById_v129 all route their raw descriptor opens through this helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_OpenFileDescriptorWithShareMode_v129": {
+		"family": "SystemRuntime",
+		"summary": "Creates one retail low-level file descriptor from a path, open flags, share mode, and permission bits.",
+		"notes": [
+			"Maps the CRT-style open flags onto `CreateFileA` access, creation, sharing, and attribute flags, allocates one free descriptor-table slot through System_AllocateFileDescriptorSlot_v129, stores the returned OS handle there, and seeds the per-descriptor text/binary/device/append flags used by the later read/seek/close helpers.",
+			"System_OpenFileDescriptor_v129 is the game-facing wrapper, while the CRT-side `__openfile` path also reuses this lower-level helper when it needs an explicit share-mode-aware descriptor open.",
+			"When text or append-mode startup needs to inspect or reposition the file cursor, it delegates the actual move to System_SeekFileDescriptor_v129 rather than touching `SetFilePointer` directly.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"System_FormatPrintfCore_v129": {
+		"family": "SystemRuntime",
+		"summary": "Shared retail printf-style format engine used by the CRT string and stream formatting wrappers.",
+		"notes": [
+			"Parses the caller-supplied format string, consumes varargs through the dedicated System_ReadVarArg32_v129 / System_ReadVarArg64_v129 / System_ReadVarArg16_v129 helpers, and emits the formatted characters into the caller-selected output sink.",
+			"Called by `_sprintf`, `FID_conflict:_fwprintf`, and `FID_conflict:_vfwprintf`, making it the common formatting core beneath the runtime error/log/message paths rather than a game-specific text helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_ReadVarArg32_v129": {
+		"family": "SystemRuntime",
+		"summary": "Reads one 32-bit value from the retail vararg cursor and advances the cursor.",
+		"notes": [
+			"Treats the caller cursor as a pointer to 4-byte argument slots, returns the current slot value, and then advances the cursor to the next argument position.",
+			"System_FormatPrintfCore_v129 uses it for the ordinary 32-bit integer, pointer, and narrow-character format cases.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ReadVarArg64_v129": {
+		"family": "SystemRuntime",
+		"summary": "Reads one 64-bit value from the retail vararg cursor and advances the cursor.",
+		"notes": [
+			"Returns the current 8-byte argument slot and then advances the caller cursor by eight bytes.",
+			"System_FormatPrintfCore_v129 uses it for the 64-bit integer and floating-point format cases that consume paired 32-bit argument slots.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ReadVarArg16_v129": {
+		"family": "SystemRuntime",
+		"summary": "Reads one 16-bit value from the retail vararg cursor while consuming one aligned argument slot.",
+		"notes": [
+			"Returns the low 16-bit value at the current argument slot and then advances the caller cursor by one 4-byte aligned slot, matching the CRT's promoted-vararg layout on 32-bit Windows.",
+			"System_FormatPrintfCore_v129 uses it for the narrow subset of short-width or wide-character format cases that still consume one aligned argument slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ExitProcess_v129": {
+		"family": "SystemRuntime",
+		"summary": "Runs the retail shutdown sequence with the default flags and then terminates the process with one exit code.",
+		"notes": [
+			"Thin wrapper over System_RunExitSequence_v129 that passes the standard `run terminators / do not return` flag combination for the ordinary process-exit path.",
+			"Called from the startup entry path once initialization or the main runtime returns its final status code.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_RunExitSequence_v129": {
+		"family": "SystemRuntime",
+		"summary": "Runs the retail CRT shutdown sequence and optionally terminates the process.",
+		"notes": [
+			"Guards against re-entrant exit, optionally executes the registered shutdown callback stacks and static terminator ranges, records the caller's exit-mode flags, and then either returns or finishes with `ExitProcess(code)`.",
+			"The direct `__exit` path reuses this helper with different flags, while System_ExitProcess_v129 is the ordinary wrapper that requests the full shutdown-and-exit path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
 	"Shell_BuildExecutableDirectoryPath_v129": {
 		"family": "ShellUI",
 		"summary": "Builds the retail executable directory path from the current module filename.",
 		"notes": [
-			"Uses `GetModuleFileNameA` plus the retail path-splitting helper to rebuild the drive-and-directory prefix into the caller buffer, matching the current install directory rather than the full executable path.",
+			"Uses `GetModuleFileNameA` plus System_SplitPathComponents_v129 to rebuild the drive-and-directory prefix into the caller buffer, matching the current install directory rather than the full executable path.",
 			"If the module filename lookup fails it loads the localized shell error strings and shows the fallback modal message box before returning failure to Shell_RunFrontendMain_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -4342,7 +5630,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Loads an `END`-delimited retail message catalog file into one frontend catalog slot and optionally selects an initial section.",
 		"notes": [
-			"Parses the source text file into grouped sections split by literal `END` lines, allocates packed line-length, pointer, and text buffers for the chosen slot, and records the caller-supplied user value alongside the parsed section table. Shell_RunFrontendMain_v129 uses it to load `mpbt.msg` before selecting the active startup catalog/section.",
+			"Parses the source text file into grouped sections split by literal `END` lines, allocates the packed line-length, pointer, and text buffers for the chosen slot through System_AllocateHeapBlock_v129, and records the caller-supplied user value alongside the parsed section table. Shell_RunFrontendMain_v129 uses it to load `mpbt.msg` before selecting the active startup catalog/section.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4354,7 +5642,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Frees one loaded retail message-catalog slot and clears the active selection when that same slot was selected.",
 		"notes": [
-			"Releases the catalog slot's packed section descriptor, pointer table, and backing text buffer, zeroes the slot's section count, and resets the global active catalog pointers when the freed slot matches Shell_GetActiveMessageCatalogIndex_v129.",
+			"Releases the catalog slot's packed section descriptor, pointer table, and backing text buffer through System_FreeHeapBlock_v129, zeroes the slot's section count, and resets the global active catalog pointers when the freed slot matches Shell_GetActiveMessageCatalogIndex_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4501,7 +5789,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Frees an owned retail shell-line buffer descriptor and its copied text payload.",
 		"notes": [
-			"Releases the copied line buffer stored in slot zero and then frees the 8-byte descriptor itself.",
+			"Releases the copied line buffer stored in slot zero through System_FreeHeapBlock_v129 and then frees the 8-byte descriptor itself through the same helper.",
 			"Used by Shell_ServiceNetworkStateLoop_v129 after one queued line has been dispatched and by Shell_ClearQueuedInboundLineQueue_v129 when startup or shutdown discards queued work wholesale.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -4629,7 +5917,8 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Restores the retail arrow cursor and clears the wait-cursor state bit.",
 		"notes": [
-			"When frontend cursor resources are active, loads the Win32 arrow cursor through the shared cursor helper and latches `DAT_0047c8c8 = 0` so the shell knows the pointer is back in its normal mode.",
+			"When frontend cursor resources are active, routes cursor mode `0` through Frame_SetSavedCursorByMode_v129 so the saved cursor slot becomes the Win32 arrow cursor and the live cursor updates immediately when it is visible.",
+			"It then latches `DAT_0047c8c8 = 0` so the shell knows the pointer is back in its normal mode.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4640,7 +5929,8 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Enters the retail wait-cursor mode and latches the corresponding shell state bit.",
 		"notes": [
-			"When frontend cursor resources are active, loads the Win32 wait cursor through the shared cursor helper and latches `DAT_0047c8c8 = 1` so later shell input checks know the pointer is in busy mode.",
+			"When frontend cursor resources are active, routes cursor mode `1` through Frame_SetSavedCursorByMode_v129 so the saved cursor slot becomes the Win32 wait cursor and the live cursor updates immediately when it is visible.",
+			"It then latches `DAT_0047c8c8 = 1` so later shell input checks know the pointer is in busy mode.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4651,7 +5941,9 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Plays the shared retail UI reject cue when interface sound effects are enabled.",
 		"notes": [
-			"Checks the shell UI-sound enable bit, primes the common cue volume from the current frontend SFX slider, and plays cue id `0` through the shared audio wrapper. Invalid wrapped-text edits, numeric prompts, menu/dialog navigation misses, and other rejected UI actions all route through this helper.",
+			"Checks the shell UI-sound enable bit, primes cue slot `0` with the named sound `alm4` and the current frontend SFX slider through Combat_SetAudioCue0NameVolumeAndPriority_v129, then plays cue id `0` through the shared audio wrapper.",
+			"It immediately clears the stored cue-0 runtime handle through Combat_ClearAudioCue0RuntimeHandle_v129 so the transient reject beep does not persist as an active combat cue slot.",
+			"Invalid wrapped-text edits, numeric prompts, menu/dialog navigation misses, and other rejected UI actions all route through this helper.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4796,11 +6088,35 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Advances and redraws the scrolling shell status marquee when the world state is idle enough to show it.",
 		"notes": [
-			"Checks the retail marquee timer and shell/UI state flags, shifts the active status text buffer left by one character, recomputes the remaining length, redraws the marquee text strip, and presents the updated rectangle.",
+			"Checks the retail marquee timer and shell/UI state flags, then only advances the marquee when World_HasNoActiveStackedShellWindow_v129 reports that the stacked world-shell modal flag is clear. When allowed, it shifts the active status text buffer left by one character, recomputes the remaining length, redraws the marquee text strip, and presents the updated rectangle.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
+		],
+	},
+	"World_HasNoActiveStackedShellWindow_v129": {
+		"family": "WorldUI",
+		"summary": "Returns whether the shared stacked world-shell active flag is currently clear.",
+		"notes": [
+			"Reads bit `0x100` from `DAT_0047d4ec` and returns true when no stacked shell/modal world overlay is active. Shell_TickScrollingStatusMarquee_v129 uses it to suppress marquee scrolling while a stacked shell owns the UI.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_ClearStackedShellActiveFlag_v129": {
+		"family": "WorldUI",
+		"summary": "Clears the shared stacked world-shell active flag without touching the current window stack directly.",
+		"notes": [
+			"Clears bit `0x100` in `DAT_0047d4ec`, which is the same stacked-shell active flag that the older world-shell close/response helpers clear inline. Shell_EnterDropScene_v129 uses it before the DROP scene resets the rest of the shell/world UI.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
 		],
 	},
 	"Shell_AppendEscDelimitedStreamChunk_v129": {
@@ -4866,6 +6182,18 @@ const OVERRIDES := {
 		"summary": "Finalizes and sends the current outbound shell command buffer when it contains a complete command frame.",
 		"notes": [
 			"Adds the retail trailer/checksum bytes through the shared packet-finalization helper, suppresses the actual TCP send when the shell is in no-send mode, and then resets the transmit buffer state for the next command.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_AppendOutboundCommandChecksumTrailer_v129": {
+		"family": "ShellUI",
+		"summary": "Appends the retail checksum/trailer bytes that finalize one outbound shell command frame.",
+		"notes": [
+			"Chooses the scene-specific checksum seed from the active shell mode, folds the already encoded payload bytes into the retail rolling checksum, writes the resulting two-byte trailer through Frame_EncodeArg_v129, and then appends the closing escape byte.",
+			"Shell_FlushOutboundCommandBuffer_v129 calls it immediately before the optional transport send whenever the transmit buffer already contains at least one opcode byte.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4961,7 +6289,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Clears the active shell/world UI and enters the retail DROP scene card flow from SCENES.DAT.",
 		"notes": [
-			"Resets the active world/shell widgets, shows the DROP bitmap through Frame_ShowCenteredArchiveBitmap_v129, optionally starts the associated scene audio cue, and clears shell-state flags before the next transition continues.",
+			"Resets the active world/shell widgets, clears the stacked-shell active bit through World_ClearStackedShellActiveFlag_v129, drops the lingering scroll-list and mech-management page flags through World_ClearScrollListShellActiveFlag_v129 and World_ClearPagedMechListAndComponentActionFlags_v129, shows the DROP bitmap through Frame_ShowCenteredArchiveBitmap_v129, optionally starts the associated scene audio cue, and clears shell-state flags before the next transition continues.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4986,7 +6314,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Performs the one-shot retail frontend bootstrap for palettes, fonts, picture archives, and audio startup.",
 		"notes": [
-			"Seeds the shell palette ramp, loads the default TFONT1 fonts, ensures the location-map index is ready, loads the shared MW picture archives/tables, initializes additional frontend resources, and starts the Miles/AIL audio layer according to the saved sound configuration bits through Shell_InitializeFrontendAudio_v129.",
+			"Seeds the shell palette ramp, loads the default TFONT1 fonts, ensures the location-map index is ready, initializes the saved/current cursor state to the stock arrow shape through Frame_InitializeSavedArrowCursor_v129, loads the shared MW picture archives/tables, initializes additional frontend resources, and starts the Miles/AIL audio layer according to the saved sound configuration bits through Shell_InitializeFrontendAudio_v129.",
 			"It also prewarms the combat actor presentation table allocation once during frontend bootstrap so Shell_EnterDropScene_v129 can immediately reseed and rebuild that runtime state when combat starts.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -5085,6 +6413,20 @@ const OVERRIDES := {
 		"summary": "Dispatches the combat voice-transmission HUD redraw to the active retail layout variant.",
 		"notes": [
 			"Selects among the blank, history, and roster-style voice HUD variants according to the current voice-transmission state flags. Called by the voice-transmission command handlers and by setup helpers that need to refresh the panel immediately.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_AllocateVoiceTransmissionHistoryBuffer_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Allocates and initializes the retail combat voice-transmission history ring buffer.",
+		"notes": [
+			"Allocates the fixed 12000-byte history slab, seeds the 100 per-entry text pointers at `DAT_00499250` to successive `0x78`-byte rows, clears each row's timed-expiry field, and resets the ring-buffer head/tail/status indices.",
+			"It also clears the cached active-status pointer state and sets `DAT_00499710 = -1` so Combat_SelectActiveVoiceTransmissionStatusMessage_v129 knows the working copy must be rebuilt the first time the compact status strip asks for text.",
+			"Combat_ResetPresentationStateAndLoadVisualOptions_v129 calls it during combat presentation reset before the retail voice/effect HUD resources are reinitialized.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5895,6 +7237,18 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_RemoveShortcutBindingAtIndex_v129": {
+		"family": "WorldUI",
+		"summary": "Removes one locally cached shortcut-binding row by table index and persists the updated shortcut list.",
+		"notes": [
+			"Shifts the later rows in the shared shortcut table `DAT_0047f8b4` down over the removed entry, decrements the active shortcut count `DAT_0047f8b0`, and then calls System_SaveFrontendConfigToRegistry_v129.",
+			"The unnamed stacked-shell callback at `0x0043f265` uses it after reading the selected shortcut row and before closing the popup / restoring focus.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_FindCachedNamedEntrySlotById_v129": {
 		"family": "WorldUI",
 		"summary": "Finds the cached named-entry slot for a retail id inside the early-world entry table.",
@@ -5978,7 +7332,150 @@ const OVERRIDES := {
 		"family": "WorldUI",
 		"summary": "Closes the current stacked world-shell child window and restores the previous active shell window when one is saved.",
 		"notes": [
-			"Frees the current stacked shell window, pops the saved world-window stack when nested overlays remain, and clears the stacked-window state bit when the stack becomes empty. When the world shell is active and unobstructed afterward, it refreshes the underlying travel-compass page highlight state before returning to the caller.",
+			"Frees the current stacked shell window, pops the saved world-window stack when nested overlays remain, and clears the stacked-window state bit when the stack becomes empty. When the stack fully unwinds it restores focus through World_ReactivateStackedShellOwnerWindow_v129, and when the world shell is active and unobstructed afterward it refreshes the underlying travel-compass page highlight state before returning to the caller.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_ReactivateStackedShellOwnerWindow_v129": {
+		"family": "WorldUI",
+		"summary": "Reactivates the stacked world-shell owner window when the stacked-shell focus flag is armed.",
+		"notes": [
+			"Called by World_CloseStackedShellWindow_v129, World_MenuDialog_HandleInput_v129, and World_Cmd04_TravelCompassPage_v129 after a stacked child is dismissed or a menu action completes. When the stacked-shell focus bit is set, it simply reactivates the owner window stored in `DAT_0047d4e4`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_RestoreStackedShellFocusTarget_v129": {
+		"family": "WorldUI",
+		"summary": "Restores stacked-shell focus to the correct owner or fallback window before pointer-driven selection handling runs.",
+		"notes": [
+			"Called only by World_HandleStackedShellSelectionPointer_v129 on pointer-down passes. When the stacked-shell focus bit is armed it either reactivates the stored owner window at `DAT_0047d4e4` or, when that owner is already the active shell root, activates the topmost alternate window instead.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_ToggleStackedShellSelectionHighlight_v129": {
+		"family": "WorldUI",
+		"summary": "Toggles the palette-swapped highlight rectangle for one stacked-shell selection row.",
+		"notes": [
+			"Uses the selection-row rect table embedded in the active stacked shell window at `DAT_0047d4e4` and swaps palette indices in the indexed row rectangle. The stacked menu/text selection handlers call it to flip the old and new row highlights without redrawing the full shell, while World_ToggleStackedShellSelectionRowHighlight_v129 exposes the same one-row palette swap for helpers that only need to clear a previously recorded selection slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_ToggleStackedShellSelectionRowHighlight_v129": {
+		"family": "WorldUI",
+		"summary": "Swaps the palette-highlight state for one indexed row in the active stacked world-shell dialog.",
+		"notes": [
+			"Looks up the indexed row rectangle in the active stacked shell window at `DAT_0047d4e4` and swaps palette indices `0x00` and `0x23` across that rect. The tiny row-state wrappers around the stacked selection handlers use it when they need to clear a previously highlighted row stored in dialog-local state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_HandleStackedShellSelectionPointer_v129": {
+		"family": "WorldUI",
+		"summary": "Pointer handler for stacked world-shell selection dialogs backed by text-decoration rows.",
+		"notes": [
+			"Installed as the pointer callback by multiple unnamed stacked-shell dialog builders. On pointer-down passes it first restores the correct focus target through World_RestoreStackedShellFocusTarget_v129, then resolves the enabled text decoration under the pointer, routes in-range selection rows either through the local stacked-shell callback or `World_SendCmd1dControlFrame_v129`, updates the shared row-selection globals, and otherwise falls back to Frame_DefaultTextDecorationPointerHandler_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_OpenStackedStatsDialog_v129": {
+		"family": "WorldUI",
+		"summary": "Builds the shared stacked world-shell stats dialog family for the older early-world summary/detail pages.",
+		"notes": [
+			"Reads a mode byte plus mixed string and numeric payload from the incoming world frame, reuses or creates a type-7 stacked shell window, and formats the header/body rows for several old summary pages. Mode `3` delegates to World_OpenStackedDualSelectionDialog_v129, mode `7` delegates to World_OpenStackedDetailedStatsDialog_v129, and the remaining modes build a shorter stats page that can be either read-only or interactive depending on the action byte.",
+			"When the dialog is interactive it installs World_HandleStackedShellSelectionPointer_v129 as the pointer callback and seeds the shared stacked-shell selection globals so World_HandleStackedStatsDialogInput_v129 can edit or submit the highlighted row values. Certain action-byte variants instead route Enter/ESC through World_HandleStackedShellActionHotkey_v129 or the local confirm/cancel path through World_HandleStackedStatsDialogConfirmInput_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_OpenStackedDetailedStatsDialog_v129": {
+		"family": "WorldUI",
+		"summary": "Builds the six-row stacked world-shell detailed stats dialog used by one of the older summary-page modes.",
+		"notes": [
+			"Invoked only from World_OpenStackedStatsDialog_v129 when the mode byte is `7`. It formats a taller type-7 stacked shell page with up to six labeled numeric rows plus an optional detail line, then either leaves the rows read-only or wires them into the shared stacked-shell selection callback family headed by World_HandleStackedStatsDialogInput_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_OpenStackedDualSelectionDialog_v129": {
+		"family": "WorldUI",
+		"summary": "Builds a compact stacked world-shell dialog with two selectable named/value rows.",
+		"notes": [
+			"Invoked only from World_OpenStackedStatsDialog_v129 when the mode byte is `3`. It writes two formatted name/value blocks into a style-5 stacked shell window, registers the two row hit regions, and optionally exposes one-button or two-button footer controls depending on the action byte. Keyboard confirm/cancel shortcuts for the remote-action variant route through World_HandleStackedShellActionHotkey_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_HandleStackedStatsDialogInput_v129": {
+		"family": "WorldUI",
+		"summary": "Keyboard input handler for the interactive stacked world-shell stats dialogs.",
+		"notes": [
+			"Used by World_OpenStackedStatsDialog_v129 and World_OpenStackedDetailedStatsDialog_v129 for the editable numeric-row variants. It handles digit entry, backspace, row switching, stepwise increment/decrement controls, Escape cancel, and submit keys, then serializes the edited values back into the appropriate outbound world opcode for the active stats-dialog mode.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_HandleStackedShellActionHotkey_v129": {
+		"family": "WorldUI",
+		"summary": "Maps confirm/cancel hotkeys on stacked world-shell action dialogs into the retail Cmd1D control-frame actions.",
+		"notes": [
+			"Used by World_OpenStackedStatsDialog_v129, World_OpenStackedDetailedStatsDialog_v129, and World_OpenStackedDualSelectionDialog_v129 for the remote-action variants. Escape and semicolon send choice `0`, while `S`/Enter send choice `1`, with the active action group taken from `DAT_0048af80`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_HandleStackedStatsDialogConfirmInput_v129": {
+		"family": "WorldUI",
+		"summary": "Handles the simple confirm/cancel keyboard path for the non-editable stacked stats dialog variants.",
+		"notes": [
+			"Used by World_OpenStackedStatsDialog_v129 when the action byte selects the local confirm/cancel flow rather than the shared Cmd1D action path. Escape closes the stacked shell and emits outbound opcode `0x0b`, while Enter emits opcode `0x0d`, switches to the wait cursor, and flushes the outbound shell buffer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_HandleStackedStatsDialogResponse_v129": {
+		"family": "WorldUI",
+		"summary": "Consumes the response frame for the older stacked stats dialog family and opens the resulting notice or modal text window.",
+		"notes": [
+			"Closes the active stacked shell if one is still open, clears the stacked-shell focus bit, and decodes a type-1 result code from the inbound world frame. Result `0` queues transient notice line `0x1c1`; result `6` opens World_OpenModalTextWindow_v129 with a combined `0x1c2` + `0x1c3` body; all other non-zero results open the same modal window with line `0x1c3` alone, then restore the arrow cursor and return the parent page mode to `4`.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -6087,6 +7584,19 @@ const OVERRIDES := {
 		"summary": "Decodes the retail Cmd45 scroll-list shell, populates its visible rows, and installs the shared keyboard, mouse, and selection callbacks.",
 		"notes": [
 			"Builds the style-6 shell window, swaps the frame over to the alternate list font through Frame_SetActiveFont_v129, lays out the current page of visible entries and optional MORE row, and stores the callback/context state used by the shared input helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/world_client.gd",
+		],
+	},
+	"World_ClearScrollListShellActiveFlag_v129": {
+		"family": "WorldUI",
+		"summary": "Clears the active-bit for the shared Cmd45 scroll-list shell window.",
+		"notes": [
+			"Clears bit `0x4` in `DAT_0047d4ec`, which is the same shell-active flag set by World_Cmd45_ScrollListShell_v129 when it installs the reusable type-6 scroll-list window in `DAT_0047d4b8`.",
+			"Shell_EnterDropScene_v129 uses it before the DROP transition tears down the remaining world UI state.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -6299,6 +7809,10 @@ const OVERRIDES := {
 	"World_RegisterShortcutBinding_v129": {
 		"family": "WorldUI",
 		"summary": "Registers a world shortcut / hotkey binding.",
+		"notes": [
+			"Appends a pending shortcut row into the shared `DAT_0047f8b4` table, persists the updated list through System_SaveFrontendConfigToRegistry_v129, and sends outbound opcode `0x1f` with the `(menu_id, selection_id)` pair that the server later accepts or rejects.",
+			"World_RemoveShortcutBindingAtIndex_v129 is the matching local removal helper for the same shortcut table.",
+		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
@@ -6526,6 +8040,19 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"World_ClearPagedMechListAndComponentActionFlags_v129": {
+		"family": "WorldUI",
+		"summary": "Clears the active state bits shared by the paged mech-list window and the mech component-action page.",
+		"notes": [
+			"ANDs `DAT_0047d4ec` with `~0x201`, dropping the `0x1` flag set by World_OpenPagedMechListWindow_v129 and the `0x200` flag set by World_Cmd31_MechComponentActionPage_v129.",
+			"Shell_EnterDropScene_v129 uses it to invalidate those mech-management page states before the DROP scene resets the rest of the world UI.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"World_DrawPagedMechListShellFrame_v129": {
 		"family": "WorldUI",
 		"summary": "Draws the static shell bitmap frame used under the retail paged mech-list window.",
@@ -6663,6 +8190,9 @@ const OVERRIDES := {
 	"World_MenuDialog_HandleInput_v129": {
 		"family": "WorldUI",
 		"summary": "Keyboard input handler for the retail menu-dialog surface.",
+		"notes": [
+			"Accepts numeric menu shortcuts plus ESC, dispatches the chosen response through World_SendMenuSelection_v129, closes the stacked shell when appropriate, then restores the owner shell focus through World_ReactivateStackedShellOwnerWindow_v129 before flushing the outbound command buffer.",
+		],
 		"implementation_status": STATUS_PARTIAL_ANALOG,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
@@ -7230,7 +8760,21 @@ const OVERRIDES := {
 		"family": "FrameBlit",
 		"summary": "Loads a retail bitmap resource from the current FILE position into a heap bitmap object.",
 		"notes": [
-			"Allocates the bitmap header object, reads the fixed header words, optionally decodes the embedded palette section, then decodes the pixel payload. On any partial-read or decode failure it frees the half-built bitmap through Frame_FreeBitmap_v129.",
+			"Allocates the bitmap header object, reads the fixed header words, optionally loads the embedded palette block through Frame_LoadBitmapPaletteBlock_v129, then decodes the pixel payload. On any partial-read or decode failure it frees the half-built bitmap through Frame_FreeBitmap_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_LoadBitmapPaletteBlock_v129": {
+		"family": "FramePalette",
+		"summary": "Loads the optional palette block for one retail bitmap resource.",
+		"notes": [
+			"Reads the palette-block byte size into the bitmap header, allocates the attached palette buffer at bitmap offset `+0x0c`, and copies the raw palette payload from the current FILE position.",
+			"Frame_LoadBitmapFromFile_v129 calls it only when the bitmap header flags include the optional palette bit, and later palette users such as Frame_CopyBitmapPaletteToBuffer_v129 consume the same attached block.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7303,6 +8847,32 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_FreeWorldShellBitmapTableEntry_v129": {
+		"family": "FrameBlit",
+		"summary": "Frees one heap-allocated world-shell bitmap table entry and its owned bitmap payload.",
+		"notes": [
+			"Checks the table-entry pointer for null, frees the owned bitmap block stored in the first field when present, and then releases the outer entry header.",
+			"Frame_FreeWorldShellBitmapTables_v129 uses it while tearing down the per-tag MW_MPICS shell bitmap tables.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_FreeWorldShellDialogBitmapTables_v129": {
+		"family": "FrameBlit",
+		"summary": "Frees the additional world-shell dialog/subpanel bitmap tables loaded from MW_MPICS and clears their globals.",
+		"notes": [
+			"Walks the extra global bitmap groups rooted at `DAT_004e81a0`, `DAT_004e79f0`, `DAT_004e7d70`, `DAT_004e7e10`, and `DAT_004e7d50`, frees every resident bitmap through Frame_FreeBitmap_v129, and zeroes the table slots afterward.",
+			"Those groups are populated by Frame_LoadWorldShellBitmapTables_v129 and reused by stacked stats dialogs, mech pages, message/compose windows, the location browser, and other world-shell subpanels. Combat_FreeVisualResourceTables_v129 calls this helper during broader frontend teardown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_FreeBitmap_v129": {
 		"family": "FrameBlit",
 		"summary": "Frees a retail heap bitmap object and any decoded pixel/palette storage it owns.",
@@ -7322,6 +8892,34 @@ const OVERRIDES := {
 		"notes": [
 			"Releases the optional block at offset `+0x18` and the earlier decoded buffer at offset `+0x0C`, then zeroes both fields so the parent bitmap header can be safely freed afterward.",
 			"Frame_FreeBitmap_v129 delegates to this helper before releasing the outer bitmap object itself.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_FreeLoadedBitmapBuffer_v129": {
+		"family": "FrameBlit",
+		"summary": "Frees one loaded bitmap-buffer descriptor and the owned heap blocks it carries.",
+		"notes": [
+			"Releases the primary payload pointer stored in the first field, frees the optional secondary block stored near offset `0x314` when present, and then releases the outer descriptor itself.",
+			"Frame_FreeCachedBitmapBufferCache_v129 uses it when tearing down the shared 40-entry cache behind Frame_GetCachedBitmapBuffer_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_FreeCachedBitmapBufferCache_v129": {
+		"family": "FrameBlit",
+		"summary": "Frees the shared cached bitmap-buffer table populated by Frame_GetCachedBitmapBuffer_v129.",
+		"notes": [
+			"Walks the fixed 40-entry cache rooted at `DAT_0047f0f8`, frees every resident loaded bitmap buffer through Frame_FreeLoadedBitmapBuffer_v129, then releases the cache header itself and clears the global pointer.",
+			"Combat_Cmd63_ResultSceneInit_v129 calls it during result-scene teardown so the archive-backed bitmap-buffer cache does not leak across combat sessions.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7393,7 +8991,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Stops the active timed archive slideshow, restores the frontend display, and clears the slideshow session globals.",
 		"notes": [
-			"Releases the temporary slideshow frame and archive handle, tears down the timer, stops any slideshow-owned audio cue, restores the baseline frontend display through Shell_ClearFrontendDisplayAndApplyCurrentPalette_v129, shows the cursor again, and zeroes the stored slideshow session block.",
+			"Releases the temporary slideshow frame and archive handle, tears down the timer, stops any slideshow-owned audio cue through Shell_ControlFrontendSlideshowAudioCue_v129, restores the baseline frontend display through Shell_ClearFrontendDisplayAndApplyCurrentPalette_v129, shows the cursor again, and zeroes the stored slideshow session block.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7404,7 +9002,8 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Shows the retail title and credits bitmap sequence from TITLE.DAT.",
 		"notes": [
-			"Opens TITLE.DAT, displays the TITL card followed by the CRDT card when available, overlays the centered version banner from Shell_GetVersionString_v129 on the first card, presents each frame full-screen, and frees the temporary bitmap after each slide.",
+			"Opens TITLE.DAT, displays the TITL card followed by the CRDT card when available, drives the shared frontend slideshow audio cue through Shell_ControlFrontendSlideshowAudioCue_v129, overlays the centered version banner from Shell_GetVersionString_v129 on the first card, presents each frame full-screen, and frees the temporary bitmap after each slide.",
+			"After the title card it waits up to five seconds for a keypress through Shell_WaitForKeypressOrTimeout_v129, and after the credits card it reuses the same helper with the shorter four-second timeout before fading back to the shell.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7415,7 +9014,18 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Advances one timed archive slideshow step, loads the next bitmap tag, presents it, and rearms the slideshow timer.",
 		"notes": [
-			"Parses the current script token as `<seconds> <tag>`, loads the referenced bitmap from the open archive, centers it in the temporary fullscreen frame, overlays the title caption on the first mode-1 slide, optionally starts the slideshow audio cue for mode 2, uploads the bitmap palette, then rearms the timer for the next delay. On exhaustion or failure it posts the completion message back to the main shell window.",
+			"Parses the current script token as `<seconds> <tag>`, loads the referenced bitmap from the open archive, centers it in the temporary fullscreen frame, overlays the title caption on the first mode-1 slide, optionally starts the slideshow audio cue for mode 2 through Shell_ControlFrontendSlideshowAudioCue_v129, uploads the bitmap palette, then rearms the timer for the next delay. On exhaustion or failure it posts the completion message back to the main shell window.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_ControlFrontendSlideshowAudioCue_v129": {
+		"family": "ShellUI",
+		"summary": "Starts, stops, or fades the shared frontend slideshow audio cue used by the title/credits sequence and slideshow mode 2.",
+		"notes": [
+			"Called by Shell_ShowTitleAndCreditsSequence_v129, Shell_TickTimedArchiveSlideshow_v129, and Shell_CloseTimedArchiveSlideshow_v129. Mode `0` starts the shared cue handle in `DAT_0047d008`, mode `1` stops it, and mode `2` ramps its active parameter downward before returning control to the caller.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7792,6 +9402,19 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Frame_EncodeMaskedSpanRuns_v129": {
+		"family": "FrameBlit",
+		"summary": "Encodes a bitmap-sized mask surface into the packed `(mask_word, run_length)` stream consumed by Frame_CompositeMaskedSpanRuns_v129.",
+		"notes": [
+			"When the output pointer is null it only counts how many dwords the encoded stream will require; otherwise it emits the per-row run pairs and a trailing `(0, 0)` terminator after collapsing adjacent equal mask words.",
+			"Combat_LoadVisualResourceTables_v129 uses it twice on the temporary bitmap blitted into `DAT_004e7a40`: first to size the heap allocation for `DAT_004e7e30`, then again to write the final masked span-run table later consumed by the tactical radar and actor preview overlays.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Frame_GetGlyphAdvance_v129": {
 		"family": "FrameText",
 		"summary": "Returns the horizontal advance for one glyph in the selected retail font table.",
@@ -7809,7 +9432,7 @@ const OVERRIDES := {
 		"family": "FrameText",
 		"summary": "Loads a retail TFONT data file into a font descriptor and precomputes the printable glyph advances.",
 		"notes": [
-			"Allocates the `0x84`-byte descriptor, loads the raw TFONT blob from disk through the shared file reader, and then calls Frame_InitializeBitmapFontDescriptorAdvances_v129 so the printable `0x20`-`0x7e` glyph widths are cached beside the loaded font data.",
+			"Allocates the `0x84`-byte descriptor through System_AllocateHeapBlock_v129, loads the raw TFONT blob from disk through System_LoadFileIntoBuffer_v129, and then calls Frame_InitializeBitmapFontDescriptorAdvances_v129 so the printable `0x20`-`0x7e` glyph widths are cached beside the loaded font data.",
 			"Shell_InitializeFrontendResourcesAndAudio_v129 uses it for TFONT1, while Combat_InitializeVisualResourcesAndHudState_v129 and Combat_Cmd63_ResultSceneInit_v129 swap in TFONT2 or the result-scene TFONT1 variant before rebuilding combat/world text surfaces.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -8120,6 +9743,19 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Frame_ClearPaletteFadeTargetBuffer_v129": {
+		"family": "FramePalette",
+		"summary": "Zeroes the shared RGB palette-fade target buffer so the next retail fade interpolates toward black.",
+		"notes": [
+			"Clears the 64-dword scratch table at `DAT_004e7e90`, which the palette-fade helper at `FUN_004583a9` reads as a packed RGB destination buffer.",
+			"Shell_OpenTimedArchiveSlideshow_v129, Shell_ShowTitleAndCreditsSequence_v129, and Combat_InitializeCombatHudAndControlState_v129 call it before black-palette transitions so later fades do not reuse stale RGB values from an earlier bitmap palette.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Frame_PresentFrameRect_v129": {
 		"family": "FrameBlit",
 		"summary": "Presents a rectangle from a frame surface to the display at the requested screen coordinates.",
@@ -8200,6 +9836,56 @@ const OVERRIDES := {
 		"notes": [
 			"Copies the working palette table into the backup buffer, queries the active palette object for the live 256-entry RGB block, retries once after restoring the DirectDraw palette owner when the first read reports the lost-surface error, and then clears the modal-palette latch bit `DAT_0047fdec`.",
 			"Shell_ShowModalMessageBox_v129, Shell_OpenStatusTextDialog_v129, the shared CMP dialogs, and the exit confirmation path all reuse it so the frontend can restore the prior palette cleanly after the dialog closes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_WaitForKeypressOrTimeout_v129": {
+		"family": "ShellUI",
+		"summary": "Pumps the Windows message queue until the deadline expires or the user presses a key.",
+		"notes": [
+			"Repeatedly peeks and removes pending Windows messages, returning `0` as soon as it sees a key-down message (`WM_KEYDOWN`) and returning `1` once `_time` advances past the caller-supplied absolute deadline.",
+			"Shell_ShowTitleAndCreditsSequence_v129 uses it to let the title and credits cards advance early on any keypress while still honoring the retail fixed 5-second / 4-second delays when the user does nothing.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_SetCursorScreenPos_v129": {
+		"family": "FrameControl",
+		"summary": "Moves the Windows cursor to an absolute screen-space position.",
+		"notes": [
+			"Thin wrapper over SetCursorPos. Combat_ProcessMouseUpperBodyAimInput_v129 uses it to warp the mouse back to the fixed `(320, 240)` aim origin after consuming the current-frame torso-yaw and pitch deltas.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_SetSavedCursorByMode_v129": {
+		"family": "FrameControl",
+		"summary": "Loads one stock cursor shape into the saved retail cursor slot and applies it when the cursor is visible.",
+		"notes": [
+			"Maps cursor mode `0` to the Win32 arrow cursor, mode `1` to the wait cursor, and the fallback mode to the stock `IDC_NO` cursor, then stores the resulting handle in `DAT_00498988`.",
+			"If the cursor is currently visible (`DAT_00498984 != NULL`), it mirrors that handle into the active-cursor slot and calls SetCursor immediately so shell busy/normal transitions take effect without waiting for a later restore.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_InitializeSavedArrowCursor_v129": {
+		"family": "FrameControl",
+		"summary": "Initializes the retail saved/current cursor handles to the stock arrow cursor.",
+		"notes": [
+			"Loads the Win32 arrow cursor into both the saved cursor slot `DAT_00498988` and the active cursor slot `DAT_00498984`, then returns `1` so the shell bootstrap can latch that cursor resources are ready.",
+			"Shell_InitializeFrontendResourcesAndAudio_v129 uses it during one-shot frontend initialization before any shell code switches between normal and wait cursor modes.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -8696,6 +10382,33 @@ const OVERRIDES := {
 		"summary": "Draws a filled circular sector into the frame surface using a scratch mask buffer and the requested palette index.",
 		"notes": [
 			"Builds the sector by tracing the start and end radii plus intermediate angle steps into a temporary square mask, flood-filling each covered scanline span, and then copying non-zero pixels into the destination frame. The formatted-text renderer uses it for the retail `[*...]` inline widget tag.",
+			"Reuses the shared Frame_AllocateRasterMaskBuffer_v129 / Frame_FreeRasterMaskBuffer_v129 scratch buffer pair, growing the cached square mask whenever the requested radius exceeds the previously allocated size.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_AllocateRasterMaskBuffer_v129": {
+		"family": "FramePrimitive",
+		"summary": "Allocates a zeroed byte-mask raster plus the small width/height bookkeeping header used by the filled-sector renderer.",
+		"notes": [
+			"Called by Frame_DrawFilledCircleSector_v129 to create the reusable square scratch surface sized to `(diameter + 1) x (diameter + 1)` bytes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_FreeRasterMaskBuffer_v129": {
+		"family": "FramePrimitive",
+		"summary": "Releases the scratch raster-mask buffer allocated for filled circle-sector rendering.",
+		"notes": [
+			"Only reached when Frame_DrawFilledCircleSector_v129 needs to replace its cached scratch surface with a larger square mask.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -9009,6 +10722,19 @@ const OVERRIDES := {
 			"res://scripts/world/solaris_map.gd",
 		],
 	},
+	"World_UpdateGroupedLocationBrowserSubmitControlState_v129": {
+		"family": "WorldUI",
+		"summary": "Updates the grouped location-browser submit control palette state when the current selection becomes submit-disabled or submit-enabled.",
+		"notes": [
+			"Reuses the cached grouped-browser flag in `DAT_0047ee10`, which is seeded from whether the current grouped selection is still one of the aggregate/non-submittable entries, and only swaps the submit control rectangle when that state changes.",
+			"World_DrawLocationBrowserSelectionMarker_v129 calls it after redrawing the grouped marker so the footer submit control stays visually synchronized with the same flag that World_GroupedLocationBrowser_HandleMouse_v129 and World_LocationBrowser_HandleInput_v129 use to reject Enter/click submits.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/world/solaris_map.gd",
+		],
+	},
 	"World_LocationBrowser_HandleMouse_v129": {
 		"family": "WorldUI",
 		"summary": "Pointer handler for the shared location-browser map window.",
@@ -9026,6 +10752,19 @@ const OVERRIDES := {
 		"summary": "Pointer handler for the grouped location-browser map window used by Cmd43.",
 		"notes": [
 			"Handles the grouped browser's two footer controls for submit/cancel, otherwise retargets the selected grouped location entry from pointer hits on the map markers and redraws the current grouped selection details when the highlighted room changes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/world/solaris_map.gd",
+		],
+	},
+	"World_IsPointerInGroupedLocationBrowserMarkerBounds_v129": {
+		"family": "WorldUI",
+		"summary": "Hit-tests one grouped location-browser marker rectangle against the current pointer position.",
+		"notes": [
+			"Takes the pointer coordinates plus the marker rectangle origin and extents decoded from one grouped browser record, then returns whether the pointer falls inside the inclusive marker bounds.",
+			"World_GroupedLocationBrowser_HandleMouse_v129 uses it while scanning the grouped location table so pointer motion and clicks can retarget the highlighted grouped room entry without reopening the footer-control path.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -9074,6 +10813,19 @@ const OVERRIDES := {
 		"summary": "Redraws the currently selected location-browser room details into the main map shell and auxiliary detail window.",
 		"notes": [
 			"Refreshes the district/house art, centered room title, optional grouped-mode fields, descriptive text block, and distance/status strings for the room currently selected by the location-browser map callbacks.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/world/solaris_map.gd",
+		],
+	},
+	"World_ComputeLocationBrowserSelectionDistance_v129": {
+		"family": "WorldUI",
+		"summary": "Computes the scaled map distance from the current browser origin to the selected location entry.",
+		"notes": [
+			"Subtracts the selected room's map coordinates from the current browser origin, runs the planar delta through System_IntegerSquareRoot_v129, and then scales the result by the active distance multiplier `DAT_0048f590`.",
+			"World_DrawLocationBrowserWindow_v129 and World_RedrawLocationBrowserSelectionDetails_v129 both call it before formatting the numeric distance readout shown beside the fixed location-browser labels.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -9462,6 +11214,30 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"System_SetRandomSeed_v129": {
+		"family": "SystemRuntime",
+		"summary": "Stores a new seed value for the shared retail LCG used by MakeRandomModulo.",
+		"notes": [
+			"Writes the caller-supplied value directly into the global seed consumed by MakeRandomModulo before later random draws advance it with the retail `seed * 0x41C64E6D + 0xBDF` step.",
+			"Combat_InitializeCombatHudAndControlState_v129 seeds it from the current clock tick, while terrain-scenery and attachment-effect helpers reseed it from terrain ids, attachment tags, and fresh clock reads before drawing randomized placements or rotations.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_CopyCString_v129": {
+		"family": "SystemRuntime",
+		"summary": "Copies a null-terminated C string, including the trailing zero, from one retail buffer to another.",
+		"notes": [
+			"Scans the source for the terminating zero byte, then copies the full byte span into the destination in dword-sized chunks followed by the remaining tail bytes.",
+			"Combat_LoadDefaultEffectAnimations_v129 uses it to copy the fixed `boom64.anm`, `smoke64.anm`, and `ack64.anm` path strings into its local filename buffer before loading each slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"System_IsProcessorTypeAtLeast_v129": {
 		"family": "SystemRuntime",
 		"summary": "Returns whether the current Windows processor type meets the supplied retail threshold.",
@@ -9530,6 +11306,17 @@ const OVERRIDES := {
 		"notes": [
 			"Looks first for the exact `AOL Frame25` / `America  Online` top-level window pair, then falls back to any `AOL Frame25` window title if the localized caption differs.",
 			"When a host window is found it arms a 30-second timer whose callback is System_TickAolPaletteWatcher_v129, enabling the legacy frontend compatibility path that auto-dismisses the external `_AOL_Palette` dialog.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_StopAolPaletteWatcherTimer_v129": {
+		"family": "SystemRuntime",
+		"summary": "Cancels the retail AOL palette watcher timer on the active shell host window.",
+		"notes": [
+			"Thin wrapper around `KillTimer` using the same host window handle tracked by the AOL compatibility path. The caller that toggles the watcher state uses it immediately after the start helper when the temporary poll window should be torn down.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [

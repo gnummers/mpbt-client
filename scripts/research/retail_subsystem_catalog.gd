@@ -27,6 +27,7 @@ const SUBSYSTEMS := {
 		"function_names": [
 			"Combat_MainLoop_v129",
 			"Combat_InitializeCombatHudAndControlState_v129",
+			"System_SetRandomSeed_v129",
 			"Combat_TickLocalActorControlLoop_v129",
 			"Combat_UpdateUpperBodyAimCueAudio_v129",
 			"Combat_BuildJoystickCapabilityFlagTable_v129",
@@ -105,6 +106,7 @@ const SUBSYSTEMS := {
 			"Combat_DrawLocalAirborneHudReadout_v129",
 			"Combat_UpdateLocalMovementHudAndAnimation_v129",
 			"Combat_IntegrateActorMotion_v129",
+			"Combat_SendLocalMotionUpdate_v129",
 			"Combat_ResolveLandingOrGroundContact_v129",
 			"Combat_ProcessLocalMechContact_v129",
 			"Combat_IsActorRecoverableSupportIntact_v129",
@@ -113,6 +115,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_TickLocalActorControlLoop_v129",
 				"to": "Combat_ProcessLocalMovementAndJumpInput_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_SendLocalMotionUpdate_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -377,6 +384,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_InitializeCombatHudAndControlState_v129",
+				"to": "System_SetRandomSeed_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeCombatHudAndControlState_v129",
 				"to": "Combat_InitializeWeaponSlotHud_v129",
 				"kind": "ghidra-callee",
 			},
@@ -578,6 +590,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_ProcessMouseUpperBodyAimInput_v129",
 				"to": "Combat_AccumulateUpperBodyPitchOffset_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessMouseUpperBodyAimInput_v129",
+				"to": "Frame_SetCursorScreenPos_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1321,6 +1338,12 @@ const SUBSYSTEMS := {
 		"function_names": [
 			"Combat_Cmd70_ActorAnimState_v129",
 			"Combat_SetActorAnimationState_v129",
+			"Combat_SetAnimationNodeStatePoseDisabledByTag_v129",
+			"Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129",
+			"Combat_SetJumpJetAnimationState_v129",
+			"Combat_ClearAirborneFlagsAndSetIdleAnimation_v129",
+			"Combat_SetGroundedIdleAnimation_v129",
+			"Combat_SetGroundedMovementAnimation_v129",
 			"Combat_StartFallDownAnim_SetRecoveryBlock_v129",
 			"Combat_AnimCallback_ClearActorRecoveryBlock_v129",
 			"Combat_ArmDeferredCollapseWhileAirborne_v129",
@@ -1336,6 +1359,71 @@ const SUBSYSTEMS := {
 				"from": "Combat_Cmd70_ActorAnimState_v129",
 				"to": "Combat_SetActorAnimationState_v129",
 				"kind": "research-linked",
+			},
+			{
+				"from": "Combat_UpdateLocalMovementHudAndAnimation_v129",
+				"to": "Combat_SetAnimationNodeStatePoseDisabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_CollectVisibleActorRenderEntries_v129",
+				"to": "Combat_SetAnimationNodeStatePoseDisabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_CollectVisibleActorRenderEntries_v129",
+				"to": "Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_AccumulateTorsoYawOffset_v129",
+				"to": "Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_AccumulateUpperBodyPitchOffset_v129",
+				"to": "Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RecenterUpperBodyAimOffsets_v129",
+				"to": "Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessWeaponBankFilterInput_v129",
+				"to": "Combat_SetAnimationNodeRotationOffsetEnabledByTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd70_ActorAnimState_v129",
+				"to": "Combat_SetJumpJetAnimationState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd70_ActorAnimState_v129",
+				"to": "Combat_ClearAirborneFlagsAndSetIdleAnimation_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd70_ActorAnimState_v129",
+				"to": "Combat_SetGroundedIdleAnimation_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd70_ActorAnimState_v129",
+				"to": "Combat_SetGroundedMovementAnimation_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_JumpJetInputTick_v129",
+				"to": "Combat_SetJumpJetAnimationState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResolveLandingOrGroundContact_v129",
+				"to": "Combat_ClearAirborneFlagsAndSetIdleAnimation_v129",
+				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_SetActorAnimationState_v129",
@@ -1548,6 +1636,7 @@ const SUBSYSTEMS := {
 			"Combat_Cmd59_ConfigureVoiceTransmission_v129",
 			"Combat_Cmd60_UpdateActorVoiceTransmissionState_v129",
 			"Combat_Cmd61_SetVoiceTransmissionTuneToChannelId_v129",
+			"Combat_AllocateVoiceTransmissionHistoryBuffer_v129",
 			"Combat_AppendVoiceTransmissionHistoryEntry_v129",
 			"Combat_ShowTimedStatusMessage_v129",
 			"Combat_HandleVoiceTransmissionInput_v129",
@@ -1587,6 +1676,11 @@ const SUBSYSTEMS := {
 			"Combat_UpdateVoiceTransmissionStatusStrip_v129",
 		],
 		"edges": [
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_AllocateVoiceTransmissionHistoryBuffer_v129",
+				"kind": "ghidra-callee",
+			},
 			{
 				"from": "Combat_InitializeBattlefieldVisualState_v129",
 				"to": "Combat_InitializeVoiceTransmissionHudControls_v129",
@@ -1836,6 +1930,7 @@ const SUBSYSTEMS := {
 			"Combat_AllocateActorPresentationStateTable_v129",
 			"Combat_FreeActorPresentationStateTable_v129",
 			"Combat_DecodePresentationStateGlobals_v129",
+			"Combat_InitializeSharedRenderProjectionContexts_v129",
 			"Combat_InitializeActorPresentationStateTable_v129",
 			"Combat_FreeVisualResourcesAndLocationMap_v129",
 			"Combat_FreeVisualResourceTables_v129",
@@ -1848,8 +1943,10 @@ const SUBSYSTEMS := {
 			"ResourceArchive_OpenTaggedArchive_v129",
 			"ResourceArchive_SeekTaggedEntry_v129",
 			"Frame_LoadBitmapFromFile_v129",
+			"Frame_LoadBitmapPaletteBlock_v129",
 			"Frame_FreeBitmap_v129",
 			"Frame_BlitBitmapPixels_v129",
+			"Frame_EncodeMaskedSpanRuns_v129",
 		],
 		"edges": [
 			{
@@ -1885,6 +1982,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
 				"to": "Combat_CapturePresentationStateSeedTick_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_InitializeSharedRenderProjectionContexts_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1943,8 +2045,18 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_LoadBitmapFromFile_v129",
+				"to": "Frame_LoadBitmapPaletteBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_LoadVisualResourceTables_v129",
 				"to": "Frame_BlitBitmapPixels_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadVisualResourceTables_v129",
+				"to": "Frame_EncodeMaskedSpanRuns_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2014,6 +2126,9 @@ const SUBSYSTEMS := {
 			"Combat_BuildTacticalRadarContactMarker_v129",
 			"Combat_TickRemoteActorPresentationState_v129",
 			"Combat_RenderTerrainSceneryProjection_v129",
+			"Combat_DrawTerrainProjectionOutline_v129",
+			"Combat_RasterizeFlatPolygon_v129",
+			"Combat_RenderTerrainSceneryObjectRecord_v129",
 			"Combat_ProjectWorldPointToScreenVertex_v129",
 		],
 		"edges": [
@@ -2288,12 +2403,27 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderTerrainSceneryProjection_v129",
+				"to": "Combat_DrawTerrainProjectionOutline_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawTerrainProjectionOutline_v129",
+				"to": "Combat_RasterizeFlatPolygon_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTerrainSceneryProjection_v129",
 				"to": "Combat_TransformPointListByMatrix4x4_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_RenderTerrainSceneryProjection_v129",
 				"to": "Combat_ProjectWorldPointToScreenVertex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTerrainSceneryProjection_v129",
+				"to": "Combat_RenderTerrainSceneryObjectRecord_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2624,13 +2754,30 @@ const SUBSYSTEMS := {
 		"function_names": [
 			"Combat_Cmd63_ResultSceneInit_v129",
 			"Combat_Cmd72_InitLocalActor_v129",
+			"Combat_ClearSpriteScaleTableCache_v129",
+			"Combat_InitializeEffectAnimationCaches_v129",
+			"Combat_FreeEffectAnimationCaches_v129",
+			"System_CopyCString_v129",
+			"Combat_FreeDefaultEffectAnimations_v129",
+			"Combat_LoadDefaultEffectAnimations_v129",
+			"Combat_LoadEffectAnimationSlot_v129",
+			"Combat_FreeEffectAnimationSlot_v129",
+			"Combat_SetEffectAnimationSlotScaleLinks_v129",
+			"Combat_GetOrCreateSpriteScaleTable_v129",
+			"Combat_LoadSpriteScaleTableFile_v129",
+			"Combat_GenerateSpriteScaleTableFile_v129",
+			"Combat_AllocateSpriteScaleTableBuffers_v129",
+			"Combat_WriteClampedSpriteScaleTableRow_v129",
+			"Combat_InitializeIdentityByteLookupTable_v129",
 			"Combat_InitializeVisualResourcesAndHudState_v129",
 			"Combat_SetTerrainAssetSet_v129",
 			"Combat_LoadTerrainPaletteOverrides_v129",
 			"Combat_DecodeTerrainSceneryConfig_v129",
+			"Combat_FreeTerrainSceneryPlacementBlockerTable_v129",
 			"Combat_DecodeTerrainProjectionOutlinePoints_v129",
 			"Combat_InitializeTerrainSceneryField_v129",
 			"Combat_BuildTerrainSceneryField_v129",
+			"System_SetRandomSeed_v129",
 			"Combat_AllocateTerrainSceneryPlacementBands_v129",
 			"Combat_FreeTerrainSceneryPlacementBands_v129",
 			"Combat_BuildTerrainSceneryObjectGroups_v129",
@@ -2649,7 +2796,32 @@ const SUBSYSTEMS := {
 		"edges": [
 			{
 				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Combat_FreeDefaultEffectAnimations_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Combat_FreeEffectAnimationCaches_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Combat_FreeTerrainSceneryPlacementBlockerTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
 				"to": "Combat_ResetEnvironmentRuntimeState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd72_InitLocalActor_v129",
+				"to": "Combat_InitializeEffectAnimationCaches_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd72_InitLocalActor_v129",
+				"to": "Combat_LoadDefaultEffectAnimations_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2665,6 +2837,66 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_Cmd72_InitLocalActor_v129",
 				"to": "Combat_DecodeTerrainProjectionOutlinePoints_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd72_InitLocalActor_v129",
+				"to": "Combat_InitializeIdentityByteLookupTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_GetOrCreateSpriteScaleTable_v129",
+				"to": "Combat_LoadSpriteScaleTableFile_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_GetOrCreateSpriteScaleTable_v129",
+				"to": "Combat_GenerateSpriteScaleTableFile_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeDefaultEffectAnimations_v129",
+				"to": "Combat_FreeEffectAnimationSlot_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadDefaultEffectAnimations_v129",
+				"to": "System_CopyCString_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadDefaultEffectAnimations_v129",
+				"to": "Combat_SetEffectAnimationSlotScaleLinks_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeDefaultEffectAnimations_v129",
+				"to": "Combat_ClearSpriteScaleTableCache_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadDefaultEffectAnimations_v129",
+				"to": "Combat_LoadEffectAnimationSlot_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadSpriteScaleTableFile_v129",
+				"to": "Combat_AllocateSpriteScaleTableBuffers_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_GenerateSpriteScaleTableFile_v129",
+				"to": "Combat_AllocateSpriteScaleTableBuffers_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_GenerateSpriteScaleTableFile_v129",
+				"to": "Combat_WriteClampedSpriteScaleTableRow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadEffectAnimationSlot_v129",
+				"to": "Combat_GetOrCreateSpriteScaleTable_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2695,6 +2927,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_BuildTerrainSceneryField_v129",
 				"to": "Combat_BuildTerrainSceneryObjectGroups_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_BuildTerrainSceneryField_v129",
+				"to": "System_SetRandomSeed_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2773,12 +3010,20 @@ const SUBSYSTEMS := {
 			"Combat_ComputeClipPlaneIntersectionCoords_v129",
 			"Combat_ClipPolygonToViewVolume_v129",
 			"Combat_ProjectClippedPolygonToScreen_v129",
+			"Combat_ProjectClippedPolygonToTexturedRenderVertices_v129",
+			"Combat_RasterizeTexturedPolygon_v129",
 			"Combat_ExpandIndexedPolygonVertexList_v129",
+			"Combat_SetEnvironmentLightDirectionAngles_v129",
 		],
 		"edges": [
 			{
 				"from": "Combat_Cmd63_ResultSceneInit_v129",
 				"to": "Combat_FreeAmbientGroundDetailSeeds_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeBattlefieldVisualState_v129",
+				"to": "Combat_SetEnvironmentLightDirectionAngles_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2802,6 +3047,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_RenderAmbientGroundDetail_v129",
+				"to": "Combat_ProjectClippedPolygonToTexturedRenderVertices_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderAmbientGroundDetail_v129",
+				"to": "Combat_RasterizeTexturedPolygon_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
 				"to": "Combat_ClipPolygonToViewVolume_v129",
 				"kind": "ghidra-callee",
@@ -2809,6 +3064,16 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
 				"to": "Combat_ProjectClippedPolygonToScreen_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
+				"to": "Combat_ProjectClippedPolygonToTexturedRenderVertices_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
+				"to": "Combat_RasterizeTexturedPolygon_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -2833,6 +3098,7 @@ const SUBSYSTEMS := {
 			"Combat_NormalizeVector3InPlace_v129",
 			"Combat_IntersectRayWithPlane_v129",
 			"Combat_ComputeActorBearingToActor_v129",
+			"Combat_ComputeArcTanDegreesFromScaledRatio_v129",
 			"Combat_ComputeVelocityMagnitude3_v129",
 			"Combat_IsActorSegmentClearOfTerrainScenery_v129",
 		],
@@ -2855,6 +3121,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_ProcessLocalMechContact_v129",
 				"to": "Combat_ComputeActorBearingToActor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ComputeActorBearingToActor_v129",
+				"to": "Combat_ComputeArcTanDegreesFromScaledRatio_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2927,13 +3198,16 @@ const SUBSYSTEMS := {
 			"Frame_PresentFrameRect_v129",
 			"Frame_RedrawWindowStackFrom_v129",
 			"Frame_ShowCenteredArchiveBitmap_v129",
+			"Frame_ClearPaletteFadeTargetBuffer_v129",
 			"Frame_UpdateFullPalette_v129",
 			"Shell_ClearFrontendDisplayAndApplyCurrentPalette_v129",
 			"Shell_CloseTimedArchiveSlideshow_v129",
 			"Shell_OpenTimedArchiveSlideshow_v129",
 			"Shell_ShowTitleAndCreditsSequence_v129",
+			"Shell_WaitForKeypressOrTimeout_v129",
 			"Shell_GetVersionString_v129",
 			"Shell_TickTimedArchiveSlideshow_v129",
+			"Shell_ControlFrontendSlideshowAudioCue_v129",
 			"ResourceArchive_CloseTaggedArchive_v129",
 			"ResourceArchive_OpenTaggedArchive_v129",
 			"ResourceArchive_SeekTaggedEntry_v129",
@@ -2964,6 +3238,36 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_ClearFrontendDisplayAndApplyCurrentPalette_v129",
 				"to": "Frame_FillDisplayRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShowTitleAndCreditsSequence_v129",
+				"to": "Frame_ClearPaletteFadeTargetBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenTimedArchiveSlideshow_v129",
+				"to": "Frame_ClearPaletteFadeTargetBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeCombatHudAndControlState_v129",
+				"to": "Frame_ClearPaletteFadeTargetBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShowTitleAndCreditsSequence_v129",
+				"to": "Shell_ControlFrontendSlideshowAudioCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_TickTimedArchiveSlideshow_v129",
+				"to": "Shell_ControlFrontendSlideshowAudioCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_CloseTimedArchiveSlideshow_v129",
+				"to": "Shell_ControlFrontendSlideshowAudioCue_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3059,6 +3363,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_ShowTitleAndCreditsSequence_v129",
 				"to": "Frame_CopyBitmapPaletteToBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShowTitleAndCreditsSequence_v129",
+				"to": "Shell_WaitForKeypressOrTimeout_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3175,7 +3484,7 @@ const SUBSYSTEMS := {
 	},
 	"shell-state-dispatch": {
 		"title": "Shell State Dispatch",
-		"summary": "Retail frontend entry, network frame polling, ESC command validation/dispatch, and state-transition tick path for the shell/world/combat/drop flows.",
+		"summary": "Retail frontend entry, network frame polling, ESC command validation/dispatch, state-transition tick path for the shell/world/combat/drop flows, and the shared heap/file/runtime helpers those paths reuse.",
 		"implementation_status": "metadata-only",
 		"godot_targets": [
 			"res://scenes/world/world.gd",
@@ -3195,6 +3504,7 @@ const SUBSYSTEMS := {
 			"System_SaveFrontendConfigToRegistry_v129",
 			"System_LoadOrInitializeFrontendConfig_v129",
 			"System_StartAolPaletteWatcherTimer_v129",
+			"System_StopAolPaletteWatcherTimer_v129",
 			"System_TickAolPaletteWatcher_v129",
 			"System_ClickAolPaletteOkButton_v129",
 			"System_DoesRegistryKeyExist_v129",
@@ -3237,7 +3547,10 @@ const SUBSYSTEMS := {
 			"Shell_HandleRpsPreambleStateByte_v129",
 			"Shell_RespondToFrq_v129",
 			"Shell_PlayUiRejectCue_v129",
+			"Combat_SetAudioCue0NameVolumeAndPriority_v129",
+			"Combat_ClearAudioCue0RuntimeHandle_v129",
 			"Shell_TickScrollingStatusMarquee_v129",
+			"World_HasNoActiveStackedShellWindow_v129",
 			"Frame_CaptureDisplayPaletteState_v129",
 			"Shell_ShowModalMessageBox_v129",
 			"Shell_OpenStatusTextDialog_v129",
@@ -3260,7 +3573,53 @@ const SUBSYSTEMS := {
 			"Shell_AppendBannerStateChangeControlFrame_v129",
 			"Shell_ResetOutboundCommandBuffer_v129",
 			"Shell_FlushOutboundCommandBuffer_v129",
+			"Shell_AppendOutboundCommandChecksumTrailer_v129",
 			"Shell_BuildExecutableDirectoryPath_v129",
+			"System_DetectDirectXCapabilityLevel_v129",
+			"System_InitializeDirectDrawDisplay_v129",
+			"System_InitializeSoftwareRasterizerSpanCode_v129",
+			"System_GetSoftwareRasterizerSpanCodeSize_v129",
+			"System_FreeHeapBlock_v129",
+			"System_AllocateHeapBlock_v129",
+			"System_AllocateHeapBlockWithRetry_v129",
+			"System_AllocateHeapBlockRaw_v129",
+			"System_SplitPathComponents_v129",
+			"System_CloseFileStream_v129",
+			"System_OpenFileStream_v129",
+			"System_ReallocateHeapBlock_v129",
+			"System_AllocateZeroedHeapBlock_v129",
+			"System_CloseFileDescriptor_v129",
+			"System_ReadFileDescriptorBytes_v129",
+			"System_QuickSort_v129",
+			"System_ShortSort_v129",
+			"System_SeekFileDescriptor_v129",
+			"System_WriteFileDescriptorBytes_v129",
+			"System_MapWin32ErrorToRuntimeError_v129",
+			"System_AllocateFileDescriptorSlot_v129",
+			"System_ClearFileDescriptorSlot_v129",
+			"System_SetFileDescriptorLength_v129",
+			"System_OpenFileDescriptor_v129",
+			"System_OpenFileDescriptorWithShareMode_v129",
+			"System_ExitProcess_v129",
+			"System_RunExitSequence_v129",
+			"System_AllocateFileStreamSlot_v129",
+			"System_ScanFormatCore_v129",
+			"System_TestFdivAcrossProcessors_v129",
+			"System_InitializeFpmathDispatchTable_v129",
+			"System_SetCrtRandomSeed_v129",
+			"System_CloseAllFileStreams_v129",
+			"System_MapLocaleStringA_v129",
+			"System_InitializeFileDescriptorTable_v129",
+			"System_InitializeEnvironmentPointerTable_v129",
+			"System_LoadEnvironmentStringsA_v129",
+			"System_ReportRuntimeErrorMessage_v129",
+			"System_CommitFileDescriptor_v129",
+			"System_FormatPrintfCore_v129",
+			"System_ReadVarArg32_v129",
+			"System_ReadVarArg64_v129",
+			"System_ReadVarArg16_v129",
+			"System_InvokeAllocationFailureHandler_v129",
+			"System_InitializeProcessHeap_v129",
 			"Shell_CreateMainWindow_v129",
 			"Shell_ResetQueuedInboundLineQueueState_v129",
 			"Shell_ClearQueuedInboundLineQueue_v129",
@@ -3275,7 +3634,16 @@ const SUBSYSTEMS := {
 			"Shell_InitializeFrontendAudio_v129",
 			"Shell_ShutdownFrontendAudio_v129",
 			"Shell_InitializeFrontendResourcesAndAudio_v129",
+			"System_InitializeExecutableChecksumTable_v129",
+			"System_VerifyExecutableChecksum_v129",
+			"System_VerifyExecutableChecksumFromDisk_v129",
+			"System_UpdateExecutableChecksumSegment_v129",
+			"System_GetFileLengthByPath_v129",
+			"System_LoadFileIntoBuffer_v129",
 			"Shell_EnterDropScene_v129",
+			"World_ClearStackedShellActiveFlag_v129",
+			"World_ClearScrollListShellActiveFlag_v129",
+			"World_ClearPagedMechListAndComponentActionFlags_v129",
 			"Combat_Cmd63_ResultSceneInit_v129",
 		],
 		"edges": [
@@ -3292,6 +3660,66 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_RunFrontendMain_v129",
 				"to": "Shell_BuildExecutableDirectoryPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_DetectDirectXCapabilityLevel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_InitializeDirectDrawDisplay_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_InitializeSoftwareRasterizerSpanCode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_InitializeSoftwareRasterizerSpanCode_v129",
+				"to": "System_GetSoftwareRasterizerSpanCodeSize_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_AllocateHeapBlock_v129",
+				"to": "System_AllocateHeapBlockWithRetry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_AllocateHeapBlockWithRetry_v129",
+				"to": "System_AllocateHeapBlockRaw_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_AllocateHeapBlockWithRetry_v129",
+				"to": "System_InvokeAllocationFailureHandler_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_BuildExecutableDirectoryPath_v129",
+				"to": "System_SplitPathComponents_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_TickScrollingStatusMarquee_v129",
+				"to": "World_HasNoActiveStackedShellWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_EnterDropScene_v129",
+				"to": "World_ClearStackedShellActiveFlag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_EnterDropScene_v129",
+				"to": "World_ClearScrollListShellActiveFlag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_EnterDropScene_v129",
+				"to": "World_ClearPagedMechListAndComponentActionFlags_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3402,6 +3830,236 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_RunFrontendMain_v129",
 				"to": "System_LoadOrInitializeFrontendConfig_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_VerifyExecutableChecksum_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksum_v129",
+				"to": "System_InitializeExecutableChecksumTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksum_v129",
+				"to": "System_VerifyExecutableChecksumFromDisk_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksumFromDisk_v129",
+				"to": "System_UpdateExecutableChecksumSegment_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadFileIntoBuffer_v129",
+				"to": "System_GetFileLengthByPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_GetFileLengthByPath_v129",
+				"to": "System_OpenFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_GetFileLengthByPath_v129",
+				"to": "System_CloseFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadFileIntoBuffer_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadFileIntoBuffer_v129",
+				"to": "System_OpenFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadFileIntoBuffer_v129",
+				"to": "System_CloseFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadLasrSequenceData_v129",
+				"to": "System_LoadFileIntoBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_LoadBitmapFontDescriptor_v129",
+				"to": "System_LoadFileIntoBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_LoadBitmapFontDescriptor_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_LoadMessageCatalog_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_LoadMessageCatalog_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_FreeMessageCatalog_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_FreeQueuedInboundLineBuffer_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyManifestFiles_v129",
+				"to": "System_OpenFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyManifestFiles_v129",
+				"to": "System_CloseFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_OpenFileDescriptor_v129",
+				"to": "System_OpenFileDescriptorWithShareMode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksumFromDisk_v129",
+				"to": "System_OpenFileDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksumFromDisk_v129",
+				"to": "System_ReadFileDescriptorBytes_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksumFromDisk_v129",
+				"to": "System_SeekFileDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_VerifyExecutableChecksumFromDisk_v129",
+				"to": "System_CloseFileDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_OpenFileDescriptorWithShareMode_v129",
+				"to": "System_SeekFileDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_OpenFileDescriptorWithShareMode_v129",
+				"to": "System_AllocateFileDescriptorSlot_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ExitProcess_v129",
+				"to": "System_RunExitSequence_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_CloseFileDescriptor_v129",
+				"to": "System_ClearFileDescriptorSlot_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_QuickSort_v129",
+				"to": "System_ShortSort_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_SetFileDescriptorLength_v129",
+				"to": "System_SeekFileDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_SetFileDescriptorLength_v129",
+				"to": "System_WriteFileDescriptorBytes_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_OpenFileStream_v129",
+				"to": "System_AllocateFileStreamSlot_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_LoadLasrSequenceProfiles_v129",
+				"to": "System_SetCrtRandomSeed_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeAmbientGroundDetail_v129",
+				"to": "System_SetCrtRandomSeed_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_CloseAllFileStreams_v129",
+				"to": "System_CloseFileStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_CloseAllFileStreams_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_MapLocaleStringA_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_MapLocaleStringA_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_InitializeFileDescriptorTable_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_InitializeEnvironmentPointerTable_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_InitializeEnvironmentPointerTable_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadEnvironmentStringsA_v129",
+				"to": "System_AllocateHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadEnvironmentStringsA_v129",
+				"to": "System_FreeHeapBlock_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_FormatPrintfCore_v129",
+				"to": "System_ReadVarArg32_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_FormatPrintfCore_v129",
+				"to": "System_ReadVarArg64_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_FormatPrintfCore_v129",
+				"to": "System_ReadVarArg16_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3771,7 +4429,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Shell_PlayUiRejectCue_v129",
+				"to": "Combat_SetAudioCue0NameVolumeAndPriority_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_PlayUiRejectCue_v129",
 				"to": "Combat_PlayAudioCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_PlayUiRejectCue_v129",
+				"to": "Combat_ClearAudioCue0RuntimeHandle_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3837,6 +4505,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_ValidateAndDispatchEscCommandBuffer_v129",
 				"to": "Shell_FlushOutboundCommandBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_FlushOutboundCommandBuffer_v129",
+				"to": "Shell_AppendOutboundCommandChecksumTrailer_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3953,12 +4626,17 @@ const SUBSYSTEMS := {
 		],
 		"function_names": [
 			"Combat_MainLoop_v129",
+			"Combat_GetActorPanelInterferenceLevel_v129",
+			"Combat_FillRectWithRandomInterferenceRuns_v129",
 			"Combat_BuildActorAnimationPose_v129",
 			"Combat_UpdateActorPreviewSectionStatusColors_v129",
+			"Combat_SetActorPreviewSectionStatusColor_v129",
 			"Combat_RenderActorPreviewPanel_v129",
+			"Combat_SelectActorAnimationStateRecord_v129",
 			"Combat_RenderModelAttachments_v129",
 			"Frame_DrawGlyph_v129",
 			"Frame_DrawString_v129",
+			"Frame_EncodeMaskedSpanRuns_v129",
 			"Frame_CompositeMaskedSpanRuns_v129",
 			"Frame_BlitRelativeRect_v129",
 			"Frame_GetGlyphAdvance_v129",
@@ -3968,12 +4646,32 @@ const SUBSYSTEMS := {
 		"edges": [
 			{
 				"from": "Combat_MainLoop_v129",
+				"to": "Combat_GetActorPanelInterferenceLevel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_FillRectWithRandomInterferenceRuns_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
 				"to": "Combat_UpdateActorPreviewSectionStatusColors_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_RenderActorPreviewPanel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActorPreviewPanel_v129",
+				"to": "Combat_SelectActorAnimationStateRecord_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateActorPreviewSectionStatusColors_v129",
+				"to": "Combat_SetActorPreviewSectionStatusColor_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3990,6 +4688,11 @@ const SUBSYSTEMS := {
 				"from": "Combat_RenderActorPreviewPanel_v129",
 				"to": "Frame_CompositeMaskedSpanRuns_v129",
 				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_EncodeMaskedSpanRuns_v129",
+				"to": "Frame_CompositeMaskedSpanRuns_v129",
+				"kind": "research-linked",
 			},
 			{
 				"from": "Combat_RenderActorPreviewPanel_v129",
@@ -4076,6 +4779,8 @@ const SUBSYSTEMS := {
 			"Frame_DispatchNormalizedKeyToActiveWindow_v129",
 			"Frame_DestroyWindow_v129",
 			"Frame_GetCachedBitmapBuffer_v129",
+			"Frame_FreeLoadedBitmapBuffer_v129",
+			"Frame_FreeCachedBitmapBufferCache_v129",
 			"Frame_InitializeBitmapLookupTableCache_v129",
 			"Frame_GetBitmapLookupTablePair_v129",
 			"Frame_GetOrCreateBitmapLookupTable_v129",
@@ -4087,6 +4792,8 @@ const SUBSYSTEMS := {
 			"Frame_InitializeBitmapFontDescriptorAdvances_v129",
 			"Frame_FreeBitmapFontDescriptor_v129",
 			"Frame_LoadMwPictureArchivesAndTables_v129",
+			"Frame_FreeWorldShellDialogBitmapTables_v129",
+			"Frame_FreeWorldShellBitmapTableEntry_v129",
 			"Frame_FreeBitmap_v129",
 			"Frame_FreeBitmapOwnedBuffers_v129",
 			"ResourceArchive_OpenTaggedArchive_v129",
@@ -4104,6 +4811,8 @@ const SUBSYSTEMS := {
 			"Frame_DrawBeveledBorderDecoration_v129",
 			"Frame_DrawBeveledRect_v129",
 			"Frame_DrawFilledCircleSector_v129",
+			"Frame_AllocateRasterMaskBuffer_v129",
+			"Frame_FreeRasterMaskBuffer_v129",
 			"Frame_DrawEllipseOutline_v129",
 			"Frame_CopyOrFillClippedRect_v129",
 			"Frame_DrawStringAt_v129",
@@ -4154,6 +4863,9 @@ const SUBSYSTEMS := {
 			"Frame_SwapPaletteIndicesInRect_v129",
 			"Frame_UpdateFullPalette_v129",
 			"Frame_UpdatePaletteRange_v129",
+			"Frame_SetCursorScreenPos_v129",
+			"Frame_SetSavedCursorByMode_v129",
+			"Frame_InitializeSavedArrowCursor_v129",
 			"Frame_RestoreSavedCursor_v129",
 			"Frame_HideCursor_v129",
 			"Frame_UpdateTextCursorHighlight_v129",
@@ -4170,6 +4882,21 @@ const SUBSYSTEMS := {
 			"Frame_LoadWorldShellBitmapTables_v129",
 		],
 		"edges": [
+			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "Frame_InitializeSavedArrowCursor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_SetArrowCursorMode_v129",
+				"to": "Frame_SetSavedCursorByMode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_SetWaitCursorMode_v129",
+				"to": "Frame_SetSavedCursorByMode_v129",
+				"kind": "ghidra-callee",
+			},
 			{
 				"from": "Frame_ActivateWindow_v129",
 				"to": "Frame_FindWindowStackIndex_v129",
@@ -4706,8 +5433,28 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_FreeCachedBitmapBufferCache_v129",
+				"to": "Frame_FreeLoadedBitmapBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_GetCachedBitmapBuffer_v129",
 				"to": "ResourceArchive_OpenTaggedArchive_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_FreeWorldShellBitmapTables_v129",
+				"to": "Frame_FreeWorldShellBitmapTableEntry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeVisualResourceTables_v129",
+				"to": "Frame_FreeWorldShellDialogBitmapTables_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Frame_FreeCachedBitmapBufferCache_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4808,6 +5555,16 @@ const SUBSYSTEMS := {
 			{
 				"from": "Frame_DrawFormattedText_v129",
 				"to": "Frame_DrawFilledCircleSector_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DrawFilledCircleSector_v129",
+				"to": "Frame_AllocateRasterMaskBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DrawFilledCircleSector_v129",
+				"to": "Frame_FreeRasterMaskBuffer_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5038,12 +5795,26 @@ const SUBSYSTEMS := {
 			"Combat_GetAttachmentTrailColorByTag_v129",
 			"Combat_GetAttachmentLocalOffsetByTag_v129",
 			"Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
+			"System_SetRandomSeed_v129",
 			"Combat_RenderEffectModelAndCheckCursorHit_v129",
 			"Combat_RenderEffectModel_v129",
 			"Combat_RenderEffectModelHitProxy_v129",
 			"Combat_CollectVisibleEffectSprites_v129",
 			"Combat_SpawnEffectSprite_v129",
+			"Combat_AllocateEffectSpriteAnimationInstance_v129",
 			"Combat_RenderEffectSprite_v129",
+			"Combat_RenderEffectSpriteAnimationInstance_v129",
+			"Combat_BlitScaledEffectSpriteFrame_v129",
+			"Combat_ProjectClippedPolygonToTexturedRenderVertices_v129",
+			"Combat_ComputeVisibleAttachmentViewVariantIndex_v129",
+			"Combat_RenderLitClippedPolygon_v129",
+			"Combat_RenderTexturedPolygonGroup_v129",
+			"Combat_RasterizeTexturedPolygonToSurface_v129",
+			"Combat_RasterizeTexturedPolygon_v129",
+			"Combat_RenderFlatShadedPolygonGroup_v129",
+			"Combat_RasterizeFlatPolygon_v129",
+			"Combat_RasterizeGouraudPolygon_v129",
+			"Combat_ComputeClampedLightDotShadeOffset_v129",
 			"Combat_ProjectWorldPointToScreenVertex_v129",
 			"Combat_InitializeActiveEffectRenderPools_v129",
 			"Combat_ResetActiveEffectRenderPools_v129",
@@ -5057,6 +5828,10 @@ const SUBSYSTEMS := {
 			"Combat_FreeEffectTrailStripEntries_v129",
 			"Combat_ResetEffectTrailStripEntries_v129",
 			"Combat_CollectVisibleEffectHitProxyModels_v129",
+			"Combat_BuildActiveEffectsCameraTransform_v129",
+			"Combat_CollectVisibleEffectModels_v129",
+			"Combat_CollectVisibleSpriteTrailAndHitProxyEffects_v129",
+			"Combat_UpdateEffectModelEntryMotion_v129",
 			"Combat_CollectVisibleEffectTrailStrips_v129",
 			"Combat_SpawnEffectTrailStripBurst_v129",
 			"Combat_SpawnEffectTrailStrip_v129",
@@ -5069,7 +5844,9 @@ const SUBSYSTEMS := {
 			"Combat_RenderImmediateWeaponFireOverlay_v129",
 			"Combat_GetWeaponSlotMuzzleOrigin_v129",
 			"Combat_ComputeEffectAimAnglesToPoint_v129",
+			"Combat_ComputeArcTanDegreesFromScaledRatio_v129",
 			"Combat_ComputePointDistance_v129",
+			"Combat_ComputeVectorMagnitude3_v129",
 			"Combat_BuildWeaponEffectSpawnGeometry_v129",
 			"Combat_SpawnActiveWeaponEffect_v129",
 			"Combat_CanAppendDamageCodeValueToActiveEffect_v129",
@@ -5159,6 +5936,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_Cmd68_SpawnWeaponEffect_v129",
 				"to": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ComputeEffectAimAnglesToPoint_v129",
+				"to": "Combat_ComputeArcTanDegreesFromScaledRatio_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5268,6 +6050,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_BuildActiveEffectsCameraTransform_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActiveEffectsPass_v129",
 				"to": "Combat_RenderSkyAndGroundBackdrop_v129",
 				"kind": "ghidra-callee",
 			},
@@ -5283,16 +6070,31 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
-				"to": "Combat_CollectVisibleEffectSprites_v129",
+				"to": "Combat_ComputeVectorMagnitude3_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CollectVisibleSpriteTrailAndHitProxyEffects_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_CollectVisibleSpriteTrailAndHitProxyEffects_v129",
+				"to": "Combat_CollectVisibleEffectSprites_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_CollectVisibleSpriteTrailAndHitProxyEffects_v129",
 				"to": "Combat_CollectVisibleEffectHitProxyModels_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
+				"to": "Combat_CollectVisibleEffectModels_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_CollectVisibleSpriteTrailAndHitProxyEffects_v129",
 				"to": "Combat_CollectVisibleEffectTrailStrips_v129",
 				"kind": "ghidra-callee",
 			},
@@ -5322,6 +6124,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_CollectVisibleEffectModels_v129",
+				"to": "Combat_UpdateEffectModelEntryMotion_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RenderEffectModelAndCheckCursorHit_v129",
 				"to": "Combat_RenderModelAttachments_v129",
 				"kind": "ghidra-callee",
@@ -5337,8 +6144,18 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_RenderEffectSprite_v129",
+				"to": "Combat_RenderEffectSpriteAnimationInstance_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
 				"to": "Combat_RenderEffectTrailStrip_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderEffectTrailStrip_v129",
+				"to": "Combat_RenderLitClippedPolygon_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5393,6 +6210,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderModelAttachments_v129",
+				"to": "Combat_ComputeVectorMagnitude3_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderModelAttachments_v129",
 				"to": "Combat_RenderAttachmentMeshListAndTrackCursorHit_v129",
 				"kind": "ghidra-callee",
 			},
@@ -5429,6 +6251,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_UpdateActiveProjectileEffects_v129",
 				"to": "Combat_SpawnEffectSprite_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnEffectSprite_v129",
+				"to": "Combat_AllocateEffectSpriteAnimationInstance_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5487,6 +6314,46 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_RenderAttachmentMeshListAndTrackCursorHit_v129",
+				"to": "Combat_ComputeVisibleAttachmentViewVariantIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderAttachmentMeshListAndTrackCursorHit_v129",
+				"to": "Combat_RenderTexturedPolygonGroup_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderAttachmentMeshListAndTrackCursorHit_v129",
+				"to": "Combat_RenderFlatShadedPolygonGroup_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTexturedPolygonGroup_v129",
+				"to": "Combat_ProjectClippedPolygonToTexturedRenderVertices_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTexturedPolygonGroup_v129",
+				"to": "Combat_RasterizeTexturedPolygon_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RasterizeTexturedPolygonToSurface_v129",
+				"to": "Combat_RasterizeTexturedPolygon_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderFlatShadedPolygonGroup_v129",
+				"to": "Combat_ComputeClampedLightDotShadeOffset_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderLitClippedPolygon_v129",
+				"to": "Combat_ComputeClampedLightDotShadeOffset_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_UpdateProjectileEffectState_v129",
 				"to": "Combat_GetAttachmentTrailColorByTag_v129",
 				"kind": "ghidra-callee",
@@ -5534,6 +6401,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
 				"to": "Combat_SpawnEffectSprite_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderEffectSpriteAnimationInstance_v129",
+				"to": "Combat_BlitScaledEffectSpriteFrame_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5588,6 +6460,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
+				"to": "System_SetRandomSeed_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnAttachmentSubtreeEffectModelsByTag_v129",
 				"to": "Combat_GetAttachmentTrailColorByTag_v129",
 				"kind": "ghidra-callee",
 			},
@@ -5617,6 +6494,7 @@ const SUBSYSTEMS := {
 			"World_Cmd40_LocationBrowser_v129",
 			"World_Cmd43_GroupedLocationBrowser_v129",
 			"World_Cmd45_ScrollListShell_v129",
+			"World_ClearScrollListShellActiveFlag_v129",
 			"Frame_SetActiveFont_v129",
 			"World_ScrollListShell_HandleInput_v129",
 			"World_ScrollListShell_HandleMouse_v129",
@@ -5641,8 +6519,11 @@ const SUBSYSTEMS := {
 			"World_DrawLocationBrowserRoomMarkers_v129",
 			"World_DrawLocationBrowserSelectionMarker_v129",
 			"World_DrawLocationBrowserWindow_v129",
+			"World_UpdateGroupedLocationBrowserSubmitControlState_v129",
 			"World_EnsureLocationMapIndex_v129",
 			"World_FindNearestLocationBrowserRoomInDirection_v129",
+			"World_IsPointerInGroupedLocationBrowserMarkerBounds_v129",
+			"World_ComputeLocationBrowserSelectionDistance_v129",
 			"World_FormatLocationBrowserDistanceScaleString_v129",
 			"World_FormatLocationBrowserSelectionDistanceString_v129",
 			"World_FreeLocationMapData_v129",
@@ -5655,7 +6536,15 @@ const SUBSYSTEMS := {
 			"World_LocationBrowser_HandleMouse_v129",
 			"World_ResetLocationLabelBitmapCache_v129",
 			"World_RegisterShortcutBinding_v129",
+			"World_RemoveShortcutBindingAtIndex_v129",
 			"World_RedrawLocationBrowserSelectionDetails_v129",
+			"World_OpenStackedStatsDialog_v129",
+			"World_OpenStackedDetailedStatsDialog_v129",
+			"World_OpenStackedDualSelectionDialog_v129",
+			"World_HandleStackedStatsDialogInput_v129",
+			"World_HandleStackedShellActionHotkey_v129",
+			"World_HandleStackedStatsDialogConfirmInput_v129",
+			"World_HandleStackedStatsDialogResponse_v129",
 			"World_OpenStackedTextDialog_v129",
 			"World_LoadLocationMapDataFile_v129",
 			"World_OpenLocationBrowserDistrictListWindow_v129",
@@ -5677,6 +6566,11 @@ const SUBSYSTEMS := {
 			"World_FreeShellWindowAuxBuffers_v129",
 			"World_MenuDialog_HandleInput_v129",
 			"World_MenuDialog_HandleMouse_v129",
+			"World_ReactivateStackedShellOwnerWindow_v129",
+			"World_RestoreStackedShellFocusTarget_v129",
+			"World_ToggleStackedShellSelectionHighlight_v129",
+			"World_ToggleStackedShellSelectionRowHighlight_v129",
+			"World_HandleStackedShellSelectionPointer_v129",
 			"World_HotkeySelectionMenu_HandleInput_v129",
 			"World_HotkeySelectionMenu_DispatchNormalizedKey_v129",
 			"World_MechStatusOptionPage_SubmitSelection_v129",
@@ -5687,6 +6581,11 @@ const SUBSYSTEMS := {
 				"from": "World_Cmd45_ScrollListShell_v129",
 				"to": "World_ScrollListShell_HandleInput_v129",
 				"kind": "research-linked",
+			},
+			{
+				"from": "Shell_EnterDropScene_v129",
+				"to": "World_ClearScrollListShellActiveFlag_v129",
+				"kind": "ghidra-callee",
 			},
 			{
 				"from": "World_Cmd45_ScrollListShell_v129",
@@ -5729,6 +6628,46 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_OpenStackedStatsDialog_v129",
+				"to": "World_OpenStackedDetailedStatsDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedStatsDialog_v129",
+				"to": "World_OpenStackedDualSelectionDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedStatsDialog_v129",
+				"to": "World_HandleStackedStatsDialogInput_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedStatsDialog_v129",
+				"to": "World_HandleStackedShellActionHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedStatsDialog_v129",
+				"to": "World_HandleStackedStatsDialogConfirmInput_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedDetailedStatsDialog_v129",
+				"to": "World_HandleStackedStatsDialogInput_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedDetailedStatsDialog_v129",
+				"to": "World_HandleStackedShellActionHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenStackedDualSelectionDialog_v129",
+				"to": "World_HandleStackedShellActionHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_Cmd04_TravelCompassPage_v129",
 				"to": "World_TravelCompassPage_HandleInput_v129",
 				"kind": "research-linked",
@@ -5759,6 +6698,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_Cmd04_TravelCompassPage_v129",
+				"to": "World_ReactivateStackedShellOwnerWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_Cmd40_LocationBrowser_v129",
 				"to": "Frame_DecodeArg_v129",
 				"kind": "ghidra-callee",
@@ -5786,6 +6730,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_Cmd53_ConfirmShortcutBinding_v129",
 				"to": "World_OpenStackedTextDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_CloseStackedShellWindow_v129",
+				"to": "World_ReactivateStackedShellOwnerWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_MenuDialog_HandleInput_v129",
+				"to": "World_ReactivateStackedShellOwnerWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_HandleStackedShellSelectionPointer_v129",
+				"to": "World_RestoreStackedShellFocusTarget_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5890,6 +6849,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "World_DrawLocationBrowserWindow_v129",
+				"to": "World_ComputeLocationBrowserSelectionDistance_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_DrawLocationBrowserWindow_v129",
 				"to": "World_FormatLocationBrowserDistanceScaleString_v129",
 				"kind": "ghidra-callee",
 			},
@@ -5904,8 +6868,18 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_DrawLocationBrowserSelectionMarker_v129",
+				"to": "World_UpdateGroupedLocationBrowserSubmitControlState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_DrawGroupedLocationBrowserWindow_v129",
 				"to": "World_RedrawLocationBrowserSelectionDetails_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawLocationBrowserSelectionDetails_v129",
+				"to": "World_ComputeLocationBrowserSelectionDistance_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5961,6 +6935,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_GroupedLocationBrowser_HandleMouse_v129",
 				"to": "World_SendLegacySelectionResponse_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_GroupedLocationBrowser_HandleMouse_v129",
+				"to": "World_IsPointerInGroupedLocationBrowserMarkerBounds_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -6935,6 +7914,7 @@ const SUBSYSTEMS := {
 			"World_GetMechDetailRowSection_v129",
 			"World_SetMechDetailRowConditionValue_v129",
 			"World_Cmd31_MechComponentActionPage_v129",
+			"World_ClearPagedMechListAndComponentActionFlags_v129",
 			"World_GetMechDetailRowLabel_v129",
 			"World_GetMechDetailRowConditionPercent_v129",
 			"World_MechComponentActionPage_GetConditionPercentColor_v129",
@@ -7003,6 +7983,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_Cmd31_MechComponentActionPage_v129",
 				"to": "World_UpdateMechManagementListSelectionHighlight_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_EnterDropScene_v129",
+				"to": "World_ClearPagedMechListAndComponentActionFlags_v129",
 				"kind": "ghidra-callee",
 			},
 			{
