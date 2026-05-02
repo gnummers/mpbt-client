@@ -67,6 +67,18 @@ const OVERRIDES := {
 		],
 		"research_refs": ["RESEARCH.md:3592"],
 	},
+	"Combat_SendLocalMechContactUpdate_v129": {
+		"family": "CombatWire",
+		"summary": "Sends the retail local-mech contact update for the remote actor hit by the local collision response.",
+		"notes": [
+			"Only called from Combat_ProcessLocalMechContact_v129 after a local collision against another active mech is confirmed. Encodes the contacted actor through the shared slot-to-network lookup table at `DAT_0047e138`, then writes three local motion components from the active contact/rebound vector fields into the outbound combat stream.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
 	"Combat_ComputeActorBearingToActor_v129": {
 		"family": "Movement",
 		"summary": "Computes the retail planar bearing from one actor to another in the engine's signed heading units.",
@@ -187,6 +199,45 @@ const OVERRIDES := {
 		"summary": "Initializes a retail 4x4 fixed-point matrix to the identity transform.",
 		"notes": [
 			"Sets the diagonal to `0x10000` and all other cells to zero, which is the retail 16.16 fixed-point identity matrix. Shared by combat startup, preview-panel setup, pose builders, and projectile/effect state resets.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ComputeFixedSinCos_v129": {
+		"family": "CombatMath",
+		"summary": "Computes retail 16.16 fixed-point sine and cosine values for one combat angle.",
+		"notes": [
+			"Interpolates between adjacent entries in the retail trigonometric lookup tables at `DAT_0047ff98`/`DAT_0047ff9c` using the 14-bit angle remainder, writing the sine to the first output pointer and the cosine to the second.",
+			"Shared by the matrix rotation helpers, tactical radar heading markers, effect trail spawning, and frame circle-sector fills that need the same fixed-angle basis vectors.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_TransformPointListByMatrix4x4_v129": {
+		"family": "CombatMath",
+		"summary": "Transforms a strided list of retail combat points through a 4x4 fixed-point matrix.",
+		"notes": [
+			"Treats each source element as a 6-int record, rotating and translating the leading xyz triplet through the supplied matrix while copying the trailing three metadata ints unchanged into the destination record.",
+			"Terrain-scenery projection, sky/ground backdrop, effect-strip, and other projected point-list paths reuse it when whole batches of combat-space points must be transformed together.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_TransformVectorByMatrix3x3_v129": {
+		"family": "CombatMath",
+		"summary": "Transforms one retail xyz vector by the rotational 3x3 basis of a fixed-point matrix.",
+		"notes": [
+			"Ignores the translation row and multiplies the input vector only by the matrix axes, making it suitable for direction, offset, and already-origin-relative point transforms.",
+			"Used by tactical radar, actor preview/rendering, projectile/effect state, and cursor-hit helpers that need basis-only transforms without adding a world-space translation.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -643,6 +694,18 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_ApplyActiveTerrainPaletteForDuration_v129": {
+		"family": "TerrainScenery",
+		"summary": "Applies the active combat terrain palette working copy immediately and arms a short restore deadline.",
+		"notes": [
+			"Only runs while the retail combat presentation mode byte `DAT_0047c8d4` is `4`. It applies the runtime terrain palette buffer at `DAT_00489c80` through Frame_ApplyBitmapPalette_v129 and stores `DAT_0047cbb0 + param_1` into `DAT_0048a490` so the main loop can restore `DAT_0047cbbc` after the timeout expires.",
+			"Combat_ApplyDamagePairOrQueueEffect_v129 and Combat_ResolveProjectileImpactDamage_v129 both call it with a duration of `7` ticks when the local actor takes immediate impact damage.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_DecodeTerrainSceneryConfig_v129": {
 		"family": "TerrainScenery",
 		"summary": "Decodes the local-actor terrain-scenery config payload, including scenery class masks and no-place blocker circles.",
@@ -652,6 +715,32 @@ const OVERRIDES := {
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_DecodeTerrainProjectionOutlinePoints_v129": {
+		"family": "TerrainScenery",
+		"summary": "Decodes the capped local-actor terrain projection outline point list used by the retail tactical projection overlay.",
+		"notes": [
+			"Called from Combat_Cmd72_InitLocalActor_v129. Reads a point-count byte into `DAT_004f578c`, decodes each `(x, y)` pair as two 3-byte arguments, subtracts the shared world-origin bias `0x018e4258`, and stores the resulting points into the outline table rooted at `DAT_004f69e0`.",
+			"When more than ten points arrive it still consumes the extra encoded pairs from the inbound stream, but only the first ten survive and `DAT_004f578c` is clamped back to `10`. Combat_RenderTerrainSceneryProjection_v129 later injects the Z plane and projects those stored points into the radar/world-marker overlay.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_DecodeLocalActorMechState_v129": {
+		"family": "MechRuntime",
+		"summary": "Decodes the cmd72 local-actor mech state block, including the backing mech record, component state tables, and trailing label string.",
+		"notes": [
+			"Starts by decoding the mech id, loading the decoded mech record through Mech_AllocateAndLoadRecordById_v129, caching that pointer into the local actor block at `+0x21e`, and then seeding the runtime and component-status regions through Mech_InitRuntimeStateFromRecord_v129 and Mech_InitComponentStatusFromRecord_v129.",
+			"After the mech record is in place it decodes several XOR-protected byte and type-1 argument tables into the local actor arrays at `+0x18c`, `+0x164`, `+0x14e`, `+0x20e`, and `+0x1e6`, then copies a capped `0x1f`-byte string span into the actor block at `+0x2da`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+			"res://scripts/assets/mec_parser.gd",
 		],
 	},
 	"Combat_QueryTerrainScenerySupportAtCoord_v129": {
@@ -800,6 +889,82 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_DrawHeadingTapeHud_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the stacked retail heading-tape HUD for the local chassis and upper-body headings.",
+		"notes": [
+			"Called from Combat_MainLoop_v129 in the steady-state overlay path when the presentation mode is using the normal HUD instead of world markers. Draws the shared baseline and tick marks across the top of the combat frame, centers the lower heading tape on the local mech heading field, and centers the upper tape on the combined upper-body heading offset used by the aim/torso presentation state.",
+			"Reuses the fixed `10`-through-`350` heading label strip with the cardinal markers `N`, `E`, `S`, and `W`, and applies the active zoom-state byte `DAT_004f6c38` to scale the tape spacing before forwarding each visible label through Combat_DrawOverlayTextLine_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawOffscreenActorEdgeMarkers_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the retail off-screen actor edge markers around the combat frame for active remote contacts.",
+		"notes": [
+			"Called from Combat_MainLoop_v129 only while the standard HUD overlay path is active instead of the full world-marker mode. Walks the active remote actors, checks their projected screen position fields, and places stacked markers along the left edge, right edge, or top edge whenever a contact falls outside the visible combat frame.",
+			"Uses Combat_MapActorColorCodeToPaletteIndex_v129 to derive each contact color from the actor color code field, triggers the shared LASR cue auto-select path the first time a nonlocal contact enters the forward in-frame zone, and delegates the tiny arrow rasterization to Combat_DrawOffscreenActorEdgeMarker_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawOffscreenActorEdgeMarker_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws one small directional off-screen actor marker glyph on the combat frame edge.",
+		"notes": [
+			"Builds a clipped five-scanline arrow shape inside the main combat frame using the supplied palette index. The direction parameter selects the left-edge, right-edge, or downward top-edge glyph variant used by Combat_DrawOffscreenActorEdgeMarkers_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_MapActorColorCodeToPaletteIndex_v129": {
+		"family": "CombatOverlay",
+		"summary": "Maps a retail actor color code to the fixed palette index used by combat markers, radar blips, and status text.",
+		"notes": [
+			"Translates the eight retail actor color-code values into the hard-coded palette entries reused by Combat_RenderActorWorldMarkers_v129, Combat_RenderTacticalRadarPanel_v129, Combat_DrawOffscreenActorEdgeMarkers_v129, and the target-side header color in Combat_DrawActorStatusPanel_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawActorStatusPanel_v129": {
+		"family": "CombatHud",
+		"summary": "Draws the retail actor status side panel for the local mech or the currently selected target.",
+		"notes": [
+			"Returns unless the panel-mode byte `DAT_0047d2c4` selects either the local actor (`1`) or the current tracked target (`2`); in target mode it also requires the selected contact to remain active and visible before any rows are emitted.",
+			"Builds the colored status rows for the torso, arm, leg, and detail sections, formats the header as either `MY %s` or `TARGET: %s`, appends the `Jets: %d Sinks: %d` summary plus the active weapon/detail rows, and forwards the resulting text layout through Combat_DrawOverlayTextLine_v129 on the fixed combat side-panel coordinates.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawOverlayTextLine_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws one clipped text line onto the main combat overlay surface.",
+		"notes": [
+			"Rejects coordinates outside the `320x240` combat frame, offsets the supplied x position by the retail combat-panel origin `0x50`, clamps the draw rectangle to a single 15-pixel text row, and forwards the string into Frame_DrawString_v129 using the active combat window font.",
+			"Shared by the framerate overlay, tracked-target labels, compact voice status HUD, countdown timer, and several other combat overlay panels.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_DrawTrackedActorScreenBracket_v129": {
 		"family": "CombatOverlay",
 		"summary": "Draws the retail screen-space bracket around the currently tracked actor and, when enabled, its adjacent info label.",
@@ -836,6 +1001,55 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"System_GetCentisecondTickCount_v129": {
+		"family": "SystemRuntime",
+		"summary": "Returns the retail monotonic tick count in centiseconds.",
+		"notes": [
+			"Wraps `timeGetTime()` and divides the millisecond result by ten, giving the 10 ms units used by the retail framerate sampler, countdown HUD, animation timers, and other combat overlay clocks.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_RoundFloatToNearestInt_v129": {
+		"family": "SystemRuntime",
+		"summary": "Rounds a float to the nearest integer using the retail `__ftol` helper plus a fractional-threshold check.",
+		"notes": [
+			"Converts the incoming float through `__ftol()`, then increments the truncated integer when the remaining fractional part exceeds the comparison constant at `DAT_00479010`.",
+			"Combat_UpdateJumpFuelReserve_v129 uses it for the scaled airborne jump-fuel drain terms before the helper subtracts those deltas from the encrypted local reserve.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_IntegerSquareRoot_v129": {
+		"family": "SystemRuntime",
+		"summary": "Computes the integer square root of a non-negative retail fixed/range accumulator.",
+		"notes": [
+			"Uses a coarse repeated-quartering seed and then refines it with a Newton-style midpoint step until the candidate changes by at most one.",
+			"Combat distance, speed, planar-radius, and tactical-radar callers reuse it to avoid floating-point square roots in the live simulation path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"System_UpdateCrc32_v129": {
+		"family": "SystemRuntime",
+		"summary": "Updates a running CRC32 accumulator over one byte buffer using the retail non-reflected polynomial stepper.",
+		"notes": [
+			"Shifts the accumulator left once per input bit and xors polynomial `0x04C11DB7` whenever the previous high bit was set, folding each byte from MSB to LSB.",
+			"Combat_SendLocalActorStateChecksum_v129 reuses it to derive the outbound combat checksum reply from the selected local-actor and mech-record bytes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/arena_client.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_DrawWeaponAimCursor_v129": {
 		"family": "CombatOverlay",
 		"summary": "Updates the live combat aim-cursor screen position and draws the retail cursor bitmap when the current weapon filter leaves a local slot enabled.",
@@ -865,6 +1079,19 @@ const OVERRIDES := {
 		"summary": "Draws the fixed-size retail tactical radar panel, including terrain projection, contact blips, range readout, and facing cues.",
 		"notes": [
 			"Renders into the panel rectangle `(0xdc,0x114)-(0x1a3,0x1db)`, centers the view on the local actor, reuses Combat_RenderTerrainSceneryProjection_v129 in player-relative mode, and then plots each in-range remote mech through Combat_BuildTacticalRadarContactMarker_v129 before drawing the current radar range string.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DrawTacticalRadarRangeRings_v129": {
+		"family": "CombatOverlay",
+		"summary": "Draws the concentric tactical-radar range rings for the current retail radar range step.",
+		"notes": [
+			"Converts the selected radar range into the panel's fixed 90-pixel radius scale, then draws the matching 50, 100, 300, 800, and 2500 range circles with Frame_DrawEllipseOutline_v129 around the radar center `(99,100)` as applicable.",
+			"Combat_RenderTacticalRadarPanel_v129 calls it after projecting contact markers so the active range ladder is visible on top of the terrain and blip overlay.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -940,7 +1167,7 @@ const OVERRIDES := {
 		"family": "CombatBackdrop",
 		"summary": "Renders the retail ambient ground-detail sprites at their randomized world anchors using the cached `GRD0` / `GRD1` bitmaps.",
 		"notes": [
-			"Uses the detail level selected through `DAT_0047a048` to choose how many anchors to sample, transforms the special support mesh into camera space, projects the resulting polygon, and draws the selected GRD bitmap only for anchors that remain near enough to the active view.",
+			"Uses the detail level selected through `DAT_0047a048` to choose how many anchors to sample, expands the indexed support mesh through Combat_ExpandIndexedPolygonVertexList_v129, clips it with Combat_ClipPolygonToViewVolume_v129, and draws the selected GRD bitmap only for anchors that remain near enough to the active view.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -951,7 +1178,84 @@ const OVERRIDES := {
 		"family": "CombatBackdrop",
 		"summary": "Draws the retail `SKY0` backdrop, the main ground plane quads, and any enabled ambient ground-detail sprites behind the active combat effects.",
 		"notes": [
-			"Called from Combat_RenderActiveEffectsPass_v129 when the main 3d scene is being drawn. The pass conditionally renders the `SKY0` backdrop when the matching visual toggle is enabled, draws two large transformed ground polygons, and then delegates the optional GRD sprite layer to Combat_RenderAmbientGroundDetail_v129.",
+			"Called from Combat_RenderActiveEffectsPass_v129 when the main 3d scene is being drawn. The pass conditionally renders the `SKY0` backdrop when the matching visual toggle is enabled, clips and projects the transformed ground quads through Combat_ClipPolygonToViewVolume_v129 and Combat_ProjectClippedPolygonToScreen_v129, and then delegates the optional GRD sprite layer to Combat_RenderAmbientGroundDetail_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_InterpolateClippedPolygonVertexAttributes_v129": {
+		"family": "CombatRender3d",
+		"summary": "Interpolates the payload fields for one newly clipped polygon vertex after the clip-plane intersection coordinates are solved.",
+		"notes": [
+			"Called only from Combat_ClipPolygonToViewVolume_v129 after Combat_ComputeClipPlaneIntersectionCoords_v129 finds the surviving coordinates. It linearly interpolates vertex slots `3..5`, preserving the per-vertex shading or texture payload attached to the homogeneous clip vertex.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeClipPlaneIntersectionCoords_v129": {
+		"family": "CombatRender3d",
+		"summary": "Solves the two varying coordinates where a polygon edge intersects one homogeneous combat view-volume clip plane.",
+		"notes": [
+			"Used by Combat_ClipPolygonToViewVolume_v129 for each sign-change edge while clipping against the retail left/right and top/bottom frustum boundaries. The helper returns failure only when the edge is parallel to the active clip plane.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClipPolygonToViewVolume_v129": {
+		"family": "CombatRender3d",
+		"summary": "Clips a homogeneous polygon vertex list against the retail combat view volume and emits the surviving scratch vertex list.",
+		"notes": [
+			"Used directly by Combat_RenderAmbientGroundDetail_v129 and Combat_RenderSkyAndGroundBackdrop_v129, and indirectly by the shared world-marker and effect-strip render wrappers. The helper walks the polygon through four frustum boundaries with the scratch buffers at `DAT_0048a520` and `DAT_0048a508`, inserting new vertices through Combat_ComputeClipPlaneIntersectionCoords_v129 and Combat_InterpolateClippedPolygonVertexAttributes_v129 whenever an edge crosses a clip plane.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ProjectClippedPolygonToScreen_v129": {
+		"family": "CombatRender3d",
+		"summary": "Projects one already clipped polygon vertex list into integer screen coordinates and tracks its screen-space bounds.",
+		"notes": [
+			"Converts each surviving homogeneous vertex into `(x, y)` pixels using the active viewport fields at `+0x68` and `+0x6c`, preserves either the caller-supplied depth slot or the vertex payload slot `5`, and updates the shared min/max bounds globals used by the follow-up raster path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ExpandIndexedPolygonVertexList_v129": {
+		"family": "CombatRender3d",
+		"summary": "Expands a retail indexed polygon face record into the six-word-per-vertex scratch list consumed by the clip/project helpers.",
+		"notes": [
+			"Reads the face vertex count plus its vertex-index list, copies the referenced entries from the source vertex table into a dense local buffer, and feeds that expanded list into Combat_ClipPolygonToViewVolume_v129. Combat_RenderAmbientGroundDetail_v129 is the current direct named caller.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ProjectWorldPointToScreenVertex_v129": {
+		"family": "CombatRender3d",
+		"summary": "Projects one transformed combat world point into the shared six-word screen-vertex record used by overlays and effect renderers.",
+		"notes": [
+			"Called by Combat_RenderActorWorldMarkers_v129, Combat_RenderTerrainSceneryProjection_v129, Combat_RenderEffectModelAndCheckCursorHit_v129, Combat_RenderEffectSprite_v129, and Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129. It applies the active viewport scaling and copies the point payload fields into the destination record layout consumed by the retail sprite and polygon paths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClipLineSegmentToViewVolume_v129": {
+		"family": "CombatRender3d",
+		"summary": "Clips a two-point line segment against the retail combat view volume and writes the surviving endpoints back in place.",
+		"notes": [
+			"Thin wrapper over Combat_ClipPolygonToViewVolume_v129 that seeds a two-vertex scratch polygon, runs the shared clipper, and rewrites the caller's endpoints from the surviving segment. Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129 uses it for the beam-style fallback branch before projecting the clipped muzzle-to-impact line.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1072,6 +1376,19 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 		"research_refs": ["RESEARCH.md:3624-3626"],
+	},
+	"Combat_RecomputeWalkRunSpeedCaps_v129": {
+		"family": "Movement",
+		"summary": "Recomputes the actor's current walk and run speed caps from the damaged movement rating and any caller-supplied penalty.",
+		"notes": [
+			"Stores the current walk cap as `(walk_mp - penalty) * 300` and the run cap as the rounded retail `ceil(walk_mp * 1.5) * 300` value, except when the matching leg/hip damage state forces the run cap to collapse to the walk cap.",
+			"Combat_ApplyDamageCodeValue_v129 and Combat_ApplyDetailRowDamageCode_v129 call it after movement-affecting damage updates and when shutdown forces the local actor's movement budget to zero, then refresh the local movement HUD through Combat_UpdateLocalMovementHudAndAnimation_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
 	},
 	"Combat_ToggleStickyViewMode_v129": {
 		"family": "UpperBodyControl",
@@ -1348,6 +1665,54 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
+	"Combat_ClearCmbOrCmpHudToggleByHotkey_v129": {
+		"family": "CombatPresentation",
+		"summary": "Routes the normalized presentation hotkey for `CMB` or `CMP` back into the default toggle state.",
+		"notes": [
+			"Accepts only hotkey `0x2b` or `0x49` and forwards them into Combat_UpdateCmbHudToggle_v129 or Combat_UpdateCmpHudToggle_v129 with the second state argument forced to `0`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SetCmbOrCmpHudToggleByHotkey_v129": {
+		"family": "CombatPresentation",
+		"summary": "Routes the normalized presentation hotkey for `CMB` or `CMP` into the alternate toggle state.",
+		"notes": [
+			"Accepts only hotkey `0x2b` or `0x49` and forwards them into Combat_UpdateCmbHudToggle_v129 or Combat_UpdateCmpHudToggle_v129 with the second state argument forced to `1`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ClearCmbOrCmpHudToggleByHotkeyThunk_v129": {
+		"family": "CombatPresentation",
+		"summary": "Tiny retail tail wrapper that forwards into Combat_ClearCmbOrCmpHudToggleByHotkey_v129.",
+		"notes": [
+			"Decompiles as a nine-byte thunk that immediately tail-calls the main `CMB`/`CMP` clear dispatcher without adding any extra state of its own.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SetCmbOrCmpHudToggleByHotkeyThunk_v129": {
+		"family": "CombatPresentation",
+		"summary": "Tiny retail tail wrapper that forwards into Combat_SetCmbOrCmpHudToggleByHotkey_v129.",
+		"notes": [
+			"Decompiles as a nine-byte thunk that immediately tail-calls the main `CMB`/`CMP` set dispatcher; the only inbound control-flow Ghidra currently exposes is the small preceding branch at `00415ff6`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_UpdateChbHudToggle_v129": {
 		"family": "CombatPresentation",
 		"summary": "Updates the retail `CHB1`-`CHB4` HUD toggle strip from the current presentation toggle state.",
@@ -1370,6 +1735,18 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ShowTimedStatusMessage_v129": {
+		"family": "CombatHud",
+		"summary": "Latches one timed combat status message into the shared HUD buffer and mirrors it into the capture log when logging is active.",
+		"notes": [
+			"Stores the caller-supplied text in `DAT_004f50c0`, sets the expiry tick in `DAT_004f511c`, clears the small auxiliary latch at `DAT_004f5114`, and leaves Combat_MainLoop_v129 to draw the message through the fixed `(0x14,0xcf)` status-text path until the timer expires.",
+			"Used by Combat_Cmd74_DisplayStatusMessage_v129, the local/presentation hotkey toggles, Combat_TickVoiceTransmissionSpeechInState_v129, and the capture-log helpers when retail needs to surface a transient status line to the player.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
 		],
 	},
 	"Combat_RedrawEq1HudIndicator_v129": {
@@ -1425,6 +1802,32 @@ const OVERRIDES := {
 		"summary": "Updates the retail `CMP1`-`CMP4` HUD toggle strip and the paired presentation-mode side effects.",
 		"notes": [
 			"Presentation hotkey `0x49` routes through this helper and its timeout helpers. The wrapper redraws the active `CMP*` bitmap at `(0x6,0x1c8)-(0x19,0x1df)`, conditionally forwards the toggle into the retail overlay helper when the related presentation bit is set, and triggers the paired side-effect path when switching into the non-default state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SetHudTimeoutSlotExpiry_v129": {
+		"family": "CombatHud",
+		"summary": "Arms one of the small combat HUD timeout slots for the current tick plus a caller-supplied duration.",
+		"notes": [
+			"Writes `System_GetCentisecondTickCount_v129() + duration` into `DAT_004e9100[slot]` when the slot index is in the fixed `0..5` range.",
+			"Retail uses these timeout slots for lightweight HUD state transitions such as the blinking eject indicator and the paired CMP presentation-toggle follow-up timers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ProcessExpiredHudTimeoutSlots_v129": {
+		"family": "CombatHud",
+		"summary": "Polls the six lightweight combat HUD timeout slots and fires the follow-up indicator updates whose expiry time has passed.",
+		"notes": [
+			"Called from Combat_MainLoop_v129 with the current centisecond tick count and walks `DAT_004e9100[0..5]`, clearing any slot whose deadline has expired.",
+			"Retail currently uses this poller to complete the eject indicator blink and to restore the deferred CMB/CMP presentation-toggle states by routing back into Combat_UpdateEjectStatusHudIndicator_v129, Combat_UpdateCmbHudToggle_v129, and Combat_UpdateCmpHudToggle_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1538,6 +1941,168 @@ const OVERRIDES := {
 			"res://scripts/net/arena_client.gd",
 		],
 	},
+	"Combat_GetWeaponSlotMuzzleOrigin_v129": {
+		"family": "WeaponFire",
+		"summary": "Resolves the world-space muzzle origin for one weapon slot from the actor's attachment tags.",
+		"notes": [
+			"Maps the slot's mount-location code onto a fixed attachment-tag table, reads that attachment's local offset from the active actor model, and transforms it into world space.",
+			"For the local actor it uses the simplified chassis-heading rotation path before adding the actor origin; remote actors use the full actor transform matrix. Combat_BuildWeaponEffectSpawnGeometry_v129 and Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129 both rely on the same origin helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_ComputeEffectAimAnglesToPoint_v129": {
+		"family": "CombatEffects",
+		"summary": "Computes the retail pitch/yaw effect angles that face from one world point toward another.",
+		"notes": [
+			"Zeros the roll component, derives pitch from the vertical delta over the horizontal range, and derives yaw from the XY deltas with the same quadrant correction the retail actor/effect code uses before scaling into the `0xb6` angle units stored on active effect slots.",
+			"Combat_BuildWeaponEffectSpawnGeometry_v129 uses it when seeding newly spawned weapon effects, and Combat_UpdateProjectileEffectState_v129 reruns it whenever an effect is still tracking a live attachment target.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputePointDistance_v129": {
+		"family": "CombatEffects",
+		"summary": "Returns the Euclidean distance between two combat world points with the retail overflow-safe 1/32 scaling step.",
+		"notes": [
+			"Shifts the XYZ deltas down by five bits before squaring, runs the shared integer square-root helper, and then shifts the result back up so the caller gets a world-space distance without risking overflow on large coordinate deltas.",
+			"Used by the local fire path, replicated cmd68 effect spawns, and Combat_UpdateProjectileEffectState_v129 when converting origin/impact coordinates into projectile travel lengths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_BuildWeaponEffectSpawnGeometry_v129": {
+		"family": "WeaponFire",
+		"summary": "Builds the origin, target point, travel flags, and initial aim angles for one weapon-effect spawn.",
+		"notes": [
+			"Resolves the firing slot's world-space muzzle origin, optionally derives a default forward impact point for the local actor when no explicit target attachment is locked, and otherwise transforms the target actor's attachment/tag offset into world space.",
+			"Finishes by calling Combat_ComputeEffectAimAnglesToPoint_v129 so both the local fire path and Combat_Cmd68_SpawnWeaponEffect_v129 can seed the exact same active effect state block before handing it to Combat_SpawnActiveWeaponEffect_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_SpawnActiveWeaponEffect_v129": {
+		"family": "WeaponFire",
+		"summary": "Allocates a free active projectile/effect slot and seeds it from one weapon-effect spawn request.",
+		"notes": [
+			"Scans the active effect pool at `DAT_0047f730` for a free `0x1ff`-byte slot, records the allocated index in `DAT_0048b914`, stores the origin/angles/target bookkeeping, and chooses the beam-style versus projectile-style travel cadence from the named weapon-type predicates.",
+			"When Combat_WeaponTypeUsesCachedEffectModel_v129 succeeds it also loads the cached 3D object record from `DAT_0047aaf8 + weapon_type * 0x5c` through Combat_LoadCached3dObjectRecord_v129 and marks the slot for model rendering instead of fallback sprite/beam rendering.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_CanAppendDamageCodeValueToActiveEffect_v129": {
+		"family": "CombatEffects",
+		"summary": "Returns whether one live active effect slot can absorb another deferred damage code/value pair for the same target actor.",
+		"notes": [
+			"Validates the slot index against the active effect pool at `DAT_0047f730`, requires the slot's live bit to be set, matches the slot's tracked target actor against the supplied actor id, and caps the deferred pair count at `0x14` entries.",
+			"Combat_ApplyDamagePairOrQueueEffect_v129 uses it to decide whether a fresh damage packet can piggyback on the already active local weapon effect instead of immediately playing impact feedback and applying the damage to the actor state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_AppendDamageCodeValueToActiveEffect_v129": {
+		"family": "CombatEffects",
+		"summary": "Appends one deferred damage code/value pair onto an active effect slot's pending impact list.",
+		"notes": [
+			"Writes the supplied damage code and value into the slot's paired arrays at offsets `+0x145` and `+0x195` using the current deferred-pair count stored at `+0x141`, then increments that count.",
+			"Called only after Combat_CanAppendDamageCodeValueToActiveEffect_v129 succeeds, letting Combat_ApplyDamagePairOrQueueEffect_v129 batch multiple impact updates onto the same in-flight local effect.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_RenderImmediateWeaponFireOverlay_v129": {
+		"family": "WeaponFire",
+		"summary": "Renders the small local immediate-fire overlay used by non-projectile, non-model weapon shots.",
+		"notes": [
+			"Used only on the local immediate-impact path when the weapon type does not route through cached effect models or deferred projectile effects.",
+			"Maps weapon types `2..5` onto fixed overlay dimensions, maps the weapon mount location onto a small set of cockpit-view anchor positions, then submits three backdrop-style quads and presents the updated combat view rectangle immediately.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_GetLastSpawnedWeaponEffectSlotIndex_v129": {
+		"family": "WeaponFire",
+		"summary": "Returns the active effect-pool index most recently reserved by Combat_SpawnActiveWeaponEffect_v129.",
+		"notes": [
+			"Thin accessor over `DAT_0048b914`, the global that Combat_SpawnActiveWeaponEffect_v129 updates when it claims a free slot from the active projectile/effect pool.",
+			"Combat_Cmd68_SpawnWeaponEffect_v129 reads it immediately after spawning a replicated effect so the command handler can remember which active slot was just created.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_ResolveLocalWeaponFallbackImpactPoint_v129": {
+		"family": "WeaponFire",
+		"summary": "Resolves the local actor's fallback impact point when a weapon effect is fired without a locked target attachment.",
+		"notes": [
+			"Builds the local actor's inverse transform, projects a forward point using the weapon-type range vector from `DAT_0047aad8`, and then either clips that path against the currently selected terrain-scenery face or falls back to the ground-plane intersection.",
+			"Returns the small retail path flag consumed by Combat_BuildWeaponEffectSpawnGeometry_v129 and Combat_SpawnActiveWeaponEffect_v129 alongside the resolved target point, which is why the helper stays local-fire specific instead of serving the replicated cmd68 path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_WeaponTypeUsesCachedEffectModel_v129": {
+		"family": "WeaponFire",
+		"summary": "Returns whether a retail weapon type should use the cached 3D effect-model path instead of the sprite/beam fallback.",
+		"notes": [
+			"Checks the paired weapon metadata tables at `DAT_0047aab0` and `DAT_0047aaf4`, succeeding only when the fallback-style field is zero and the cached effect-model record field is populated.",
+			"Combat_FireWeaponBank_v129 and the pooled projectile/effect allocator both call it before loading the cached object record from `DAT_0047aaf8 + weapon_type * 0x5c` through Combat_LoadCached3dObjectRecord_v129 and enabling the scaled effect-model render path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_WeaponTypeUsesProjectileEffectPath_v129": {
+		"family": "WeaponFire",
+		"summary": "Returns whether a retail weapon type belongs to the projectile-style effect path set.",
+		"notes": [
+			"Matches weapon type ids `6..9`, the same class group that keeps Combat_FireWeaponBank_v129 on the pooled projectile/effect-object path even when no cached effect model is available.",
+			"Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129 renders these classes as the short-lived projectile-sprite fallback, while the direct-fire hotkey path uses this predicate to avoid the immediate beam/impact shortcut used by the beam-style set.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_WeaponTypeUsesBeamEffectPath_v129": {
+		"family": "WeaponFire",
+		"summary": "Returns whether a retail weapon type belongs to the beam-style effect path set.",
+		"notes": [
+			"Matches weapon type ids `2..5`, the same class group that the fallback renderer turns into the muzzle-to-impact beam/quad presentation when no cached effect model is present.",
+			"Combat_UpdateActiveProjectileEffects_v129 also checks this set when deciding how aggressively to keep active weapon-effect entries visible, so the predicate spans both fire-path routing and effect rendering.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_RedrawWeaponBankHudReadouts_v129": {
 		"family": "CombatHud",
 		"summary": "Redraws the local weapon-bank readout rows on the combat HUD.",
@@ -1630,6 +2195,18 @@ const OVERRIDES := {
 			"res://scripts/audio/audio_manager.gd",
 		],
 	},
+	"Combat_TickLocalGroundMovementCadenceCue_v129": {
+		"family": "CombatAudio",
+		"summary": "Ticks the alternating grounded movement cadence cue while the local mech has a nonzero throttle target.",
+		"notes": [
+			"Called only from Combat_TickLocalActorControlLoop_v129. When the local actor is grounded and the one-second cadence timer has expired, it checks the encrypted throttle-target field at `+0x36e`, plays cue `0x22` if that target is nonzero, alternates the cue pan between the left/right endpoints through the nearby sound-parameter helper, and rearms the timer for another 100 centiseconds.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/audio/audio_manager.gd",
+		],
+	},
 	"Combat_UpdateUpperBodyAimCueAudio_v129": {
 		"family": "CombatAudio",
 		"summary": "Updates the local upper-body aim cue audio from the torso-yaw, pitch, and recenter activity timers.",
@@ -1656,6 +2233,7 @@ const OVERRIDES := {
 		"summary": "Resets the retail LASR sound state machine, clears the current/target state ids, and releases active LASR handles.",
 		"notes": [
 			"Clears the LASR enable/ramp flags, resets the current and pending LASR state ids plus the target volume bookkeeping, unregisters any active LASR sound handles, and zeroes the loop counters used by the LASR playback sequencer.",
+			"It also routes the Miles callback clear through Combat_RegisterLasrSequenceCallback_v129 so every live LASR sequence handle drops its current retail sequence callback before the state machine goes idle.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1915,6 +2493,20 @@ const OVERRIDES := {
 		"summary": "Advances the retail LASR sound state machine, including pending volume ramps and sound-handle swaps.",
 		"notes": [
 			"When LASR is enabled and armed, advances any pending target-volume ramp, counts down the current LASR playback step, swaps active LASR sound handles when the queued profile changes, and dispatches the current LASR profile callback to keep the alert sound sequence running.",
+			"Whenever the active LASR sequence handle changes, it rebinds the Miles sequence callback through Combat_RegisterLasrSequenceCallback_v129 so the alert sequencer keeps driving the retail state machine.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RegisterLasrSequenceCallback_v129": {
+		"family": "CombatAudio",
+		"summary": "Thin wrapper around the Miles sequence-callback registration used by the retail LASR sound state machine.",
+		"notes": [
+			"Delegates directly to `_AIL_register_sequence_callback_8` for the supplied sequence handle and callback pointer.",
+			"Combat_ResetLasrSoundState_v129 uses it to clear callbacks during LASR teardown, and Combat_TickLasrSoundState_v129 reuses it when a new LASR profile sequence becomes active.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -2042,6 +2634,17 @@ const OVERRIDES := {
 			"res://scripts/audio/audio_manager.gd",
 		],
 	},
+	"Combat_SetAudioCuePan_v129": {
+		"family": "CombatAudio",
+		"summary": "Sets the stereo pan for a combat audio cue slot.",
+		"notes": [
+			"Uses Miles `KSND_C_setParamName`/`KSND_C_setParamSnd` with parameter id `1`, matching the retail cue-slot storage used by Combat_SetAudioCueVolume_v129 and Combat_SetAudioCuePitch_v129. The grounded cadence helper alternates this value between the left/right endpoints while reusing cue slot `0x22`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+		],
+	},
 	"Combat_SetAudioCuePitch_v129": {
 		"family": "CombatAudio",
 		"summary": "Sets the pitch for a combat audio cue slot.",
@@ -2081,6 +2684,20 @@ const OVERRIDES := {
 		"summary": "Renders a labeled combat actor preview panel by posing the actor model, drawing it with the preview camera, and centering a truncated caption.",
 		"notes": [
 			"Called twice from Combat_MainLoop_v129 for the combat self/target preview panes. It builds a fixed preview transform, refreshes the actor pose through Combat_BuildActorAnimationPose_v129, renders the attachment stack via Combat_RenderModelAttachments_v129, truncates the supplied label to 16 characters plus ellipsis, and draws that caption along the panel bottom edge.",
+			"Combat_MainLoop_v129 refreshes the preview model's per-section damage colors through Combat_UpdateActorPreviewSectionStatusColors_v129 immediately before each self/target render pass.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_UpdateActorPreviewSectionStatusColors_v129": {
+		"family": "CombatPreview",
+		"summary": "Updates the combat actor preview model's per-section status colors from the current armor and internal structure values.",
+		"notes": [
+			"Walks the eleven mech detail rows, compares the live armor/internal values in the actor block against the decoded mech record and the internal-structure maxima, chooses one of four hard-coded status colors, and writes that color onto the matching preview-model section entry through the private mesh-color setter at `FUN_00436420`.",
+			"Called from Combat_MainLoop_v129 immediately before both self and target Combat_RenderActorPreviewPanel_v129 draws so the preview mesh reflects current section damage without rebuilding the panel layout.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -2173,7 +2790,7 @@ const OVERRIDES := {
 		"family": "JoystickControl",
 		"summary": "Loads or migrates the retail joystick keymap when needed, then rebuilds the runtime lookup tables used to resolve bound joystick actions.",
 		"notes": [
-			"Ensures the joystick keymap cache is loaded, performs the one-time registry-backed migration for the legacy binding sentinel, clears the four reverse-lookup tables under `DAT_004e4b60`-`DAT_004e5170`, and repopulates them from the active binding records in `DAT_004e8860` according to each binding's category bits. Shell_RunFrontendMain and Combat_ResetPresentationStateAndLoadVisualOptions_v129 both call it before any joystick-driven control handling so the runtime can translate incoming joystick codes back to bound retail actions.",
+			"Ensures the joystick keymap cache is loaded, performs the one-time registry-backed migration for the legacy binding sentinel, clears the four reverse-lookup tables under `DAT_004e4b60`-`DAT_004e5170`, and repopulates them from the active binding records in `DAT_004e8860` according to each binding's category bits. Shell_RunFrontendMain and Combat_ResetPresentationStateAndLoadVisualOptions_v129 both call it before any joystick-driven control handling so the runtime can translate incoming keyboard or joystick codes back to bound retail actions through Combat_LookupBoundKeyAction_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -2181,11 +2798,114 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_SetLocalControlActionPressedState_v129": {
+		"family": "JoystickControl",
+		"summary": "Sets or clears the held-state bit for one continuous retail local-control action.",
+		"notes": [
+			"Maps the bound action id onto the shared local-control bitfield `DAT_004e4f64`, updating only the continuous actions that movement, jump, help-overlay, and voice-input ticks sample each frame.",
+			"Frame_TranslateKeyMessageToNormalizedKey_v129, Combat_PollJoystickButtonsAndHatBindings_v129, and the combat mouse-control branch inside Frame_DispatchMouseEventToWindowStack_v129 all route press/release changes through this helper before Combat_ProcessLocalMovementAndJumpInput_v129, Combat_JumpJetInputTick_v129, and Combat_TickVoiceTransmissionSpeechInState_v129 consume the latched state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_LookupBoundKeyAction_v129": {
+		"family": "JoystickControl",
+		"summary": "Resolves a retail combat action id from the current keyboard-binding tables using an encoded key plus modifier mask.",
+		"notes": [
+			"Chooses one of the four reverse-lookup tables populated by Combat_InitializeJoystickBindingLookupTables_v129 for the plain, Alt, Ctrl, or Shift binding category and returns the bound action id for the low-byte key code.",
+			"Frame_TranslateKeyMessageToNormalizedKey_v129 uses it to decide whether an incoming key should fire an edge-triggered hotkey immediately or update the held-action state through Combat_SetLocalControlActionPressedState_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
 	"Combat_OpenJoystickConfigDialog_v129": {
 		"family": "JoystickControl",
 		"summary": "Opens the modal retail joystick-configuration dialog from the shell frontend.",
 		"notes": [
 			"Thin wrapper around `DialogBoxParamA(..., resource 0x71, Combat_JoystickConfigDialogProc_v129, 0)`. Shell_RunFrontendMain_v129 and the nearby unnamed shell/options path both reuse it when the player opens the combat joystick setup surface.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_OpenJoystickControlPanelApplet_v129": {
+		"family": "JoystickControl",
+		"summary": "Launches the Windows joystick control-panel applet and starts the helper thread that hooks the spawned CPL window.",
+		"notes": [
+			"Creates the helper thread backed by Combat_HookJoystickControlPanelWindowThread_v129, loads `joy.cpl`, resolves the exported `CPlApplet` entrypoint, and drives the standard init/inquire/open/stop/exit message sequence for the control-panel applet before unloading the module.",
+			"The nearby unnamed joystick-options surface uses it when the player requests the operating-system joystick calibration/settings panel from inside the retail frontend.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FindJoystickControlPanelWindowEnumProc_v129": {
+		"family": "JoystickControl",
+		"summary": "EnumWindows callback that finds the spawned joystick control-panel window owned by the retail frontend.",
+		"notes": [
+			"Checks each top-level window's owner against the cached frontend window handle, stores the matching joystick control-panel HWND, and signals the waiting helper thread once the target window appears.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_HookJoystickControlPanelWindowThread_v129": {
+		"family": "JoystickControl",
+		"summary": "Helper thread that waits for the spawned joystick control-panel window, installs the retail hook pointer, and normalizes its extended style.",
+		"notes": [
+			"Loops until Combat_FindJoystickControlPanelWindowEnumProc_v129 discovers the joy.cpl window, snapshots the existing callback pointer stored in the applet's window-extra slot, installs the retail handler at `0x414550`, clears the `0x400` extended-style bit, and forces a redraw before exiting.",
+			"Combat_OpenJoystickControlPanelApplet_v129 runs this helper in parallel with the control-panel applet so the spawned system dialog adopts the retail shell's expected behavior and chrome rules.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_BuildJoystickCapabilityFlagTable_v129": {
+		"family": "JoystickControl",
+		"summary": "Builds the small joystick capability flag table consumed by the retail options/property-sheet UI.",
+		"notes": [
+			"Writes a fixed leading marker in slot `0`, mirrors the current joystick-present state into slots `1` and `2`, and fills the remaining slots from the detected capability bits in `DAT_004e91d0`, clearing every optional entry when no joystick or no active device is available.",
+			"Shell_JoystickOptionsPageProc_v129 reuses this helper before enabling its per-axis controls and rebuilding the live selector rows shown in the frontend settings UI.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_FindJoystickCapabilityIndexByComboSelection_v129": {
+		"family": "JoystickControl",
+		"summary": "Maps one joystick-options combo-box selection back to the underlying seven-slot capability index.",
+		"notes": [
+			"Linearly scans the seven-entry selector mapping table built beside `DAT_0048b0b8` and returns the matching capability slot, or `-1` when the combo selection does not correspond to any currently exposed row.",
+			"Shell_JoystickOptionsPageProc_v129 uses it on apply to convert the four combo-box selections back into the persisted `DAT_0047f8e5`..`DAT_0047f8f1` joystick capability indices after the duplicate-check pass succeeds.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetJoystickCapabilitySummaryControlText_v129": {
+		"family": "JoystickControl",
+		"summary": "Builds the localized joystick capability summary string and writes it directly into one retail options dialog control.",
+		"notes": [
+			"Starts from the shared joystick-status prefix in `DAT_0047cd48`, appends one or more localized fragments selected from the current `DAT_0048afe8` capability/state bits, joins multi-fragment output with the shared separator at `DAT_0047d1ec`, and commits the final text through `SetDlgItemTextA`.",
+			"Shell_AudioOptionsPageProc_v129 refreshes control `0x446` with this helper whenever the live joystick capability flags change, while the broader frontend flow keeps using Combat_FormatJoystickStatusSummary_v129 for the simpler buffer-based status line cases.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3193,6 +3913,32 @@ const OVERRIDES := {
 			"res://scripts/net/ws_client.gd",
 		],
 	},
+	"Combat_SendLocalWeaponEffectUpdate_v129": {
+		"family": "CombatWire",
+		"summary": "Packages one local weapon-fire/effect update from the computed fire solution and forwards it to the retail outbound combat stream.",
+		"notes": [
+			"Called from Combat_HandleLocalControlHotkey_v129 and Combat_FireWeaponBank_v129 after the local fire path has already resolved the current slot, target actor, attachment/tag source, and effect origin coordinates.",
+			"Normalizes the hidden angle/coordinate inputs into retail wire units and forwards the assembled payload into Combat_SendWeaponEffectUpdate_v129, making it the high-level local-fire wrapper around the lower-level outbound effect sender.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_SendWeaponEffectUpdate_v129": {
+		"family": "CombatWire",
+		"summary": "Appends one outbound retail weapon/effect update frame with source-target bytes plus angle and XYZ payload.",
+		"notes": [
+			"Appends outbound opcode `0x0A`, maps positive target actor slots through the shared slot-to-network lookup table `DAT_0047e138`, encodes the remaining selector/tag bytes, and then serializes the scaled angle plus XYZ/effect arguments into the stream.",
+			"The decoded shape matches the fields consumed later by Combat_Cmd68_SpawnWeaponEffect_v129, so this helper is the lower-level sender used by Combat_SendLocalWeaponEffectUpdate_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/arena_client.gd",
+			"res://scripts/net/ws_client.gd",
+		],
+	},
 	"Combat_SendCmd19Action_v129": {
 		"family": "CombatWire",
 		"summary": "Queues outbound combat cmd19 and flushes it immediately.",
@@ -3205,11 +3951,24 @@ const OVERRIDES := {
 			"res://scripts/net/ws_client.gd",
 		],
 	},
+	"Combat_SendLocalActorStateChecksum_v129": {
+		"family": "CombatWire",
+		"summary": "Builds and sends the retail local-actor checksum reply from the inbound challenge seed.",
+		"notes": [
+			"Decodes a 4-byte seed, folds selected local-actor and linked mech-record bytes through System_UpdateCrc32_v129, clamps each compared value to `0xFF`, and keeps the larger of the runtime-versus-record pair before hashing it.",
+			"After hashing the fixed stat block plus the variable-length component arrays, it appends outbound opcode `0x19`, writes the computed checksum as a 4-byte arg, and flushes immediately.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/arena_client.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_InitializeVisualResourcesAndHudState_v129": {
 		"family": "CombatInit",
 		"summary": "Initializes the retail combat visual resources, fonts, and baseline HUD state before the main loop enters steady-state rendering.",
 		"notes": [
-			"Refreshes the two combat HUD fonts, delegates bulk bitmap/bootstrap loading to Combat_LoadVisualResourceTables_v129, resets several actor/HUD state fields, and primes the active combat surface/backbuffer handle used by later draws.",
+			"Begins by freeing any previously loaded combat visual resources and cached location-map data through Combat_FreeVisualResourcesAndLocationMap_v129, then refreshes the two combat HUD fonts, delegates bulk bitmap/bootstrap loading to Combat_LoadVisualResourceTables_v129, resets several actor/HUD state fields, and primes the active combat surface/backbuffer handle used by later draws.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3217,16 +3976,132 @@ const OVERRIDES := {
 			"res://scripts/ui/combat_radar.gd",
 		],
 	},
-	"Combat_ResetPresentationStateAndLoadVisualOptions_v129": {
+	"Combat_FreeVisualResourcesAndLocationMap_v129": {
 		"family": "CombatInit",
-		"summary": "Resets the retail combat presentation state and loads the saved visual-detail / overlay option bits into the active runtime flags.",
+		"summary": "Releases the currently loaded combat visual resource tables and cached world location map before combat visuals are rebuilt.",
 		"notes": [
-			"Called from Shell_EnterDropScene_v129 before the combat scene is fully entered. Clears many transient presentation globals, restores the saved detail level from `DAT_0047f898`, maps the persisted display-flag bits from `DAT_0047f89c` into `DAT_0047a044`, and resets the screen-shake state before steady-state rendering begins.",
+			"Calls Combat_FreeVisualResourceTables_v129 to close the tagged archives and free the cached combat bitmap tables, then frees the cached world location map through World_FreeLocationMapData_v129.",
+			"Used by Combat_InitializeVisualResourcesAndHudState_v129 so a fresh combat visual bootstrap starts from a fully cleared resource set.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_FreeVisualResourceTables_v129": {
+		"family": "CombatInit",
+		"summary": "Closes the active combat tagged archives and frees the cached retail combat bitmap tables.",
+		"notes": [
+			"Closes the pair of active tagged archives, frees the bitmap arrays rooted at `DAT_004e7cd0` and `DAT_004e7a90`, zeroes those slots, and then runs the final visual cleanup helper at `FUN_00439340`.",
+			"Called from both Combat_FreeVisualResourcesAndLocationMap_v129 during combat reinitialization and Shell_ShutdownFrontendResourcesAndAudio_v129 during full frontend teardown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Combat_ResetPresentationStateAndLoadVisualOptions_v129": {
+		"family": "CombatInit",
+		"summary": "Resets the retail combat presentation state and loads the saved visual-detail / overlay option bits into the active runtime flags.",
+		"notes": [
+			"Called from Shell_EnterDropScene_v129 before the combat scene is fully entered. Clears many transient presentation globals, restores the saved detail level from `DAT_0047f898`, maps the persisted display-flag bits from `DAT_0047f89c` into `DAT_0047a044`, and resets the screen-shake state before steady-state rendering begins.",
+			"Before the steady-state flags are restored it tears down any prior actor presentation table, conditionally decodes the previously seeded presentation globals, captures a fresh time-based seed, rebuilds the active eight-slot actor presentation table, and re-encodes the shared presentation globals around that new seed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ResetPresentationStateSeedGuard_v129": {
+		"family": "CombatInit",
+		"summary": "Clears the one-shot guard that allows the retail presentation-state XOR seed to be refreshed.",
+		"notes": [
+			"Only called from Combat_ResetPresentationStateAndLoadVisualOptions_v129 immediately before Combat_CapturePresentationStateSeedTick_v129. It resets `DAT_0048a48c` so the next helper can sample a new tick-derived seed into `DAT_004f6c14`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_CapturePresentationStateSeedTick_v129": {
+		"family": "CombatInit",
+		"summary": "Captures the current tick count as the retail presentation-state XOR seed when the guard is open.",
+		"notes": [
+			"If `DAT_0048a48c` is clear it stores `timeGetTime()` into `DAT_004f6c14` and then closes the guard by setting `DAT_0048a48c = 1`.",
+			"Combat_DecodePresentationStateGlobals_v129 and Combat_InitializeActorPresentationStateTable_v129 both use this seed to XOR-protect the shared presentation globals and encoded actor-state fields.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_AllocateActorPresentationStateTable_v129": {
+		"family": "CombatInit",
+		"summary": "Allocates the retail eight-slot actor presentation state table and refreshes its companion heap-noise buffer.",
+		"notes": [
+			"Frees the prior random-sized decoy allocation at `DAT_0047cbf8` when present, allocates a fresh decoy block sized from `_rand()`, then allocates the fixed `0x24e0`-byte actor table at `DAT_004f5778` and marks `DAT_004f6c34 = 1`.",
+			"Called from Shell_InitializeFrontendResourcesAndAudio_v129 to prewarm the combat presentation heap and from Combat_ResetPresentationStateAndLoadVisualOptions_v129 whenever the active actor table needs to be rebuilt.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_FreeActorPresentationStateTable_v129": {
+		"family": "CombatInit",
+		"summary": "Frees the active retail actor presentation state table and clears its allocation flag.",
+		"notes": [
+			"When `DAT_004f6c34` is set it releases `DAT_004f5778` and clears the flag back to zero.",
+			"Combat_ResetPresentationStateAndLoadVisualOptions_v129 uses this as the first step of the presentation reset before allocating and seeding a fresh actor table.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_DecodePresentationStateGlobals_v129": {
+		"family": "CombatInit",
+		"summary": "XOR-decodes the shared retail combat presentation globals with the previously captured presentation seed.",
+		"notes": [
+			"Uses `DAT_004f6c14` and its low 16 bits to decode the short/int presentation tables rooted near `DAT_0047a818`, `DAT_0047aaa8`, `DAT_004f5774`, and related globals outside the actor table.",
+			"Combat_ResetPresentationStateAndLoadVisualOptions_v129 only calls it after the first combat bootstrap, when `DAT_004f5788` shows those globals are still encoded with the prior seed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_InitializeActorPresentationStateTable_v129": {
+		"family": "CombatInit",
+		"summary": "Zeroes and seeds the retail actor presentation state table, then reapplies XOR encoding to the shared presentation globals.",
+		"notes": [
+			"Clears the full `0x24e0`-byte table at `DAT_004f5778`, then walks each `0x49c`-byte actor slot seeding the encoded position, heading, temperature, and status fields from `DAT_004f6c14` before steady-state combat updates begin.",
+			"After the actor slots are seeded it XORs the same shared presentation globals unlocked by Combat_DecodePresentationStateGlobals_v129, effectively rotating the retail presentation-state encoding around the freshly captured seed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_ResetActorLookupState_v129": {
+		"family": "CombatInit",
+		"summary": "Clears the shared actor-id lookup state and transient effect scratch globals used by retail combat sync.",
+		"notes": [
+			"Only called from Combat_ResetPresentationStateAndLoadVisualOptions_v129 during combat bootstrap. Resets both actor lookup tables (`DAT_0047e110` and `DAT_0047e138`) plus their associated counters/heads, and also clears the transient effect scratch ids later reused by Combat_Cmd68_SpawnWeaponEffect_v129 and Combat_Cmd71_ResetEffectState_v129.",
+			"Combat_Cmd64_AddActor_v129 repopulates the remote actor slot mappings after this reset, while Combat_Cmd72_InitLocalActor_v129 seeds the local actor entry in the forward lookup table.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
 		],
 	},
 	"Combat_InitializeBattlefieldVisualState_v129": {
@@ -3270,13 +4145,197 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Main retail frontend entry path that initializes the client windowing/network stack, runs the shell message loop, and shuts down on exit.",
 		"notes": [
-			"Performs the single-instance check, resolves the working directory, initializes the Win32 shell window and message queue, sets up the frontend bootstrap through Shell_InitializeFrontendResourcesAndAudio_v129, then services inbound shell/network frames until shutdown.",
+			"Performs the single-instance check, resolves the working directory, initializes the cached shell version banner through Shell_InitializeVersionString_v129, creates the Win32 shell window and message queue, sets up the frontend bootstrap through Shell_InitializeFrontendResourcesAndAudio_v129, then services inbound shell/network frames until shutdown.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
 			"res://scripts/net/server_bridge.gd",
 			"res://scripts/audio/audio_manager.gd",
+		],
+	},
+	"Shell_BuildExecutableDirectoryPath_v129": {
+		"family": "ShellUI",
+		"summary": "Builds the retail executable directory path from the current module filename.",
+		"notes": [
+			"Uses `GetModuleFileNameA` plus the retail path-splitting helper to rebuild the drive-and-directory prefix into the caller buffer, matching the current install directory rather than the full executable path.",
+			"If the module filename lookup fails it loads the localized shell error strings and shows the fallback modal message box before returning failure to Shell_RunFrontendMain_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_CreateMainWindow_v129": {
+		"family": "ShellUI",
+		"summary": "Registers the retail MPBattleTech window class and creates the hidden main shell window.",
+		"notes": [
+			"Registers the `MPBattleTech` Win32 class with the retail window procedure, icon, cursor, and menu resource, then calls `CreateWindowExA` for the top-level shell window.",
+			"On success it shows and updates the new window, caches the instance handle, window handle, and UI thread id in the shared shell globals used by the later socket and auxiliary-window helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_HandleSocketWindowCreationFailure_v129": {
+		"family": "ShellUI",
+		"summary": "Logs the fatal frontend socket-window creation failure and tears down the main shell window.",
+		"notes": [
+			"Only called from Shell_RunFrontendMain_v129 when `MakeSocketWindow(DAT_0047a050)` returns zero during frontend startup. Copies the localized frontend title string into a stack buffer, reports the caller-supplied failure text through System_ReportBterrorEvent_v129, and then destroys the main shell window `DAT_0047a050` so startup aborts cleanly.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_ShowModalMessageBox_v129": {
+		"family": "ShellUI",
+		"summary": "Shows a frontend modal message box while preserving the retail palette snapshot rules used by shell dialogs.",
+		"notes": [
+			"Wraps Win32 `MessageBoxA` on the main shell window `DAT_0047a050`. When the modal-palette flag `DAT_0047fdec` is set it refreshes the palette snapshot first and restores the full palette after the message box closes, which is why System_ReportBterrorEvent_v129 and the joystick/config warning paths use this helper instead of calling `MessageBoxA` directly.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_OpenStatusTextDialog_v129": {
+		"family": "ShellUI",
+		"summary": "Opens the small modeless shell status-text dialog and writes one caller-supplied line into it.",
+		"notes": [
+			"Refreshes the modal palette snapshot, closes any existing instance through Shell_CloseStatusTextDialog_v129, creates dialog resource `0x6f` with Shell_StatusTextDialogProc_v129, copies up to 100 characters into the shared buffer `DAT_00498d90`, and writes that text into control `0x41A` before showing the dialog.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_CloseStatusTextDialog_v129": {
+		"family": "ShellUI",
+		"summary": "Closes the active modeless shell status-text dialog when one is open.",
+		"notes": [
+			"Destroys `DAT_0047fdf0`, clears the stored window handle, and restores the full palette after the dialog is dismissed. Shell_HandlePreVersionBannerLine_v129 uses it when the pre-version banner line advances the shell state and the dialog must disappear before the transition continues.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_StatusTextDialogProc_v129": {
+		"family": "ShellUI",
+		"summary": "Minimal dialog procedure for the modeless shell status-text dialog.",
+		"notes": [
+			"Only distinguishes the `WM_INITDIALOG` path and otherwise leaves all message handling to the default dialog manager. Shell_OpenStatusTextDialog_v129 installs it on resource `0x6f`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_ConfirmClientExit_v129": {
+		"family": "ShellUI",
+		"summary": "Shows the retail exit confirmation prompt and posts the shell shutdown command when the player accepts.",
+		"notes": [
+			"Refreshes the display palette snapshot through Frame_CaptureDisplayPaletteState_v129, shows the localized `0xE9/0xEA` Yes/No confirmation text on the main shell window, and on `IDYES` posts message `0x401` with command `2` before setting the shared exit flag bit in `DAT_0047a040`.",
+			"World_TravelCompassPage_HandleMouse_v129 uses it for the fixed EXIT button, and World_MenuDialog_HandleInput_v129 reuses the same helper for menu entries whose selection id resolves to the retail exit action `100`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_OpenOptionsPropertySheet_v129": {
+		"family": "ShellUI",
+		"summary": "Opens the shared retail options property sheet used by the frontend and world-shell option buttons.",
+		"notes": [
+			"Builds up to four localized property-sheet pages from the caller's bitmask, sets the shared shell modal flag, starts the short timer callback used by the sheet, captures the active palette through Frame_CaptureDisplayPaletteState_v129, and restores the palette after PropertySheetA returns.",
+			"Shell_RunFrontendMain_v129 plus the world byte-selection and travel-compass handlers all reuse it for the fixed options action instead of opening one-off dialogs.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_TickOptionsPropertySheetAudio_v129": {
+		"family": "ShellUI",
+		"summary": "Timer callback that keeps the retail audio service layer advancing while the shared options property sheet is open.",
+		"notes": [
+			"Installed through `SetTimer(..., 0xfa, Shell_TickOptionsPropertySheetAudio_v129)` by Shell_OpenOptionsPropertySheet_v129 before PropertySheetA takes over the modal message loop.",
+			"Calls `KSND_C_update()` plus Combat_TickLasrSoundState_v129 so the retail options sheet continues servicing Miles-backed UI and LASR state while the shell is inside the property-sheet dialog.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_InitializePropertySheetPage_v129": {
+		"family": "ShellUI",
+		"summary": "Fills one retail property-sheet page descriptor before the shared options sheet is shown.",
+		"notes": [
+			"Writes the fixed `0x28`-byte page structure with the caller's module handle, dialog-template id, page dialog proc, and per-page lParam value. Shell_OpenOptionsPropertySheet_v129 calls it once per enabled options page before passing the descriptor array to PropertySheetA.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_InitializeVersionString_v129": {
+		"family": "ShellUI",
+		"summary": "Formats the cached retail version banner string used by the shell title and credits overlays.",
+		"notes": [
+			"Builds the static `BattleTech II Version ...` banner in the shared shell string buffer from the compiled retail version components during frontend startup.",
+			"Shell_RunFrontendMain_v129 calls it once before creating the main shell window, and Shell_ShowTitleAndCreditsSequence_v129 later reuses the cached banner without recomputing it.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_OptionsPropertySheetInitCallback_v129": {
+		"family": "ShellUI",
+		"summary": "Initialization callback for the retail options property sheet window.",
+		"notes": [
+			"Records the created property-sheet window handle, clears the window-long flag bit used by the stock shell wrapper, and installs the custom subclass proc stored at `0x414470` when the property sheet is initialized.",
+			"Shell_OpenOptionsPropertySheet_v129 passes it through the property-sheet header callback field so the options sheet can reuse the shell's palette and input handling rules.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_AudioOptionsPageProc_v129": {
+		"family": "ShellUI",
+		"summary": "Dialog proc for the retail options tab that owns audio sliders, speech/LASR preview controls, mixer launch, and live capability-status text.",
+		"notes": [
+			"Shell_OpenOptionsPropertySheet_v129 registers this proc for property-sheet resource `0x6d`. On `WM_INITDIALOG` it seeds the global/music sliders, speech and LASR preview buttons, and the live capability-status text from the saved frontend config plus the current `DAT_0048afe8` joystick capability bits.",
+			"Handles the preview buttons by routing through `KSND_C_setParamSnd`, Combat_SetLasrSoundState_v129, and the speech-in Miles helpers, launches `SNDVOL32` from the mixer button, persists the updated sound flags through System_SaveFrontendConfigToRegistry_v129 on apply, and refreshes control `0x446` through Combat_SetJoystickCapabilitySummaryControlText_v129 whenever the page state changes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_JoystickOptionsPageProc_v129": {
+		"family": "ShellUI",
+		"summary": "Dialog proc for the retail options tab that exposes joystick axis-mode selectors, sensitivity sliders, binding dialogs, and control-panel refresh.",
+		"notes": [
+			"Shell_OpenOptionsPropertySheet_v129 registers this proc for property-sheet resource `0x6c`. On `WM_INITDIALOG` it populates four joystick selector combo boxes from Combat_BuildJoystickCapabilityFlagTable_v129, restores the cached slider and checkbox state, and refreshes the localized status line through Combat_FormatJoystickStatusSummary_v129.",
+			"Handles the config and binding modal buttons, opens the joystick control-panel applet from the fixed refresh button, rebuilds the selector rows after that applet returns, rejects duplicate selector choices through the localized warning path, converts accepted combo selections back into capability-slot ids through Combat_FindJoystickCapabilityIndexByComboSelection_v129, then calls Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129 and System_SaveFrontendConfigToRegistry_v129 on apply.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
 		],
 	},
 	"Shell_LoadMessageCatalog_v129": {
@@ -3351,17 +4410,182 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Shell_GetVersionString_v129": {
+		"family": "ShellUI",
+		"summary": "Returns the cached retail version banner string prepared during frontend startup.",
+		"notes": [
+			"Thin accessor over the shared shell version buffer initialized by Shell_InitializeVersionString_v129.",
+			"Shell_ShowTitleAndCreditsSequence_v129 and the timed archive slideshow caption path call it repeatedly when centering the version text over the first title card.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_ParseComstarIdCode_v129": {
+		"family": "SystemRuntime",
+		"summary": "Parses a five-character retail ComStar ID code into the corresponding numeric ID, returning `-1` on invalid or out-of-range input.",
+		"notes": [
+			"Validates the code length, converts the upper-case base36 payload through System_Base36StringToInt_v129, then adds the retail ComStar ID offset and rejects results outside the accepted numeric ID range. Frame_DrawFormattedText_v129 uses it for the inline `||#` / `||%` list-metadata tags that attach player IDs to formatted shell rows.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"System_FormatComstarIdCode_v129": {
+		"family": "SystemRuntime",
+		"summary": "Formats one retail numeric ComStar ID into its zero-padded five-character display code.",
+		"notes": [
+			"Rejects numeric IDs outside the retail ComStar range, subtracts the fixed ComStar base offset, converts the result through System_IntToBase36String_v129, and left-pads the output to five characters in a shared static buffer. World_Cmd14_PersonnelRecord_v129 uses it when rendering the dossier page's visible ID field.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"System_Base36StringToInt_v129": {
+		"family": "SystemRuntime",
+		"summary": "Converts a short ASCII base36 string into an integer, logging invalid digits and overflow through the retail debug stream.",
+		"notes": [
+			"Accepts up to six characters, treats alphabetic digits case-insensitively, and accumulates the result in base 36. The ComStar ID parser wrapper uses it before applying the retail numeric-range checks.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"System_IntToBase36String_v129": {
+		"family": "SystemRuntime",
+		"summary": "Converts a non-negative integer into an upper-case base36 string stored in a shared static buffer.",
+		"notes": [
+			"Repeatedly divides by 36, reverses the generated digit run into the shared output buffer, and rejects negative input through the retail debug stream. System_FormatComstarIdCode_v129 builds the visible five-character ComStar code on top of this helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
 	"Shell_ServiceNetworkStateLoop_v129": {
 		"family": "ShellUI",
 		"summary": "Polls queued shell/network frames, dispatches them through the shell state handlers, and advances the active frontend state tick.",
 		"notes": [
-			"Dequeues incoming packets, feeds each one to Shell_HandlePostVersionBannerLine_v129, updates sound/auxiliary polling, then ticks the current shell state branch according to the retail DAT_0047c8d4 state value.",
+			"Drains the queued inbound-line FIFO through Shell_DequeueQueuedInboundLineBuffer_v129, feeds each copied line buffer to Shell_HandlePostVersionBannerLine_v129, and releases the owned buffer with Shell_FreeQueuedInboundLineBuffer_v129 before continuing.",
+			"After the queue drain finishes it updates sound/auxiliary polling and ticks the current shell state branch according to the retail DAT_0047c8d4 state value.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
 			"res://scripts/net/server_bridge.gd",
 			"res://scripts/audio/audio_manager.gd",
+		],
+	},
+	"Shell_CreateQueuedInboundLineBuffer_v129": {
+		"family": "ShellUI",
+		"summary": "Allocates an owned retail shell-line buffer and copies one inbound text line into it.",
+		"notes": [
+			"Allocates an 8-byte descriptor whose first slot points at a newly allocated copy buffer and whose second slot stores the caller-supplied line length.",
+			"The copy buffer is sized as `length + 10`, then populated byte-for-byte from the source line so later queue consumers can own and free the text independently of the socket receive buffer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_FreeQueuedInboundLineBuffer_v129": {
+		"family": "ShellUI",
+		"summary": "Frees an owned retail shell-line buffer descriptor and its copied text payload.",
+		"notes": [
+			"Releases the copied line buffer stored in slot zero and then frees the 8-byte descriptor itself.",
+			"Used by Shell_ServiceNetworkStateLoop_v129 after one queued line has been dispatched and by Shell_ClearQueuedInboundLineQueue_v129 when startup or shutdown discards queued work wholesale.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_ResetQueuedInboundLineQueueState_v129": {
+		"family": "ShellUI",
+		"summary": "Resets the retail queued inbound-line FIFO counters and pointers without freeing payloads.",
+		"notes": [
+			"Zeros the shared queued-line count, head pointer, and tail pointer at `DAT_0047f880` / `DAT_0047f884` / `DAT_0047f888`.",
+			"Shell_RunFrontendMain_v129 uses it when initializing the shell runtime, and Shell_ClearQueuedInboundLineQueue_v129 calls it after draining all outstanding nodes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_ClearQueuedInboundLineQueue_v129": {
+		"family": "ShellUI",
+		"summary": "Drains the retail queued inbound-line FIFO, freeing each copied line buffer and then resetting queue state.",
+		"notes": [
+			"Repeatedly dequeues pending line buffers through Shell_DequeueQueuedInboundLineBuffer_v129, frees each copied payload through Shell_FreeQueuedInboundLineBuffer_v129, then finishes by calling Shell_ResetQueuedInboundLineQueueState_v129.",
+			"Shell_RunFrontendMain_v129 uses it during teardown so no queued shell text survives a frontend restart or shutdown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_EnqueueQueuedInboundLineBuffer_v129": {
+		"family": "ShellUI",
+		"summary": "Appends one copied shell-line buffer to the tail of the retail queued inbound-line FIFO.",
+		"notes": [
+			"Wraps the caller-supplied buffer descriptor in a small queue node from Shell_CreateQueuedInboundLineQueueNode_v129 and then links that node onto the head/tail globals.",
+			"The queued-line count is incremented only when the node allocation succeeds.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_DequeueQueuedInboundLineBuffer_v129": {
+		"family": "ShellUI",
+		"summary": "Removes and returns the oldest copied shell-line buffer from the retail queued inbound-line FIFO.",
+		"notes": [
+			"Returns zero when the queue is empty; otherwise it detaches the head node, repairs the tail pointer when the last entry is removed, frees the queue node through Shell_FreeQueuedInboundLineQueueNode_v129, decrements the queued-line count, and returns the payload descriptor.",
+			"Shell_ServiceNetworkStateLoop_v129 uses it to drain incoming shell text in FIFO order.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_CreateQueuedInboundLineQueueNode_v129": {
+		"family": "ShellUI",
+		"summary": "Allocates one retail FIFO node for a queued inbound-line buffer.",
+		"notes": [
+			"Allocates an 8-byte node whose first slot stores the queued buffer descriptor and whose second slot stores the next-node pointer.",
+			"Used only by Shell_EnqueueQueuedInboundLineBuffer_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_FreeQueuedInboundLineQueueNode_v129": {
+		"family": "ShellUI",
+		"summary": "Clears and frees one retail queued inbound-line FIFO node.",
+		"notes": [
+			"Zeros the node's payload and next pointers before releasing the node allocation.",
+			"Used only by Shell_DequeueQueuedInboundLineBuffer_v129 after the payload descriptor has been detached from the queue.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
 		],
 	},
 	"Shell_RunWorldStateTick_v129": {
@@ -3648,6 +4872,30 @@ const OVERRIDES := {
 			"res://scripts/net/server_bridge.gd",
 		],
 	},
+	"Shell_ResetOutboundCommandBuffer_v129": {
+		"family": "ShellUI",
+		"summary": "Resets the outbound shell command buffer and seeds it with the retail ESC/`!` frame prefix.",
+		"notes": [
+			"Moves the active write pointer back to the transmit buffer base, writes bytes `0x1b` and `0x21`, and leaves the buffer ready for Shell_AppendOutboundCommandOpcode_v129 or the lower-level frame argument encoders.",
+			"Called after successful sends by Shell_FlushOutboundCommandBuffer_v129 and explicitly reused by the banner-transition handlers before they assemble their direct state-change control frames.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_AppendBannerStateChangeControlFrame_v129": {
+		"family": "ShellUI",
+		"summary": "Appends the direct retail state-change control frame used by the pre/post-version banner transition handlers.",
+		"notes": [
+			"Assumes Shell_ResetOutboundCommandBuffer_v129 has already seeded the ESC/`!` header, then appends outbound opcode `0x03` followed by bytes `1`, `0x1d`, `0x03`, and a final state selector of `1` or `3` depending on the low world/combat state bit in `DAT_0047a040._1_1_`.",
+			"Shell_HandlePreVersionBannerLine_v129 and Shell_HandlePostVersionBannerLine_v129 both call it immediately before Shell_FlushOutboundCommandBuffer_v129 to finalize the negotiated shell-state transition frame.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
 	"Shell_HandlePostVersionBannerLine_v129": {
 		"family": "ShellUI",
 		"summary": "Handles inbound shell/banner lines after the frontend has already entered the active post-version state machine.",
@@ -3688,7 +4936,20 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Broadcasts the retail auxiliary-window close commands to each visible non-main window on the current UI thread.",
 		"notes": [
-			"Enumerates thread windows and sends WM_COMMAND `2` and `7` to every visible window except the main shell window before the combat transition continues.",
+			"Enumerates thread windows and delegates each candidate to Shell_SendCloseCommandsToVisibleThreadWindow_v129, which sends WM_COMMAND `2` and `7` to every visible window except the main shell window before the combat transition continues.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_SendCloseCommandsToVisibleThreadWindow_v129": {
+		"family": "ShellUI",
+		"summary": "Sends the retail close command pair to one visible non-main auxiliary window on the shell UI thread.",
+		"notes": [
+			"Skips the cached main shell window `DAT_0047a050`, checks visibility on the candidate HWND, and then sends WM_COMMAND ids `2` and `7` when that auxiliary window is visible.",
+			"Used only as the per-window callback passed by Shell_SendCloseCommandsToVisibleThreadWindows_v129 to `EnumThreadWindows`.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3708,17 +4969,115 @@ const OVERRIDES := {
 			"res://scripts/audio/audio_manager.gd",
 		],
 	},
+	"Shell_ShutdownFrontendResourcesAndAudio_v129": {
+		"family": "ShellUI",
+		"summary": "Tears down the retail frontend shell resources, fonts, idle timer, and audio layer on exit.",
+		"notes": [
+			"Called by Shell_RunFrontendMain_v129 during frontend shutdown. It frees the active message catalog, releases the combat/world visual tables through Combat_FreeVisualResourceTables_v129, releases the pair of TFONT descriptors through Frame_FreeBitmapFontDescriptor_v129, stops the inactivity timer through Shell_StopInactivityShutdownTimer_v129, and closes any lingering frontend shell state that still owns modal resources.",
+			"When the retail sound-state bits show audio was initialized, it delegates to Shell_ShutdownFrontendAudio_v129 before finishing with `_AIL_shutdown`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/audio/audio_manager.gd",
+		],
+	},
 	"Shell_InitializeFrontendResourcesAndAudio_v129": {
 		"family": "ShellUI",
 		"summary": "Performs the one-shot retail frontend bootstrap for palettes, fonts, picture archives, and audio startup.",
 		"notes": [
-			"Seeds the shell palette ramp, loads the default TFONT1 fonts, ensures the location-map index is ready, loads the shared MW picture archives/tables, initializes additional frontend resources, and starts the Miles/AIL audio layer according to the saved sound configuration bits.",
+			"Seeds the shell palette ramp, loads the default TFONT1 fonts, ensures the location-map index is ready, loads the shared MW picture archives/tables, initializes additional frontend resources, and starts the Miles/AIL audio layer according to the saved sound configuration bits through Shell_InitializeFrontendAudio_v129.",
+			"It also prewarms the combat actor presentation table allocation once during frontend bootstrap so Shell_EnterDropScene_v129 can immediately reseed and rebuild that runtime state when combat starts.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
 			"res://scripts/audio/audio_manager.gd",
 			"res://scripts/assets/asset_registry.gd",
+		],
+	},
+	"Shell_InitializeFrontendAudio_v129": {
+		"family": "ShellUI",
+		"summary": "Initializes the retail frontend sound driver, volumes, and LASR sound support flags from the saved shell audio configuration bits.",
+		"notes": [
+			"Configures the KSND driver parameters, starts `KSND_C_init`, applies the saved music and sound-effect volumes, and updates the shared frontend capability flags based on the returned driver feature mask.",
+			"It then probes LASR sound support through Combat_EnsureLasrSoundInitialized_v129, maps the caller-supplied enable bits into `DAT_0047a040`, and finishes by reading the retail `mpbt.kdt` sound table.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_ShutdownFrontendAudio_v129": {
+		"family": "ShellUI",
+		"summary": "Shuts down the retail frontend sound driver and clears the associated sound-state flags.",
+		"notes": [
+			"Calls `KSND_C_shutdown` and then clears the frontend sound-enable bits in `DAT_0047a040` so later state transitions stop treating the sound layer as active.",
+			"Used only by Shell_ShutdownFrontendResourcesAndAudio_v129 when the frontend previously initialized retail audio support.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Shell_StopInactivityShutdownTimer_v129": {
+		"family": "ShellUI",
+		"summary": "Stops the retail inactivity shutdown timer when the frontend shell is being torn down.",
+		"notes": [
+			"Kills the timer stored in `DAT_0047e250` if one is active. Shell_ShutdownFrontendResourcesAndAudio_v129 uses it during frontend cleanup so the idle watchdog cannot fire while the shell is exiting.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_StartInactivityShutdownTimer_v129": {
+		"family": "ShellUI",
+		"summary": "Starts the retail inactivity shutdown timer and records the current activity tick.",
+		"notes": [
+			"Installs the global timer callback Shell_HandleInactivityShutdownTimer_v129 with the caller-supplied seconds interval and seeds `DAT_0047a060` from GetTickCount so the idle-warning path has its initial activity baseline.",
+			"Shell_InitializeFrontendResourcesAndAudio_v129 calls it during frontend bootstrap to arm the long idle shutdown watchdog.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_HandleInactivityShutdownTimer_v129": {
+		"family": "ShellUI",
+		"summary": "Timer callback that warns about prolonged frontend inactivity and eventually forces the retail idle shutdown.",
+		"notes": [
+			"After roughly 14 minutes of inactivity it opens Shell_OpenInactivityShutdownWarningDialog_v129 once; after roughly 15 minutes it posts the shell close command, sets the inactivity-exit flag bit, and records the localized `Shutdown due to inactivity.` event through System_ReportBterrorEvent_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_OpenInactivityShutdownWarningDialog_v129": {
+		"family": "ShellUI",
+		"summary": "Opens the small modeless warning dialog shown shortly before the retail inactivity shutdown fires.",
+		"notes": [
+			"Captures the current palette state through Frame_CaptureDisplayPaletteState_v129 and creates dialog resource `0x70` with Shell_InactivityShutdownDialogProc_v129, storing the returned window handle in `DAT_0047e254` so the timer callback can avoid opening duplicates or close the warning on forced shutdown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_InactivityShutdownDialogProc_v129": {
+		"family": "ShellUI",
+		"summary": "Dialog procedure for the retail inactivity shutdown warning prompt.",
+		"notes": [
+			"Shows the warning dialog on init, treats button `1` as recent activity by resetting `DAT_0047a060` to the current tick and posting a close message to itself, and on close restores the full palette before clearing `DAT_0047e254`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
 		],
 	},
 	"Combat_RedrawVoiceTransmissionHud_v129": {
@@ -3749,7 +5108,21 @@ const OVERRIDES := {
 		"family": "VoiceTransmission",
 		"summary": "Handles the active combat voice-transmission text-entry mode, including typing, submit, and local history echo.",
 		"notes": [
-			"Accepts printable keys into the active voice/transmission text buffer, supports backspace and cancel, routes transmit-mode submissions through Combat_SendVoiceTransmissionText_v129, mirrors local-entry rows into the history feed, plays the confirm cue, and flushes the outbound shell buffer when the entry completes.",
+			"Accepts printable keys into the active voice/transmission text buffer, supports backspace and cancel, routes ordinary transmit-mode submissions through Combat_SendVoiceTransmissionText_v129, routes speech-out submissions through Combat_SendSpeechOutText_v129, mirrors the local entry into the history feed, plays the confirm cue, and flushes the outbound shell buffer when the entry completes.",
+			"When speech-out mode is armed (`DAT_0047fec8 == 2`), it prefixes the locally echoed history row with the fixed `*` marker from `DAT_0047d3e8` before appending the typed text.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
+	"Combat_SendSpeechOutText_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Sends one combat speech-out text payload through the retail outbound shell buffer.",
+		"notes": [
+			"Appends outbound opcode `0x0f`, then encodes the supplied text with the combat byte-counted string codec.",
+			"Used only by Combat_HandleVoiceTransmissionInput_v129 when speech-out mode is armed; the caller mirrors the same text into the local history feed with the fixed `*` speech-out prefix before flushing the outbound buffer.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -3874,6 +5247,54 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_ClearSpeechOutActorLabelSlots_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Clears the two retail speech-out actor label slots shown across the top edge of the combat HUD.",
+		"notes": [
+			"Resets both slot-active flags and their actor indices back to zero, removing any pending left/right speech-out speaker labels before the next combat presentation frame draws them again.",
+			"Combat_InitializeVisualResourcesAndHudState_v129 calls this during combat HUD bootstrap so the speech-out overlay starts empty after presentation resources are rebuilt.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_DrawSpeechOutActorLabels_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Draws the active retail speech-out speaker labels across the top row of the combat HUD.",
+		"notes": [
+			"Called from Combat_MainLoop_v129 after the steady-state voice/status HUD work. When the left slot is active it draws the fixed `*` prefix followed by that actor's callsign at `(0x05,0x03)`; when the right slot is active it right-aligns the other actor's callsign against the combat frame's right edge.",
+			"The two slots are fed by the KSND speech-out callback path through Combat_SetSpeechOutActorLabelSlot_v129 and Combat_ClearSpeechOutActorLabelSlot_v129, making this a lightweight live speaker overlay rather than part of the larger voice-panel window.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetSpeechOutActorLabelSlot_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Marks one speech-out actor label slot active for the actor currently mapped to a sound-source index.",
+		"notes": [
+			"Looks up the sound-source index through the shared actor lookup table at `DAT_0047e110`, then stores the resolved actor slot into one of the two top-row speech-out label slots and marks that slot active.",
+			"The KSND speech-out event callback uses this helper when a callback packet advertises the start/show flag for a label slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClearSpeechOutActorLabelSlot_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Clears one active speech-out actor label slot on the combat HUD.",
+		"notes": [
+			"Resets the chosen top-row speech-out label slot back to inactive and zeroes its stored actor index so Combat_DrawSpeechOutActorLabels_v129 stops drawing that speaker name on subsequent frames.",
+			"The KSND speech-out event callback uses this helper when a callback packet advertises the hide/stop flag for a label slot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_RebuildVoiceTransmissionRosterOrder_v129": {
 		"family": "VoiceTransmission",
 		"summary": "Rebuilds the retail roster-display order used by the voice-transmission roster HUD.",
@@ -3941,6 +5362,31 @@ const OVERRIDES := {
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ResetVoiceTransmissionHudToggleAnimation_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Resets the staged voice-transmission HUD toggle animation back to its baseline state.",
+		"notes": [
+			"Clears the latched transition-state globals `DAT_00499228` and `DAT_00499224`, then restores the root combat frame's stored voice-panel height slot at `+0x58` to `0x48`.",
+			"Combat_InitializeBattlefieldVisualState_v129 uses it while seeding the initial combat HUD so the voice panel starts from a stable non-animated state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_IsVoiceTransmissionHudToggleAnimationActive_v129": {
+		"family": "VoiceTransmission",
+		"summary": "Returns whether the voice-transmission HUD toggle animation is still in flight.",
+		"notes": [
+			"Compares the live CMP voice-toggle bit `DAT_0047a04c & 2` against the latched endpoint value in `DAT_00499228` and returns true while they differ.",
+			"Combat HUD redraw helpers use it to suppress immediate `Frame_PresentFrameRect_v129` blits until the staged open/close transition reaches its settled endpoint.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
 		],
 	},
 	"Combat_RefreshOpenVoiceTransmissionHud_v129": {
@@ -4046,6 +5492,132 @@ const OVERRIDES := {
 			"res://scripts/net/arena_client.gd",
 		],
 	},
+	"Mech_GetVariantCodeById_v129": {
+		"family": "MechRuntime",
+		"summary": "Returns the localized mech variant code string for one mech id, such as `HBK-4G`.",
+		"notes": [
+			"Maps mech ids `0..0xa0` onto message-catalog lines starting at `0x3ae` and falls back to the retail `HBK-4G` placeholder when the id is out of range.",
+			"Used by runtime init and the mech-management list pages anywhere retail needs the short variant/designation code separate from the longer chassis display name.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Mech_GetChassisDisplayNameById_v129": {
+		"family": "MechRuntime",
+		"summary": "Returns the localized mech chassis/family display name for one chassis id, such as `HUNCHBACK`.",
+		"notes": [
+			"Maps chassis ids `0..0x41` onto message-catalog lines starting at `0x36c` and falls back to the retail `HUNCHBACK` placeholder when the id is out of range.",
+			"Mech_InitRuntimeStateFromRecord_v129 combines this longer family name with Mech_GetVariantCodeById_v129 when it builds the cached runtime display label, and the world mech-management pages reuse it for ranked/mech-detail lists.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Mech_GetWeaponTypeLabelById_v129": {
+		"family": "MechRuntime",
+		"summary": "Returns the localized retail weapon-type label for one weapon id, choosing either the long detail wording or the compact status-column wording.",
+		"notes": [
+			"Maps weapon ids `0..0x10` onto the two adjacent message-catalog line ids stored in the retail weapon metadata table: `DAT_0047aaa4` for the long/detail label path and `DAT_0047aaa0` for the compact label path.",
+			"World_GetMechDetailRowLabel_v129 uses the long variant for mech-component detail rows, while the mech status/component pages reuse the same table for compact per-weapon labels. Out-of-range ids fall back to the retail `unknown w` placeholder.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Mech_ClassifyPagedListStatusById_v129": {
+		"family": "MechRuntime",
+		"summary": "Maps one mech id onto the shared four-way status/group byte used by the retail paged mech-list windows.",
+		"notes": [
+			"Cmd26 and Cmd27 receive this per-row byte directly from the server, but World_Cmd32_AlternateRankingList_v129 synthesizes it locally from the mech id by returning bucket values `0..3` across the retail id ranges `1..0x24`, `0x25..0x54`, `0x55..0x7f`, and `0x80+`.",
+			"The helper stays named around the generic paged-list status role rather than the ranking packet because the same byte lives in the shared chooser/paged-list row model at `DAT_004f6c40`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Mech_AllocateAndLoadRecordById_v129": {
+		"family": "MechRuntime",
+		"summary": "Allocates a retail mech-record buffer and fills it with the decoded mechdata entry for one mech id.",
+		"notes": [
+			"Allocates the fixed `0x228`-byte mech-record block with the retail heap helper and reports a BT error event if that allocation fails.",
+			"On success it immediately delegates to Mech_LoadRecordIntoBufferById_v129. Combat_Cmd64_AddActor_v129 and the world mech-management pages use this wrapper when they need a temporary decoded mech record by id.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Mech_SeedRecordCipherFromFilenameSuffix_v129": {
+		"family": "MechRuntime",
+		"summary": "Seeds the retail mech-record XOR stream from the last four characters of the mechdata filename stem.",
+		"notes": [
+			"Searches for the final `.` in the caller-supplied path; if no extension is present it uses the final four path characters instead. The copied four-byte suffix is stored into `DAT_0047cb9c` and becomes the starting state for Mech_NextRecordCipherWord_v129.",
+			"Mech_LoadRecordIntoBufferById_v129 lowercases the mechdata path before calling it, so the seed is stable across filesystem case differences.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Mech_XorRecordBufferWithCipherStream_v129": {
+		"family": "MechRuntime",
+		"summary": "XOR-decodes a mechdata record buffer byte-by-byte using the rolling filename-seeded retail cipher stream.",
+		"notes": [
+			"Walks the loaded mechdata bytes and XORs each byte with the next value from Mech_NextRecordCipherWord_v129, advancing the destination pointer one byte at a time across the full record length.",
+			"Mech_LoadRecordIntoBufferById_v129 applies this pass immediately after reading the `0x228`-byte record from disk and before the later per-field ushort normalization pass.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Mech_NextRecordCipherWord_v129": {
+		"family": "MechRuntime",
+		"summary": "Advances the retail mech-record XOR generator and returns the next stream word derived from the filename-suffix seed.",
+		"notes": [
+			"Updates `DAT_0047cb9c` with the retail linear-congruential step and then folds the high and low halves together to produce the next XOR word.",
+			"Used only by Mech_XorRecordBufferWithCipherStream_v129 during mechdata record decode.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Mech_LoadRecordIntoBufferById_v129": {
+		"family": "MechRuntime",
+		"summary": "Loads, decrypts, and normalizes one retail mechdata record into a caller-supplied buffer.",
+		"notes": [
+			"Builds the mechdata file path from Mech_GetVariantCodeById_v129 plus the static mechdata directory/extension strings, opens the file, reads the fixed `0x228`-byte record, and XOR-decodes the packed ushort fields in place.",
+			"Also lowercases the variant code for the companion asset lookup, validates the decoded mech id range, and applies the retail post-load normalization pass before returning the populated buffer to Mech_AllocateAndLoadRecordById_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Mech_InitRuntimeStateFromRecord_v129": {
 		"family": "MechRuntime",
 		"summary": "Initializes actor runtime state from the mech record.",
@@ -4063,11 +5635,42 @@ const OVERRIDES := {
 	"Mech_InitComponentStatusFromRecord_v129": {
 		"family": "MechRuntime",
 		"summary": "Initializes per-component runtime status from the mech record.",
+		"notes": [
+			"Seeds the live armor, internal-structure, weapon-condition, and misc-detail arrays from the mech record, and initializes the eight internal-structure maxima through Mech_GetInternalStructureMaxByTonnageAndSection_v129 so later mech-status pages and combat damage paths can compare current values against the correct tonnage-scaled baseline.",
+		],
 		"implementation_status": STATUS_PARTIAL_ANALOG,
 		"godot_targets": [
 			"res://scripts/assets/mec_parser.gd",
 			"res://scenes/combat/combat.gd",
 			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Mech_GetInternalStructureMaxByTonnageAndSection_v129": {
+		"family": "MechRuntime",
+		"summary": "Returns the retail maximum internal-structure value for one mech tonnage bucket and section index.",
+		"notes": [
+			"Uses the tonnage divided by five to index the internal-structure tables and folds the shared torso/arm/leg section cases onto the correct retail max-value column, returning `9` for the head section.",
+			"Mech_InitComponentStatusFromRecord_v129 uses it to seed the current/max internal-structure state, and the mech-status/component-action pages plus the combat status panel reuse it when converting row values into percentages or display colors.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/assets/mec_parser.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Mech_MapDetailRowToInternalStructureSection_v129": {
+		"family": "MechRuntime",
+		"summary": "Maps the 11 mech-detail armor/status rows onto the eight retail internal-structure section indices.",
+		"notes": [
+			"Leaves the head/arm/leg rows distinct while collapsing the mirrored rear-torso rows onto the same torso section indices used by the internal-structure arrays.",
+			"Combat_DrawActorStatusPanel_v129, the nearby actor-preview color helper, and World_Cmd30_MechStatusOptionPage_v129 use it before looking up max/current internal-structure values for a displayed row.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scripts/assets/mec_parser.gd",
 		],
 	},
 	"World_ClearWorldUiChildren_v129": {
@@ -4228,7 +5831,7 @@ const OVERRIDES := {
 		"family": "WorldUI",
 		"summary": "Decodes a numbered checkbox list and opens the shared late-world multi-select dialog.",
 		"notes": [
-			"Reads a follow-up command id, an initial bitmask, a heading string, and one plain-text row per entry. It formats the numbered rows into the shared style-2 shell window, seeds each checkbox from the incoming bitmask, and installs World_BitmaskSelectionList_HandleInput_v129 as the active confirm/toggle callback.",
+			"Reads a follow-up command id, an initial bitmask, a heading string, and one plain-text row per entry. It formats the numbered rows into the shared style-2 shell window, seeds each checkbox from the incoming bitmask through Frame_SetTextDecorationToggleStateByIndex_v129, and installs World_BitmaskSelectionList_HandleInput_v129 as the active confirm/toggle callback.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4314,6 +5917,29 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_CachedNamedEntrySelectionDialog_ToggleSelectionHighlight_v129": {
+		"family": "WorldUI",
+		"summary": "Inverts one cached-entry selection-dialog highlight rectangle.",
+		"notes": [
+			"Computes the two-column option rectangle from the current dialog window, then calls Frame_SwapPaletteIndicesInRect_v129 so the same helper can both apply and clear the cached-entry selection highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_CachedNamedEntrySelectionDialog_UpdateSelectionHighlight_v129": {
+		"family": "WorldUI",
+		"summary": "Selection-change callback for the cached named-entry selection dialog.",
+		"notes": [
+			"Highlights the currently active cached-entry choice when the dialog requests an apply pass, unhighlights the previously latched choice on a clear pass, and routes both operations through World_CachedNamedEntrySelectionDialog_ToggleSelectionHighlight_v129.",
+			"World_OpenCachedNamedEntrySelectionDialog_v129 installs this callback on the type-7 selection window alongside the existing keyboard input handler.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_CachedNamedEntrySelectionDialog_HandleInput_v129": {
 		"family": "WorldUI",
 		"summary": "Handles navigation and submit actions for the cached named-entry selection dialog.",
@@ -4365,6 +5991,19 @@ const OVERRIDES := {
 		"summary": "Opens the shared modal world text window with optional seeded input text.",
 		"notes": [
 			"Allocates the common modal page shell, writes the supplied body text, installs the shared close/submit callbacks, and optionally creates a child edit field preloaded with caller-provided text.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_ModalTextWindow_HandleInput_v129": {
+		"family": "WorldUI",
+		"summary": "Shared input handler for the retail modal text window and its text-entry variants.",
+		"notes": [
+			"Handles `Tab` by focusing the child edit field when one exists, `Esc` by sending an empty string response through the old text-response helper, and `Enter` by copying the current edit text into a local buffer before dispatching the window-specific follow-up action.",
+			"For the generic text-response path it forwards the typed string through World_SendLegacyTextResponse_v129, then closes the stacked shell and flushes the outbound buffer. Special follow-up ids branch into the retail shortcut-binding flow, the numbered text-selection reopen path, and the local file-open path used by the late-world shell.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4432,6 +6071,91 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_NumberedTextSelectionDialog_HandleInput_v129": {
+		"family": "WorldUI",
+		"summary": "Handles numeric hotkeys for the older numbered text-selection dialog.",
+		"notes": [
+			"Converts the normalized digit key into a one-based row index, rejects digits beyond the decoded choice count, and otherwise sends the selected numbered response before destroying the modal page and flushing the outbound buffer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd45_ScrollListShell_v129": {
+		"family": "WorldUI",
+		"summary": "Decodes the retail Cmd45 scroll-list shell, populates its visible rows, and installs the shared keyboard, mouse, and selection callbacks.",
+		"notes": [
+			"Builds the style-6 shell window, swaps the frame over to the alternate list font through Frame_SetActiveFont_v129, lays out the current page of visible entries and optional MORE row, and stores the callback/context state used by the shared input helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/world_client.gd",
+		],
+	},
+	"World_ScrollListShell_HandleInput_v129": {
+		"family": "WorldUI",
+		"summary": "Keyboard handler for the retail Cmd45 scroll-list shell, including row movement, MORE paging, and submit behavior.",
+		"notes": [
+			"Handles ESC to close and send the cancel opcode, SPACE to request the built-in MORE action on the eligible Cmd45 modes, ENTER to either send the selected row value or open the special follow-up dialog when the latched scroll-list id is zero, and Up/Down to move the active row while skipping empty metadata slots in `DAT_004f6440`.",
+			"Uses the installed row-highlight callback on the active shell window before and after cursor movement so the visible selection stays aligned with the current row index in `DAT_004e8854`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/world_client.gd",
+		],
+	},
+	"World_ScrollListShell_HandleMouse_v129": {
+		"family": "WorldUI",
+		"summary": "Pointer handler for the retail Cmd45 scroll-list shell, covering hover selection, click submit, and close-on-activate behavior.",
+		"notes": [
+			"Maps the pointer y-position into one visible list row, rejects out-of-range or empty rows through the shared UI fallback path, and uses the installed selection-highlight callback to keep hover state synchronized with `DAT_004e8854` whenever the mouse moves across the shell.",
+			"On activation it either sends the selected row through World_SendMenuSelection_v129 or opens World_OpenScrollListEntryActionDialog_v129 when the latched scroll-list id is zero, matching the same special-case split used by the keyboard handler.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/world_client.gd",
+		],
+	},
+	"World_ScrollListShell_ToggleRowHighlight_v129": {
+		"family": "WorldUI",
+		"summary": "Inverts the palette-highlight rectangle for one visible Cmd45 scroll-list row.",
+		"notes": [
+			"Computes the row rectangle from the active type-6 shell window, the shared row height of `0xe`, and the current row index, then calls Frame_SwapPaletteIndicesInRect_v129 so the same leaf can both apply and clear the highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_ScrollListShell_UpdateSelectionHighlight_v129": {
+		"family": "WorldUI",
+		"summary": "Selection-change callback for the retail Cmd45 scroll-list shell.",
+		"notes": [
+			"Highlights the current `DAT_004e8854` row when the caller requests an apply pass, unhighlights the previously latched row stored on the window when the caller requests a clear pass, and routes both operations through World_ScrollListShell_ToggleRowHighlight_v129.",
+			"World_Cmd45_ScrollListShell_v129 installs this helper in the shell window callback slot used by both World_ScrollListShell_HandleInput_v129 and World_ScrollListShell_HandleMouse_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_OpenScrollListEntryActionDialog_v129": {
+		"family": "WorldUI",
+		"summary": "Opens the special two-option follow-up dialog for one selected Cmd45 scroll-list entry.",
+		"notes": [
+			"Builds a style-2 shell window whose heading combines the selected row label with the formatted ComStar id code, then renders two localized action rows from message-catalog lines `0x91` and `0x92` before installing the standard menu-dialog input and mouse handlers.",
+			"World_ScrollListShell_HandleInput_v129 reaches this helper only when the latched scroll-list id is zero, making it the special-case follow-up surface layered on top of the generic Cmd45 list shell.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/world_client.gd",
+		],
+	},
 	"World_OpenTripleStringListDialog_v129": {
 		"family": "WorldUI",
 		"summary": "Builds the late-world triple-string list dialog, optionally including the stored leading key column.",
@@ -4478,11 +6202,36 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_SendLegacyTextResponse_v129": {
+		"family": "WorldSubmit",
+		"summary": "Sends the old cmd08-family world text response with a command id and byte-counted string payload.",
+		"notes": [
+			"Appends outbound opcode `0x08`, encodes the retail follow-up command id as a type1 arg, then appends the submitted text as a byte-counted string. Shared by the modal text-window input handler for generic text submit and cancel-with-empty-string flows.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/world_client.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_SendNumberedTextSelectionResponse_v129": {
+		"family": "WorldSubmit",
+		"summary": "Sends the response frame for the older numbered text-selection dialog.",
+		"notes": [
+			"Appends outbound opcode `0x09`, encodes the fixed subcommand byte `0x01`, then serializes the latched text context plus the chosen numbered row value as the retail reply payload.",
+			"Used exclusively by World_NumberedTextSelectionDialog_HandleInput_v129 after the pressed digit is validated against the current row count.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/world_client.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_BitmaskSelectionList_HandleInput_v129": {
 		"family": "WorldSubmit",
 		"summary": "Handles confirm/cancel input and per-row toggles for the late-world checkbox selection dialog.",
 		"notes": [
-			"Escape sends a zero value through World_SendLegacySelectionResponse_v129, Enter recomputes the checked-row bitmask and submits `bitmask + 1`, and numeric row hotkeys toggle the corresponding checkbox before redrawing its decoration in place.",
+			"Escape sends a zero value through World_SendLegacySelectionResponse_v129, Enter recomputes the checked-row bitmask by querying each checkbox through Frame_IsTextDecorationToggleStateSetByIndex_v129 and submits `bitmask + 1`, and numeric row hotkeys toggle the corresponding checkbox through Frame_SetTextDecorationToggleStateByIndex_v129 before redrawing it in place.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4524,6 +6273,29 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_RestoreTransientNoticeWindowFocus_v129": {
+		"family": "WorldUI",
+		"summary": "Restores focus to the active transient-notice popup after a travel-compass page rebuild or z-order shuffle.",
+		"notes": [
+			"Only runs when a queued transient-notice window is currently open. Temporarily reactivates the popup, lets the next-highest world window repair the stack underneath it, and redraws the travel-compass highlights before reactivating the popup again when the compass root still owns the active overlay state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_TransientNoticeDialog_HandleInput_v129": {
+		"family": "WorldUI",
+		"summary": "Handles the interactive transient-notice dialog choices and advances the notice queue afterward.",
+		"notes": [
+			"Reads the active queued notice record, maps `Esc`/`N` to a zero response, `Y` to a one response, and `Enter` to the notice's stored default/type value, then sends the reply through the shared transient-notice response helper before flushing the outbound buffer.",
+			"Type-2 notices bypass the response send and simply advance the queue, matching the one-button informational notice path opened by World_ShowNextTransientNotice_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_RegisterShortcutBinding_v129": {
 		"family": "WorldUI",
 		"summary": "Registers a world shortcut / hotkey binding.",
@@ -4544,6 +6316,19 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_SendTransientNoticeResponse_v129": {
+		"family": "WorldSubmit",
+		"summary": "Sends the response frame for an interactive transient notice.",
+		"notes": [
+			"Appends outbound opcode `0x12`, encodes the notice id as a type1 arg, the selected response/state as a type4 arg, and the queued notice's variant byte as the trailing selector field.",
+			"Used by World_TransientNoticeDialog_HandleInput_v129 for the yes/no and default-action notice variants.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/world_client.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_SendTravelCompassSlotSelection_v129": {
 		"family": "WorldSubmit",
 		"summary": "Sends the travel-compass selection for one of the four surrounding page slots.",
@@ -4555,6 +6340,18 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scripts/net/world_client.gd",
 			"res://scripts/net/world_travel_client.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_OpenByteSelectionMenuHelp_v129": {
+		"family": "WorldUI",
+		"summary": "Opens the retail `wnd_menu` help topic for byte-selection menus.",
+		"notes": [
+			"Builds the `solaris.hlp` path from the active install directory, hides the current cursor through Frame_HideCursor_v129, and calls WinHelpA first with the topic-open action and then with the small `wnd_menu` help menu descriptor when the help file launches successfully.",
+			"On success it latches the WinHelp window handle and sets the shared help-open flag in `DAT_0047a040`; on failure it immediately restores the saved cursor through Frame_RestoreSavedCursor_v129. World_ByteSelectionMenu_HandleInput_v129 uses it for the page-local help button `0x100`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
 			"res://scenes/world/world.gd",
 		],
 	},
@@ -4607,6 +6404,52 @@ const OVERRIDES := {
 		"summary": "Pointer handler for the early-world travel-compass page.",
 		"notes": [
 			"Maps clicks on the center slot into World_OpenCachedNamedEntrySelectionDialog_v129, routes the four surrounding slot hits into World_SendTravelCompassSlotSelection_v129, and preserves the fixed byte-selection action buttons plus help/close behavior on the same page.",
+			"When the shared shell-control redirect flag is active it delegates the click-to-command translation through World_SendTravelCompassMouseControlFrame_v129 instead of executing the local action immediately.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_SendTravelCompassMouseControlFrame_v129": {
+		"family": "WorldUI",
+		"summary": "Translates one travel-compass mouse hit into the corresponding outbound Cmd1D control-frame action.",
+		"notes": [
+			"Compares the clicked control id against the page's active center control, maps clicks above/below that anchor into the retail relative control opcodes, and forwards the result through World_SendCmd1dControlFrame_v129.",
+			"World_TravelCompassPage_HandleMouse_v129 only uses this path while the shared shell redirect flag is set, which is why ordinary local clicks still branch directly into slot selection, cached-entry popup, EXIT confirmation, or the CMP button animation.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_ActivateTravelCompassCmpButton_v129": {
+		"family": "WorldUI",
+		"summary": "Plays the travel-compass CMP button flash/press animation and then opens the shared CMP action dialog.",
+		"notes": [
+			"Only called from World_TravelCompassPage_HandleInput_v129 and World_TravelCompassPage_HandleMouse_v129 for the travel-compass page's fixed CMP action button. Blits the pressed-state bitmap, waits roughly `0x15` centiseconds, restores the idle art, and then opens Shell_OpenCmpActionDialog_v129 unless the caller requested the visual-only phase.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_IsTravelCompassCurrentLabelPictureId_v129": {
+		"family": "WorldUI",
+		"summary": "Returns whether a travel-compass picture id is the singleton current-label placeholder.",
+		"notes": [
+			"Matches picture id `0x16`, the one-off placeholder that World_Cmd04_TravelCompassPage_v129 and World_RedrawTravelCompassPageArt_v129 treat as eligible for substitution with the live location-label bitmap loaded into `DAT_0047fb5c`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_IsTravelCompassDistrictLabelPictureId_v129": {
+		"family": "WorldUI",
+		"summary": "Returns whether a travel-compass picture id falls in the district-label placeholder range.",
+		"notes": [
+			"Matches picture ids `0x21` through `0x25`, the five label-backed district placeholder variants that the travel-compass page swaps to the live location-label bitmap instead of the cached `I101+` art table when `DAT_0047fb5c` is available.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4676,6 +6519,19 @@ const OVERRIDES := {
 		"summary": "Creates the shared four-slot paged mech-list window used by the late-world cmd26/cmd27/cmd32 chooser family.",
 		"notes": [
 			"Reuses or allocates the fullscreen frame-backed window, switches the header/action labels according to the current mech-list mode, seeds four slot decorations plus the bottom action buttons, installs the slot-highlight callback and keyboard handlers, redraws the first visible page, and shows the initial selection highlight. Cmd26 mech lists, cmd27 alternate mech choosers, and cmd32 alternate ranking lists all converge here after decoding their row data.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"World_DrawPagedMechListShellFrame_v129": {
+		"family": "WorldUI",
+		"summary": "Draws the static shell bitmap frame used under the retail paged mech-list window.",
+		"notes": [
+			"Blits the fixed top, side, divider, and lower border art into the shared paged mech-list frame before any row text, mech art, or action labels are rendered.",
+			"World_OpenPagedMechListWindow_v129 uses it during initial construction and World_RedrawPagedMechListWindow_v129 reuses it whenever the visible page contents are rebuilt.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4769,6 +6625,20 @@ const OVERRIDES := {
 		"summary": "Sends the cmd1d control-frame actions used by the paged mech-list footer buttons and alternate-choice submit path.",
 		"notes": [
 			"Maps `Enter` to the current alternate-choice index plus ten, `Esc` to cancel, `N` and `P` to the retail previous/next choice actions, and `X` to the explicit examine action, then forwards the selected control id through World_SendCmd1dControlFrame_v129 with the paged mech-list action opcode.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/world_client.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"World_SendPagedMechListAlternateChoiceTable_v129": {
+		"family": "WorldSubmit",
+		"summary": "Sends the alternate-choice table selected from the retail paged mech-list window.",
+		"notes": [
+			"Appends outbound opcode `0x10`, encodes the owning paged-list command id plus the number of visible alternate-choice rows, then serializes one `(choice-index, selected-value)` pair per row from the shared paged mech-list state tables.",
+			"World_PagedMechList_HandleInput_v129 reaches this helper only in alternate-choice mode after duplicate-assignment validation passes.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4877,7 +6747,7 @@ const OVERRIDES := {
 		"family": "WorldUI",
 		"summary": "Closes the active world root and auxiliary UI windows and clears the corresponding world-shell state bits.",
 		"notes": [
-			"When the world-shell active bit is set, marks teardown in progress, clears world UI children, destroys the root/auxiliary popup windows tracked in the shared world globals, clears the optional overlay/dialog windows guarded by bits `0x40` and `0x04`, and resets the world-shell flag mask before returning. When the world shell is not active, it falls back to the shared UI cleanup path.",
+			"When the world-shell active bit is set, marks teardown in progress, clears world UI children, destroys the root/auxiliary popup windows tracked in the shared world globals, clears the optional overlay/dialog windows guarded by bits `0x40` and `0x04`, and resets the world-shell flag mask before returning. When the world shell is not active, it falls back to the shared UI cleanup path through Frame_ResetRootWindowTextLayout_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5369,6 +7239,20 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_LoadBitmapPixelPayload_v129": {
+		"family": "FrameBlit",
+		"summary": "Loads the variable-size pixel payload block for one retail bitmap object.",
+		"notes": [
+			"Reads the payload width, height, and byte count into the bitmap header, allocates the backing buffer at `+0x18`, then copies the raw payload bytes from the current FILE position.",
+			"Frame_LoadBitmapFromFile_v129 calls it after the optional palette/aux block loader succeeds, and any short read or allocation failure forces the parent loader to free the half-built bitmap.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"Frame_LoadMwPictureArchivesAndTables_v129": {
 		"family": "FrameBlit",
 		"summary": "Opens MW_MPICS.DAT, preloads the shared bitmap tables, and opens the unit bitmap archives used by retail inline/image surfaces.",
@@ -5424,6 +7308,20 @@ const OVERRIDES := {
 		"summary": "Frees a retail heap bitmap object and any decoded pixel/palette storage it owns.",
 		"notes": [
 			"Used by the file-loader error paths, the formatted-text inline asset path, combat bootstrap cleanup, and world map/data loading when temporary bitmap objects are no longer needed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_FreeBitmapOwnedBuffers_v129": {
+		"family": "FrameBlit",
+		"summary": "Frees the palette and pixel buffers owned by one retail bitmap object and clears both pointers.",
+		"notes": [
+			"Releases the optional block at offset `+0x18` and the earlier decoded buffer at offset `+0x0C`, then zeroes both fields so the parent bitmap header can be safely freed afterward.",
+			"Frame_FreeBitmap_v129 delegates to this helper before releasing the outer bitmap object itself.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5506,7 +7404,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Shows the retail title and credits bitmap sequence from TITLE.DAT.",
 		"notes": [
-			"Opens TITLE.DAT, displays the TITL card followed by the CRDT card when available, overlays the title caption on the first card, presents each frame full-screen, and frees the temporary bitmap after each slide.",
+			"Opens TITLE.DAT, displays the TITL card followed by the CRDT card when available, overlays the centered version banner from Shell_GetVersionString_v129 on the first card, presents each frame full-screen, and frees the temporary bitmap after each slide.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5524,11 +7422,68 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_CreateRootWindow_v129": {
+		"family": "FrameWindow",
+		"summary": "Clears the retail window-stack globals and creates the fullscreen root frame used as the compose/display anchor.",
+		"notes": [
+			"Resets the live window count, allocates a 640x480 root frame through Frame_CreateWindow_v129, installs the root-only keyboard callback, and refreshes the global root/active-frame pointers plus the cached compose-surface pointer derived from that frame.",
+			"Shell_InitializeFrontendResourcesAndAudio_v129 calls it during frontend bootstrap, and Frame_ResetWindowStack_v129 reuses it after destroying transient windows when the retail shutdown flag is not set.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_CreateWindow_v129": {
 		"family": "FrameWindow",
 		"summary": "Allocates and initializes a retail frame/window with backing storage, callbacks, and optional inset text layout.",
 		"notes": [
 			"Registers the new frame in the global z-order array, zeroes its control state, stores the requested screen position and dimensions, allocates the backing rectangle metadata block, seeds the default input/render callbacks, and finishes by resetting the text-layout state. When the caller sets the final flag it also enables the standard shell text insets used by modal pages and slideshow windows.",
+			"If the requested window is larger than the retail 80x24-style threshold, it also sets the fullscreen-stack flag later queried by Frame_FindTopFullscreenWindowInStack_v129 during active-window repair after fullscreen page teardown.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_SetActiveFont_v129": {
+		"family": "FrameText",
+		"summary": "Stores the active bitmap-font descriptor on a retail frame and refreshes the font-derived row metrics that travel with it.",
+		"notes": [
+			"Writes the caller-supplied font descriptor into the frame text state, then synchronizes the cached text-row baseline and the default row pitch used by the shell's list-style text decorations.",
+			"Frame_CreateWindow_v129 uses it during frame initialization, while World_Cmd45_ScrollListShell_v129 switches the shared scroll-list shell over to the alternate font descriptor before laying out the visible rows.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ConfigureTextGridMetrics_v129": {
+		"family": "FrameText",
+		"summary": "Configures the active line height and derived text-grid metrics for a retail frame/window.",
+		"notes": [
+			"Stores the caller-supplied line height in the frame's text-layout state, derives the matching wrapped-column and visible-row counts from the frame dimensions, and updates the related cached limits used by the text writer and scroll helper.",
+			"Combat HUD panels plus many world shell list/dialog windows call it immediately after Frame_CreateWindow_v129 so later formatted-text and decoration helpers share consistent monospace grid metrics.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_FindTopWindowAtPoint_v129": {
+		"family": "FrameWindow",
+		"summary": "Returns the topmost retail frame/window whose screen rectangle contains the supplied display coordinates.",
+		"notes": [
+			"Walks the live window-stack array from topmost to bottommost and returns the first frame whose on-screen bounds contain the requested point.",
+			"Frame_DispatchMouseEventToWindowStack_v129 uses it as the shared pointer hit-test entry before applying modal-window and focused-control rules.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5563,11 +7518,54 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_ResetWindowStack_v129": {
+		"family": "FrameWindow",
+		"summary": "Destroys every live retail frame/window in the stack and recreates the root frame unless full shutdown is active.",
+		"notes": [
+			"Walks the global frame array, releases each frame's backing rectangle, owned auxiliary buffers, and heap object, then clears the stored stack slots.",
+			"When the frontend shutdown flag is not set it finishes by rebuilding the fullscreen root frame through Frame_CreateRootWindow_v129 so later shell flows still have a valid compose/display anchor.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ResetRootWindowTextLayout_v129": {
+		"family": "FrameWindow",
+		"summary": "Clears the root frame's registered text-decoration state and restores its default text layout.",
+		"notes": [
+			"Targets the shared fullscreen root frame, zeroes its decoration/control counts and related root-only layout flags, then delegates to Frame_ResetTextLayoutState_v129 so the root surface returns to the retail default text box state.",
+			"World_TeardownRootUiWindows_v129 uses it as the fallback cleanup path when no active world-root window tree is present but the shared shell compose frame still needs to be reset.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_DestroyWindow_v129": {
 		"family": "FrameWindow",
 		"summary": "Destroys a retail frame/window, recursively releasing child frames, backing storage, and active-window state.",
 		"notes": [
 			"Removes the frame from the global z-order array, recursively tears down any owned child window tree, frees linked UI-control blocks and auxiliary buffers, repairs the active/focused window globals, and finally releases the frame object itself. It is the shared close path beneath stacked shell windows, slideshow teardown, and many world-dialog cleanup callbacks.",
+			"After removing the target, it can fall back through Frame_FindTopFullscreenWindowInStack_v129 so fullscreen/root-style pages reclaim focus instead of leaving a smaller inset shell window active when the current replacement target still requests fullscreen redraw semantics.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_FindTopFullscreenWindowInStack_v129": {
+		"family": "FrameWindow",
+		"summary": "Returns the topmost retail frame/window in the live stack whose fullscreen flag is set.",
+		"notes": [
+			"Scans the current z-order array from bottom to top and keeps the last window whose flag word at `+0x48` contains bit `4`, yielding the topmost fullscreen-capable frame currently present in the stack.",
+			"Frame_CreateWindow_v129 sets that bit for the large/full-display windows, and Frame_DestroyWindow_v129 uses this helper when repairing the active-window pointer after one of those fullscreen-style pages closes.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5631,10 +7629,39 @@ const OVERRIDES := {
 		"summary": "Briefly flashes the retail control bound to a normalized hotkey, showing its pressed state before restoring the normal artwork.",
 		"notes": [
 			"Scans the frame's registered controls for the supplied hotkey, draws the control's pressed or active visual according to its decoration type, waits for the short retail key-click delay, and then restores the control's default appearance. Message, compose, travel-compass, and transient-notice key handlers use it before dispatching the logical action.",
+			"For decoration type `0`, it toggles the pressed-state look by calling Frame_InvertTextDecorationPaletteByIndex_v129 before and after the short delay instead of drawing alternate bitmap or bevel assets.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_InvertTextDecorationPaletteByIndex_v129": {
+		"family": "FrameControl",
+		"summary": "Inverts the palette indices inside one type-0 text-decoration rect, producing the retail pressed/flash visual for plain text controls.",
+		"notes": [
+			"Looks up the decoration rectangle plus its stored fill width from the frame's registered text-decoration table, then swaps palette indices `0xd7` and `0x00` across that rect through Frame_SwapPaletteIndicesInRect_v129.",
+			"Frame_DefaultTextDecorationPointerHandler_v129 uses it when a type-0 decoration is pressed or released with the mouse, and Frame_FlashHotkeyControl_v129 reuses the same helper to flash those controls for keyboard hotkeys.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_SetTextDecorationTextByIndex_v129": {
+		"family": "FrameControl",
+		"summary": "Copies one string into a registered text-decoration entry and expands the decoration width to fit the measured label text.",
+		"notes": [
+			"Stores the supplied string into the decoration record payload at offset `+0x26`, measures its rendered width with Frame_MeasureStringWidth_v129, and extends the decoration's right edge when the current width is too small.",
+			"When the incoming string is empty, it still enforces the retail fallback minimum width of `0x20` pixels. The currently known unnamed caller uses it while assembling shell-style text-decoration controls with dynamic captions.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
 		],
 	},
 	"Frame_DispatchNormalizedKeyToActiveWindow_v129": {
@@ -5700,6 +7727,35 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_DefaultTextDecorationPointerHandler_v129": {
+		"family": "FrameControl",
+		"summary": "Shared default mouse handler for retail frames that use registered text-decoration controls.",
+		"notes": [
+			"Hit-tests the frame's enabled decoration table, tracks the currently pressed decoration index, updates each supported control type's pressed/released artwork in place, and forwards completed releases into the frame's registered action dispatcher callback.",
+			"Type-0 controls use Frame_InvertTextDecorationPaletteByIndex_v129 for their reversible pressed-state feedback, while the other supported decoration kinds redraw their bevel, bitmap, or palette-swap visuals directly.",
+			"Frame_CreateWindow_v129 installs it as the default pointer callback, and world paged lists, scroll-list shells, travel-compass buttons, and other shell pages reuse it unless they replace the frame-local mouse handler with a custom implementation.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_DispatchTextDecorationActionById_v129": {
+		"family": "FrameControl",
+		"summary": "Dispatches a released text-decoration/control id into the frame's primary or alternate action callback.",
+		"notes": [
+			"On release, reads the registered decoration id from the selected entry and forwards it into either the primary action callback slot at `+0x1430` or the alternate slot at `+0x1438`, depending on the current retail pointer-mode state.",
+			"Frame_CreateWindow_v129 installs it as the default decoration-action callback, while World_TravelCompassPage_HandleMouse_v129 also calls it directly for the older button strip path before applying its cursor-side effects.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_SeedEditableTextBuffer_v129": {
 		"family": "FrameText",
 		"summary": "Draws an initial formatted string into a retail edit field and copies that same text into the frame's editable buffer state.",
@@ -5749,6 +7805,50 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_LoadBitmapFontDescriptor_v129": {
+		"family": "FrameText",
+		"summary": "Loads a retail TFONT data file into a font descriptor and precomputes the printable glyph advances.",
+		"notes": [
+			"Allocates the `0x84`-byte descriptor, loads the raw TFONT blob from disk through the shared file reader, and then calls Frame_InitializeBitmapFontDescriptorAdvances_v129 so the printable `0x20`-`0x7e` glyph widths are cached beside the loaded font data.",
+			"Shell_InitializeFrontendResourcesAndAudio_v129 uses it for TFONT1, while Combat_InitializeVisualResourcesAndHudState_v129 and Combat_Cmd63_ResultSceneInit_v129 swap in TFONT2 or the result-scene TFONT1 variant before rebuilding combat/world text surfaces.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_InitializeBitmapFontDescriptorAdvances_v129": {
+		"family": "FrameText",
+		"summary": "Builds the cached printable glyph-advance table for a loaded retail bitmap font descriptor.",
+		"notes": [
+			"Seeds the descriptor's advance cache with the retail default width marker and then walks the printable ASCII range, reading each glyph's stored advance from the raw TFONT blob so later text measurement and drawing paths can use constant-time lookups.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_FreeBitmapFontDescriptor_v129": {
+		"family": "FrameText",
+		"summary": "Releases one retail bitmap font descriptor and its loaded TFONT data blob.",
+		"notes": [
+			"Frees the raw font blob referenced by the descriptor, clears the cached advance region, releases the descriptor itself, and nulls the caller-owned slot.",
+			"Shell_ShutdownFrontendResourcesAndAudio_v129 plus the combat/result-scene font swap paths call it before loading replacement TFONT resources.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_MeasureStringWidth_v129": {
 		"family": "FrameText",
 		"summary": "Measures a retail string width using the active frame font, including tab-stop expansion.",
@@ -5778,6 +7878,19 @@ const OVERRIDES := {
 		"summary": "Moves the retail frame text cursor to a clamped pixel position and updates the derived column and row state.",
 		"notes": [
 			"Clamps the requested pixel coordinates to the 640x480 retail surface bounds, stores the pixel x-position directly, derives the text column from `x / 8`, and derives the text row from `y / line_height` using the frame's active line-height field. Modal editors, cached-entry dialogs, label strips, and menu builders use it before streaming text into a specific insertion point.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_ClearCurrentTextLine_v129": {
+		"family": "FrameText",
+		"summary": "Clears the current retail text line, resets the cursor x-position, and drops the latched line metadata.",
+		"notes": [
+			"Fills exactly one active text-row band of the frame surface using the current line index and the frame's active line height, then resets the current pixel x-position to column zero and clears the cached row metadata slot at `+0x1404`.",
+			"Formatted shell text helpers use it before rewriting the current line so inline list metadata and other per-line state do not leak across redraws.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5893,6 +8006,20 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scripts/ui/combat_radar.gd",
 			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_ScrollClippedRectWithWrapOrFill_v129": {
+		"family": "FramePrimitive",
+		"summary": "Shifts a clipped frame rectangle by the requested delta, then either fills the exposed area with a solid byte or wraps in pixels from a source tile buffer.",
+		"notes": [
+			"In fill mode it reuses Frame_CopyOrFillClippedRect_v129 to move the surviving pixels and fills the newly exposed strips with the supplied palette byte; if the shift exceeds the rect dimensions it falls back to a full Frame_FillRect_v129.",
+			"In wrap mode it treats the final argument as a source tile buffer, normalizes the deltas modulo the rect width and height, and repaints the nine translated neighbor regions to synthesize wrapped scrolling. Frame_ScrollTextViewportUpIfAtBottom_v129 uses the fill path for the retail text viewport scroll.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
 		],
 	},
 	"Frame_DrawWrappedLine_v129": {
@@ -6067,6 +8194,43 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Frame_CaptureDisplayPaletteState_v129": {
+		"family": "FramePalette",
+		"summary": "Captures the current display palette state before shell dialogs or modal prompts disturb it.",
+		"notes": [
+			"Copies the working palette table into the backup buffer, queries the active palette object for the live 256-entry RGB block, retries once after restoring the DirectDraw palette owner when the first read reports the lost-surface error, and then clears the modal-palette latch bit `DAT_0047fdec`.",
+			"Shell_ShowModalMessageBox_v129, Shell_OpenStatusTextDialog_v129, the shared CMP dialogs, and the exit confirmation path all reuse it so the frontend can restore the prior palette cleanly after the dialog closes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_RestoreSavedCursor_v129": {
+		"family": "FrameControl",
+		"summary": "Restores the saved retail cursor handle as the active Windows cursor.",
+		"notes": [
+			"Copies the stored cursor handle from `DAT_00498988` into the current-cursor slot `DAT_00498984` and immediately applies it with SetCursor. The help path, redraw path, and a few combat mouse-state transitions reuse it when a temporary cursor override ends.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_HideCursor_v129": {
+		"family": "FrameControl",
+		"summary": "Clears the current retail cursor and hides the Windows cursor.",
+		"notes": [
+			"Zeros the active cursor slot `DAT_00498984` and calls SetCursor(NULL). Used by the byte-selection help launcher and a few redraw / combat mouse paths before another helper restores the stored cursor shape.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Frame_CyclePaletteEntries_v129": {
 		"family": "FramePalette",
 		"summary": "Rotates a contiguous palette range at a fixed tick interval and uploads the updated entries.",
@@ -6195,6 +8359,202 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_EncodeTransparentBitmapCommandStream_v129": {
+		"family": "FrameBlit",
+		"summary": "Scans a clipped 8-bit bitmap rect against a transparent key, computes the non-transparent bounds, and encodes the surviving rows into the retail transparent bitmap command stream.",
+		"notes": [
+			"When an output buffer is supplied it writes a small header containing the source rect size, destination origin, and tight non-transparent bounding box offsets before appending the row payload. With a null output pointer it still walks the image and returns the encoded size requirement.",
+			"It delegates each bounded row to Frame_EncodeTransparentBitmapCommandRow_v129 after trimming leading and trailing fully transparent rows and columns.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_EncodeTransparentBitmapCommandRow_v129": {
+		"family": "FrameBlit",
+		"summary": "Encodes one bounded bitmap row into transparent-skip, literal-byte, and repeated-byte commands for the retail transparent bitmap stream.",
+		"notes": [
+			"Walks the current row from left to right, distinguishing transparent-key spans, literal mixed spans, and repeated-byte runs before delegating the actual opcode emission to Frame_EmitTransparentBitmapRunCommand_v129.",
+			"Always terminates the row with the zero end-of-row marker after flushing any pending transparent skip.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_EmitTransparentBitmapRunCommand_v129": {
+		"family": "FrameBlit",
+		"summary": "Appends one command to the retail transparent bitmap row stream and updates the tracked horizontal bounds for the encoded image.",
+		"notes": [
+			"Mode `0` resets the row state, mode `1` emits literal bytes, mode `2` emits repeated-byte runs, mode `3` defers a transparent skip, and mode `4` writes the row terminator.",
+			"The helper also supports size-only passes when the destination buffer is null, so the enclosing encoder can precompute the exact command-stream allocation size.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ComputeTransparentBitmapCommandBounds_v129": {
+		"family": "FrameBlit",
+		"summary": "Walks one retail transparent bitmap command stream entry and reports the bounding rectangle it would touch at the requested origin.",
+		"notes": [
+			"Parses the same transparent-skip, literal-byte, repeated-byte, and end-of-row commands emitted by the retail transparent bitmap encoder, tracking the minimum and maximum x/y coordinates reached by the stream.",
+			"Applies horizontal and vertical mirror flags from the final argument before storing the output rectangle, making it the natural bounds helper for flipped command-stream draws.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransparentBitmapCommandClipped_v129": {
+		"family": "FrameBlit",
+		"summary": "Blits one retail transparent bitmap command-stream entry into the destination frame with clip-rectangle handling.",
+		"notes": [
+			"Consumes the transparent-skip, literal-byte, repeated-byte, and end-of-row commands emitted by the retail encoder while clipping both horizontally and vertically against the destination frame rectangle.",
+			"When the target rect fully contains the command bounds it falls through to Frame_BlitTransparentBitmapCommandFast_v129 for the straight-line inner loop.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransparentBitmapCommandFast_v129": {
+		"family": "FrameBlit",
+		"summary": "Blits one retail transparent bitmap command-stream entry without additional clipping checks.",
+		"notes": [
+			"Assumes the caller has already verified the destination rect fully contains the command entry and then streams the literal and repeated-byte runs directly into the frame buffer.",
+			"Used as the unclipped fast path by Frame_BlitTransparentBitmapCommandClipped_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129": {
+		"family": "FrameBlit",
+		"summary": "Blits one retail transparent bitmap command-stream entry into the destination frame after remapping each source palette index through the active lookup table, with clip handling.",
+		"notes": [
+			"Uses the same transparent command stream as the raw variant but translates every emitted byte through `DAT_00483658` before writing it to the destination frame buffer.",
+			"When the target rect fully contains the command bounds it falls through to Frame_BlitPaletteMappedTransparentBitmapCommandFast_v129 for the unclipped inner loop.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitPaletteMappedTransparentBitmapCommandFast_v129": {
+		"family": "FrameBlit",
+		"summary": "Blits one palette-mapped retail transparent bitmap command-stream entry without additional clipping checks.",
+		"notes": [
+			"Assumes the caller has already verified the destination rect fully contains the command entry and emits the translated bytes directly into the frame buffer using the active palette lookup table.",
+			"Used as the unclipped fast path by Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransformedTransparentBitmapCommand_v129": {
+		"family": "FrameBlit",
+		"summary": "Blits one retail transparent bitmap command-stream entry through the transformed draw path, supporting rotation, independent x/y scale, and optional palette remapping.",
+		"notes": [
+			"When the angle is zero and both scales are `0x10000`, it falls straight through to either Frame_BlitTransparentBitmapCommandClipped_v129 or Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129.",
+			"Otherwise it sizes a scratch surface from Frame_GetTransparentBitmapCommandSize_v129, derives the command origin from Frame_GetTransparentBitmapCommandOrigin_v129, optionally seeds that scratch surface from the indexed command entry, transforms the four command corners with Frame_TransformPointAroundPivotByAngleAndScale_v129, and scan-converts the resulting quadrilateral back into the destination frame.",
+			"Flag bit `0` selects the palette-mapped source path; flag bit `1` skips rebuilding the scratch surface and reuses the caller-supplied scratch pixels.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetTransparentBitmapCommandSize_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the inclusive width and height of one retail transparent bitmap command-stream entry.",
+		"notes": [
+			"Reads the stored left/top/right/bottom bounds from the indexed command entry and converts them into `(width,height)` by subtracting the min coordinates and adding one.",
+			"The transformed transparent-command wrapper uses it to size the temporary intermediate buffer that receives the unrotated command entry before the final transformed draw.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetTransparentBitmapCommandOrigin_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the stored top-left origin of one retail transparent bitmap command-stream entry.",
+		"notes": [
+			"Fetches the entry's stored left and top coordinates as a packed `(x,y)` pair without applying any mirroring or destination offset.",
+			"The transformed transparent-command wrapper uses it as the pivot/origin when it builds the intermediate source surface for later rotation and scaling.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_TransformPointAroundPivotByAngleAndScale_v129": {
+		"family": "FrameBlit",
+		"summary": "Rotates and non-uniformly scales one point around a pivot using the retail fixed-angle lookup tables.",
+		"notes": [
+			"Treats the input point as an offset from the supplied pivot, applies independent x and y fixed-point scales, rotates the result with the cosine/sine pair from Frame_GetFixedCosSinByAngle_v129, then adds the pivot back.",
+			"The transformed transparent-command wrapper calls it for each source corner while building the destination quadrilateral that bounds the rotated bitmap.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetFixedCosSinByAngle_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the retail fixed-point cosine and sine for an angle normalized into the renderer's 0xE10-step circle.",
+		"notes": [
+			"Normalizes the signed angle into the renderer's full turn and then reflects into the appropriate quadrant while reading the shared lookup tables.",
+			"Important output order: the first out-parameter receives cosine and the second receives sine.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_BlitBitmapPixels_v129": {
 		"family": "FrameBlit",
 		"summary": "Blits a bitmap resource's full pixel payload into the clipped destination frame rectangle.",
@@ -6222,11 +8582,54 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_NormalizeRect_v129": {
+		"family": "FramePrimitive",
+		"summary": "Normalizes an in-place retail rectangle so left<=right and top<=bottom.",
+		"notes": [
+			"Swaps the horizontal endpoints when the incoming right edge is left of the left edge, then performs the same correction for the vertical endpoints.",
+			"Frame_DrawLineAndPresent_v129, Frame_InvertRectPixels_v129, and several world/combat redraw helpers call it before presenting or clipping a touched rectangle.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_DrawRectOutline_v129": {
+		"family": "FramePrimitive",
+		"summary": "Draws a one-pixel rectangle outline by emitting the four edge line segments.",
+		"notes": [
+			"Calls the low-level line drawer four times to cover the left, bottom, right, and top edges of the requested rectangle without filling its interior.",
+			"Frame_DrawFilledBoxOrBitmapDecoration_v129 reuses it for the simple retail boxed-decoration style after filling the control interior.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_DrawLineAndPresent_v129": {
 		"family": "FramePrimitive",
 		"summary": "Draws one clipped line segment into the frame surface and then presents the touched rectangle.",
 		"notes": [
+			"Normalizes the touched line rectangle through Frame_NormalizeRect_v129 after drawing the segment, then presents only that minimal updated region.",
 			"Used by the world connector overlay commands and the immediate bevel helper when retail wants the line update shown right away rather than batched with a later blit.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_InvertRectPixels_v129": {
+		"family": "FramePrimitive",
+		"summary": "Bit-inverts every pixel in a frame-local rectangle and optionally presents the touched region afterward.",
+		"notes": [
+			"Walks the target pixel span row by row inside the frame backing buffer, replacing each byte with its bitwise inverse.",
+			"When the final flag is nonzero, it normalizes the updated rectangle through Frame_NormalizeRect_v129 and presents the result immediately. World_DrawLocationBrowserSelectionMarker_v129 uses that path for the grouped-browser selection highlight.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -6266,7 +8669,7 @@ const OVERRIDES := {
 		"family": "FrameText",
 		"summary": "Draws the simple filled-box decoration variant and the bitmap-backed decoration variant used by registered frame text decorations.",
 		"notes": [
-			"For type-3 decorations it fills the local decoration box and optionally adds crossing diagonal strokes; for type-8 decorations it chooses one of two bitmap resources and draws it into the decoration bounds.",
+			"For type-3 decorations it fills the local decoration box, outlines it through Frame_DrawRectOutline_v129, and optionally adds crossing diagonal strokes; for type-8 decorations it chooses one of two bitmap resources and draws it into the decoration bounds.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -6301,6 +8704,34 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_DrawEllipseOutline_v129": {
+		"family": "FramePrimitive",
+		"summary": "Draws an ellipse outline centered at the requested point using the supplied radii and palette index.",
+		"notes": [
+			"Uses the midpoint-ellipse stepping logic to plot the four symmetric edge points, clipping each pixel against the frame bounds before writing the destination palette value.",
+			"When either radius is zero it falls back to the shared line helper, and the tactical radar reuses it for the small circular heading/marker outlines around the center panel.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CopyOrFillClippedRect_v129": {
+		"family": "FramePrimitive",
+		"summary": "Copies a clipped rectangle from a raw source pixel buffer into a destination frame rectangle, or fills that clipped region with a solid palette index.",
+		"notes": [
+			"Treats both source and destination as 8-bit pixel planes with inclusive clip bounds, intersects the translated source and destination rectangles, and then either copies each row or emits a repeated palette byte depending on the final selector argument.",
+			"Used by HUD/world redraw helpers for opaque bitmap-region copies, and by Frame_ScrollTextViewportUpIfAtBottom_v129 as the low-level primitive behind its wrapped viewport scroll refresh.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_DrawFormattedText_v129": {
 		"family": "FrameText",
 		"summary": "Parses and draws the retail inline-formatted text stream, including tabs, centered runs, embedded bitmaps, and inline widgets.",
@@ -6311,6 +8742,104 @@ const OVERRIDES := {
 		"godot_targets": [
 			"res://scripts/ui/combat_radar.gd",
 			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_RegisterTextDecoration_v129": {
+		"family": "FrameText",
+		"summary": "Appends one typed decoration/control entry to a retail frame and initializes the stored rectangle, id, and payload fields.",
+		"notes": [
+			"Allocates the next `0x4e`-byte decoration slot in the frame-local table, stores the caller-supplied type/id/geometry, copies any inline label text, seeds the default palette/style fields for the supported decoration classes, and immediately draws the entry type when its registration path renders in-place.",
+			"Retail combat HUD builders, world dialog/menu pages, transient notices, and the paged mech-list shell all use it as the common registration helper before later bitmap-pair or bevel-palette tweaks are applied to the created entry.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_SetTextDecorationBevelPalettePairByIndex_v129": {
+		"family": "FrameText",
+		"summary": "Stores the two bevel palette indices used by one registered border-style text decoration.",
+		"notes": [
+			"Writes the caller-supplied highlight and shadow palette indices into the decoration record fields consumed by Frame_DrawBeveledBorderDecoration_v129.",
+			"World_OpenPagedMechListWindow_v129 uses it to recolor the four slot border decorations from the generic registration defaults before those entries are later flashed or disabled.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_EnableTextDecorationByIndex_v129": {
+		"family": "FrameText",
+		"summary": "Marks one registered text-decoration/control entry as enabled for hit-testing and interaction.",
+		"notes": [
+			"Sets the entry's enabled flag at the selected decoration-table slot without redrawing the control immediately.",
+			"Retail combat HUD toggles, weapon slot grids, the travel-compass root page, and the paged mech-list redraw path use it to re-enable controls after mode changes or row availability updates.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_DisableTextDecorationByIndex_v129": {
+		"family": "FrameText",
+		"summary": "Marks one registered text-decoration/control entry as disabled so pointer hit-testing skips it.",
+		"notes": [
+			"Clears the same decoration enabled flag used by the hit-test and default pointer helpers, leaving the stored decoration geometry and artwork intact until a later redraw changes the visuals.",
+			"Retail uses it to suppress inactive HUD toggles, unavailable paged mech-list arrows or rows, and travel-compass buttons whose mode-dependent action should not currently fire.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_SetTextDecorationBitmapPairByIndex_v129": {
+		"family": "FrameText",
+		"summary": "Stores the two bitmap resources used by one registered text-decoration/control entry and redraws that entry.",
+		"notes": [
+			"Writes the caller-supplied bitmap pair into the decoration record at the selected `0x4e`-byte entry offset, then immediately re-renders that decoration through Frame_DrawTextDecorationByIndex_v129.",
+			"Retail uses it to assign the normal/active artwork for shell buttons, paged-list arrows, combat HUD controls, transient notices, and related text-decoration based widgets after creating them with the generic registration helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_SetTextDecorationToggleStateByIndex_v129": {
+		"family": "FrameText",
+		"summary": "Updates the checked or active state of one toggle-style text-decoration/control entry and redraws it in place.",
+		"notes": [
+			"Handles the two stateful decoration types used by the retail shell toggle widgets: the boxed checkmark entry and the paired-bitmap toggle entry. It writes the new state into the selected decoration record and then re-renders that one entry through Frame_DrawTextDecorationByIndex_v129.",
+			"World_Cmd42_BitmaskSelectionList_v129 uses it to seed each checkbox from the incoming server bitmask, and World_BitmaskSelectionList_HandleInput_v129 reuses it whenever the player toggles a numbered row hotkey.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_IsTextDecorationToggleStateSetByIndex_v129": {
+		"family": "FrameText",
+		"summary": "Returns whether one toggle-style text-decoration/control entry is currently set.",
+		"notes": [
+			"Reads back the state fields for the two retail toggle decoration types: the boxed checkmark entry and the paired-bitmap toggle entry. Other decoration kinds report false so non-toggle widgets never contribute to checkbox bitmasks.",
+			"World_BitmaskSelectionList_HandleInput_v129 uses it both when rebuilding the outgoing bitmask on Enter and when inverting one numbered checkbox row before the redraw pass.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
@@ -6392,6 +8921,20 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_FindEnabledTextDecorationAtPoint_v129": {
+		"family": "FrameText",
+		"summary": "Returns the first enabled registered text-decoration/control entry whose rectangle contains the supplied frame-local point.",
+		"notes": [
+			"Scans the frame's decoration table from index 0 upward and requires both the entry-visible bit and the enabled bit before accepting a rectangle hit.",
+			"Used by the default decoration pointer handler plus several custom world-shell mouse handlers that need to map a local pointer position back to the clicked control index.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_RedrawRegisteredTextDecorations_v129": {
 		"family": "FrameText",
 		"summary": "Redraws all registered text decorations/controls that are currently enabled on the frame.",
@@ -6458,7 +9001,7 @@ const OVERRIDES := {
 		"family": "WorldUI",
 		"summary": "Draws the current location-browser selection marker in either the standard map or grouped-browser mode.",
 		"notes": [
-			"In the standard map browser it draws the small retail marker around the selected room coordinate. In grouped mode it instead palette-swaps the selected aggregate marker region and updates the grouped selection-state flag that the shared browser highlight callback reuses.",
+			"In the standard map browser it draws the small retail marker around the selected room coordinate. In grouped mode it instead inverts the selected aggregate marker region through Frame_InvertRectPixels_v129 and updates the grouped selection-state flag that the shared browser highlight callback reuses.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -6727,6 +9270,100 @@ const OVERRIDES := {
 			"res://scripts/net/comstar_client.gd",
 		],
 	},
+	"Shell_OpenCmpActionDialog_v129": {
+		"family": "ShellUI",
+		"summary": "Opens the shared CMP action dialog used by both combat HUD and travel-compass entry points.",
+		"notes": [
+			"Called from Combat_UpdateCmpHudToggle_v129 when the CMP toggle is switched into the non-default state, and from World_ActivateTravelCompassCmpButton_v129 after the travel-compass CMP button flash completes.",
+			"Refreshes the palette snapshot through the shared modal-prep helper and opens dialog resource `0x74` with Shell_CmpActionDialogProc_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scripts/net/comstar_client.gd",
+		],
+	},
+	"Shell_CmpActionDialogProc_v129": {
+		"family": "ShellUI",
+		"summary": "Dialog procedure for the shared CMP action chooser.",
+		"notes": [
+			"Centers the dialog over the root shell window, closes cleanly on `WM_CLOSE`, and routes the two action buttons according to the shared shell/combat state flag `DAT_0047c8d4`.",
+			"In state `3` it either opens Shell_OpenCmpMessageEntryDialog_v129 or the one-button Shell_OpenCmpInfoDialog_v129; in state `4` the primary action sends the immediate CMP dialog opcode through Shell_SendCmpDialogCommand_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scripts/net/comstar_client.gd",
+		],
+	},
+	"Shell_OpenCmpInfoDialog_v129": {
+		"family": "ShellUI",
+		"summary": "Opens the one-button follow-up informational dialog used by the shared CMP action flow.",
+		"notes": [
+			"Reached from Shell_CmpActionDialogProc_v129 and from the cancel path of Shell_CmpMessageEntryDialogProc_v129. Uses dialog resource `0x75` with Shell_CmpInfoDialogProc_v129 after the same palette/modal preparation step as the other CMP dialogs.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scripts/net/comstar_client.gd",
+		],
+	},
+	"Shell_CmpInfoDialogProc_v129": {
+		"family": "ShellUI",
+		"summary": "Dialog procedure for the one-button CMP informational modal.",
+		"notes": [
+			"Centers the dialog, closes on `WM_CLOSE`, and dismisses the modal when its single confirm button is pressed before restoring the full palette.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Shell_OpenCmpMessageEntryDialog_v129": {
+		"family": "ShellUI",
+		"summary": "Opens the free-text CMP message-entry dialog.",
+		"notes": [
+			"Reached from Shell_CmpActionDialogProc_v129 when the shared state flag allows typed CMP text entry. Opens dialog resource `0x76` with Shell_CmpMessageEntryDialogProc_v129 after refreshing the modal palette snapshot.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scripts/net/comstar_client.gd",
+		],
+	},
+	"Shell_CmpMessageEntryDialogProc_v129": {
+		"family": "ShellUI",
+		"summary": "Dialog procedure for the typed CMP message-entry modal.",
+		"notes": [
+			"Centers the dialog, caps the editable text length at `0x2ee`, and enables the confirm button only while the edit control is non-empty.",
+			"On submit it normalizes an unexpected empty body to the retail debug placeholder, replaces non-identifier characters with `-`, and sends the resulting text through Shell_SendCmpDialogCommand_v129 using the CMP text opcode `0x22`. On cancel it falls back to Shell_OpenCmpInfoDialog_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scripts/net/comstar_client.gd",
+		],
+	},
+	"Shell_SendCmpDialogCommand_v129": {
+		"family": "ShellUI",
+		"summary": "Sends one immediate CMP dialog command opcode and an optional type1 text payload, then flushes it immediately.",
+		"notes": [
+			"Only used by the shared CMP dialog flow. Appends the caller-supplied opcode to the outbound shell buffer, serializes the provided string only for opcode `0x22`, and then flushes the buffer immediately.",
+			"This helper is distinct from World_ComposeEditor_SubmitMessage_v129: the compose editor writes the full recipient/body payload for opcode `0x15`, while this dialog helper sends only the tiny no-arg or text-only CMP prompt commands.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/comstar_client.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_OpenComposeEditor_v129": {
 		"family": "ComstarUI",
 		"summary": "Opens the local editable ComStar compose editor for one or many target ids.",
@@ -6825,11 +9462,237 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"System_IsProcessorTypeAtLeast_v129": {
+		"family": "SystemRuntime",
+		"summary": "Returns whether the current Windows processor type meets the supplied retail threshold.",
+		"notes": [
+			"Wraps `GetSystemInfo`, compares `dwProcessorType` against the caller-supplied minimum, and returns a boolean result. The shell frontend reuses it for both the NoGameCPUCheck and NoSpeechCPUCheck gating paths.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_OpenNoGameCpuCheckDialog_v129": {
+		"family": "SystemRuntime",
+		"summary": "Opens the frontend NoGameCPUCheck override dialog when the current CPU fails the retail game-speed threshold.",
+		"notes": [
+			"Returns immediately when the `Software\\\\Kesmai\\\\MultiPlayer Battletech Solaris\\\\NoGameCPUCheck` override key already exists or System_IsProcessorTypeAtLeast_v129 reports a processor type at least `0x1E6`.",
+			"Otherwise opens dialog resource `0x77` with System_NoGameCpuCheckDialogProc_v129 and normalizes a dialog creation failure to the retail cancel code `2`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_VerifyManifestFiles_v129": {
+		"family": "SystemRuntime",
+		"summary": "Validates that every file listed in `MANIFEST.TXT` exists before the frontend continues booting.",
+		"notes": [
+			"Opens `MANIFEST.TXT` relative to the retail install path, trims each line, and attempts to reopen every listed file. A missing manifest file or listed payload produces a localized `bterror.log` entry through System_ReportBterrorEvent_v129 that includes the missing filename and active install path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_SaveFrontendConfigToRegistry_v129": {
+		"family": "SystemRuntime",
+		"summary": "Writes the retail frontend config blob and version marker to the Kesmai registry key.",
+		"notes": [
+			"Opens `Software\\\\Kesmai\\\\MultiPlayer Battletech Solaris\\\\Config`, writes the single-character version marker for config schema `100`, then persists the `0x91`-byte settings blob rooted at `DAT_0047f890`. Any registry open/write failure is surfaced immediately through Shell_ShowModalMessageBox_v129.",
+			"Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129 plus the shortcut-binding accept/reject flows reuse this helper whenever they need to persist updated local frontend settings.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_LoadOrInitializeFrontendConfig_v129": {
+		"family": "SystemRuntime",
+		"summary": "Loads the retail frontend config blob from the Kesmai registry key or seeds it with defaults on first run.",
+		"notes": [
+			"Creates or opens the shared `...\\\\Config` key during Shell_RunFrontendMain_v129 startup, accepts the stored blob only when both the version value and the `0x91`-byte payload are present, and copies the bytes into `DAT_0047f890` on success.",
+			"When the key is new, the version mismatches, or the payload read fails, it falls back to System_SaveFrontendConfigToRegistry_v129 so the in-memory defaults become the new persisted baseline.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_StartAolPaletteWatcherTimer_v129": {
+		"family": "SystemRuntime",
+		"summary": "Starts the retail AOL palette watcher timer when an AOL Frame25 host window is present.",
+		"notes": [
+			"Looks first for the exact `AOL Frame25` / `America  Online` top-level window pair, then falls back to any `AOL Frame25` window title if the localized caption differs.",
+			"When a host window is found it arms a 30-second timer whose callback is System_TickAolPaletteWatcher_v129, enabling the legacy frontend compatibility path that auto-dismisses the external `_AOL_Palette` dialog.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_TickAolPaletteWatcher_v129": {
+		"family": "SystemRuntime",
+		"summary": "Ticks the retail AOL palette watcher, polling the palette window and dispatching the OK-button callback when needed.",
+		"notes": [
+			"Uses the first timer fire to arm the watcher flag, then on later ticks looks up the `_AOL_Palette` window and enumerates its children through System_ClickAolPaletteOkButton_v129.",
+			"When the callback reports that it already pressed the button, this helper clears the one-shot click flag before the next poll cycle.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_ClickAolPaletteOkButton_v129": {
+		"family": "SystemRuntime",
+		"summary": "Child-window callback that finds the AOL palette dialog's `OK` button and simulates the double-click needed to dismiss it.",
+		"notes": [
+			"Accepts only `_AOL_Button` child windows whose text is exactly `OK`, then sends two `WM_LBUTTONDOWN` / `WM_LBUTTONUP` pairs at the fixed client coordinate `0x000A000A`.",
+			"Sets the shared watcher click flag after a successful synthetic double-click so System_TickAolPaletteWatcher_v129 can treat the next poll cycle as the post-dismiss phase.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_LoadStringResource_v129": {
+		"family": "SystemRuntime",
+		"summary": "Loads one Win32 string-table resource into the shared retail scratch buffer and returns it.",
+		"notes": [
+			"Wraps `LoadStringA(DAT_0047a054, resource_id, &DAT_004e47a0, 400)` and returns the shared `DAT_004e47a0` buffer. Retail shell, world, and combat paths reuse this helper for localized UI text before formatting status strings, dialog warnings, and HUD labels.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/settings/settings.gd",
+		],
+	},
+	"System_GetDirectDrawErrorString_v129": {
+		"family": "SystemRuntime",
+		"summary": "Maps a DirectDraw/HRESULT failure code to the localized retail error string shown in BTERR reports.",
+		"notes": [
+			"Handles the known DirectDraw and COM failure constants through the string-table resources, then falls back to formatting the low 16-bit code into the generic unknown-error message buffer at `DAT_004f6a70`.",
+			"Retail DirectDraw creation, surface setup, and present/release failure paths feed its result into System_ReportBterrorEvent_v129 before surfacing the frontend graphics error.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_DoesRegistryKeyExist_v129": {
+		"family": "SystemRuntime",
+		"summary": "Checks whether the requested registry subkey exists beneath the supplied root hive.",
+		"notes": [
+			"Wraps `RegOpenKeyExA(root, subkey, 0, KEY_READ, &handle)` and closes the handle immediately on success. The speech and NoGame CPU-check paths use it before reading override values or attempting to delete the override keys.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_CreateCurrentUserRegistryKey_v129": {
+		"family": "SystemRuntime",
+		"summary": "Creates the requested registry subkey beneath `HKEY_CURRENT_USER` and closes it immediately.",
+		"notes": [
+			"Calls `RegCreateKeyExA(HKEY_CURRENT_USER, subkey, ..., \"Application Stuff\", KEY_ALL_ACCESS, ...)` and returns success when the key can be opened or created. The formal root parameter is ignored in the body; the retail CPU-check dialogs still pass `HKEY_CURRENT_USER`, so the helper effectively codifies the current-user override policy.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_DeleteRegistryKeyIfPresent_v129": {
+		"family": "SystemRuntime",
+		"summary": "Deletes the requested registry subkey when it exists beneath the supplied root hive.",
+		"notes": [
+			"First reuses System_DoesRegistryKeyExist_v129 and then calls `RegDeleteKeyA(root, subkey)` only when the key is present, returning success when the key was absent or deleted cleanly. The speech and NoGame CPU-check dialogs use it when the override checkbox is turned off.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/settings/settings.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_NoGameCpuCheckDialogProc_v129": {
+		"family": "SystemRuntime",
+		"summary": "Dialog procedure for the retail NoGameCPUCheck override prompt.",
+		"notes": [
+			"Initializes the checkbox from the `NoGameCPUCheck` registry value, returns `1` or `2` for the OK/Cancel buttons, and toggles the registry override when the checkbox changes.",
+			"When registry updates fail it reports the localized frontend error through System_ReportBterrorEvent_v129 and posts a synthetic cancel command so the dialog closes cleanly.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"System_ToggleCaptureLog_v129": {
 		"family": "SystemRuntime",
 		"summary": "Toggles the shared retail capture log file and posts the corresponding begin/end status lines.",
 		"notes": [
 			"Opens or closes `btcap_log`, flips the active capture bit in `DAT_0047a040`, posts the localized success/error status message through the shared shell/combat text path, and writes the timestamped `BEGIN/END capture` banner lines. Combat_MainLoop_v129 uses it when the Ctrl+Shift+`.` debug chord arms the capture bit, while Shell_HandlePostVersionBannerLine_v129 uses the same helper to close an active capture during the post-version/drop transition.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_ReportBterrorEvent_v129": {
+		"family": "SystemRuntime",
+		"summary": "Writes one formatted event to `bterror.log`, optionally surfaces it immediately, and can latch the shared retail error flags.",
+		"notes": [
+			"Formats the caller-supplied source file, source line, optional context string, and message into the retail `%s -- %s(%d):(%s)%s` log line, prefixed with the current timestamp from `_time`/`_ctime`.",
+			"When the log file cannot be opened it falls back to the localized frontend error text path, and the two trailing flags control whether the message is surfaced immediately and whether `DAT_0047a040` receives the retail `0x802` error bits.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/server_bridge.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_ResolveSpeechCpuCheckMode_v129": {
+		"family": "SystemRuntime",
+		"summary": "Resolves the retail speech CPU-check mode during frontend initialization.",
+		"notes": [
+			"Accepts CPUs at or above the `0x24A` processor-type threshold immediately, otherwise checks the `NoSpeechCPUCheck` override registry path and optional `Override` value before opening the fallback resource `0x78` prompt.",
+			"Normalizes the chosen mode into the speech-control bitfield at `DAT_0048afe8`, which is why Shell_InitializeFrontendResourcesAndAudio_v129 can treat the helper as the single source of speech CPU policy.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_SpeechCpuCheckDialogProc_v129": {
+		"family": "SystemRuntime",
+		"summary": "Dialog procedure for the retail NoSpeechCPUCheck override prompt.",
+		"notes": [
+			"Centers resource `0x78`, initializes the `NoSpeechCPUCheck` checkbox and two override radio buttons from the registry, and returns the selected override mode when the user confirms the dialog.",
+			"When the checkbox is toggled it creates or removes the registry key, persists the `Override` DWORD through the speech override path, and reports localized failures through System_ReportBterrorEvent_v129 before forcing the dialog to close on error.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/audio/audio_manager.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_WriteCaptureLogEntry_v129": {
+		"family": "SystemRuntime",
+		"summary": "Appends one formatted entry to `btcap_log` while the shared retail capture bit is enabled.",
+		"notes": [
+			"Opens `btcap_log` in the retail append mode, writes the caller-supplied wide-format string via `vfwprintf`, and closes the file after each entry. If the file can no longer be opened it clears the active capture bit and posts the localized failure status line through the shared shell/combat status path.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [

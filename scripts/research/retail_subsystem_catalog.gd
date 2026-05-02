@@ -29,9 +29,17 @@ const SUBSYSTEMS := {
 			"Combat_InitializeCombatHudAndControlState_v129",
 			"Combat_TickLocalActorControlLoop_v129",
 			"Combat_UpdateUpperBodyAimCueAudio_v129",
+			"Combat_BuildJoystickCapabilityFlagTable_v129",
+			"Combat_FindJoystickCapabilityIndexByComboSelection_v129",
 			"Combat_OpenJoystickConfigDialog_v129",
+			"Combat_SetJoystickCapabilitySummaryControlText_v129",
+			"Combat_OpenJoystickControlPanelApplet_v129",
+			"Combat_FindJoystickControlPanelWindowEnumProc_v129",
+			"Combat_HookJoystickControlPanelWindowThread_v129",
 			"Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129",
 			"Combat_InitializeJoystickBindingLookupTables_v129",
+			"Combat_LookupBoundKeyAction_v129",
+			"Combat_SetLocalControlActionPressedState_v129",
 			"Combat_PollJoystickButtonsAndHatBindings_v129",
 			"Combat_PollJoystickAxisState_v129",
 			"Combat_FormatJoystickBindingLabel_v129",
@@ -39,6 +47,7 @@ const SUBSYSTEMS := {
 			"Combat_FormatJoystickStatusSummary_v129",
 			"Combat_JoystickBindingDialogProc_v129",
 			"Combat_JoystickConfigDialogProc_v129",
+			"Shell_JoystickOptionsPageProc_v129",
 			"Combat_RebuildJoystickConflictList_v129",
 			"Combat_HasConfiguredJoystickAxisModes_v129",
 			"Combat_SaveJoystickKeymap_v129",
@@ -48,10 +57,12 @@ const SUBSYSTEMS := {
 			"Combat_AdvanceEjectConfirmState_v129",
 			"Combat_SendEjectCommandAfterCue_v129",
 			"System_ToggleCaptureLog_v129",
+			"Combat_ShowTimedStatusMessage_v129",
 			"Combat_HandleLocalControlHotkey_v129",
 			"Combat_ProcessMouseThrottleZoneInput_v129",
 			"Combat_ToggleInvertedMouseThrottle_v129",
 			"Combat_ProcessLocalMovementAndJumpInput_v129",
+			"Combat_RecomputeWalkRunSpeedCaps_v129",
 			"Combat_ToggleStickyViewMode_v129",
 			"Combat_ProcessWeaponBankFilterInput_v129",
 			"Combat_ProcessChassisTurnInput_v129",
@@ -72,13 +83,17 @@ const SUBSYSTEMS := {
 			"Combat_JumpJetInputTick_v129",
 			"Combat_UpdateLocalThrottleTarget_v129",
 			"Combat_UpdateLocalThrottleFeedbackAudio_v129",
+			"Combat_TickLocalGroundMovementCadenceCue_v129",
 			"Combat_UpdateCombatStartCountdownHud_v129",
+			"Combat_SendLocalActorStateChecksum_v129",
+			"Combat_DrawActorStatusPanel_v129",
 			"Combat_PlayAudioCue_v129",
 			"Combat_PlayImpactCue_v129",
 			"Combat_PlayCollapseImpactCue_v129",
 			"Combat_StopAudioCue_v129",
 			"Combat_IsAudioCuePlaying_v129",
 			"Combat_SetAudioCueVolume_v129",
+			"Combat_SetAudioCuePan_v129",
 			"Combat_SetAudioCuePitch_v129",
 			"Combat_UpdateLocalHeatAccumulator_v129",
 			"Combat_UpdateHeatShutdownState_v129",
@@ -108,6 +123,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_TickLocalActorControlLoop_v129",
 				"to": "Combat_UpdateLocalThrottleFeedbackAudio_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_TickLocalActorControlLoop_v129",
+				"to": "Combat_TickLocalGroundMovementCadenceCue_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -151,6 +171,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "Combat_AllocateActorPresentationStateTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_InitializeJoystickBindingLookupTables_v129",
 				"to": "Combat_LoadJoystickKeymap_v129",
 				"kind": "ghidra-callee",
@@ -161,8 +186,28 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_TranslateKeyMessageToNormalizedKey_v129",
+				"to": "Combat_LookupBoundKeyAction_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_TranslateKeyMessageToNormalizedKey_v129",
+				"to": "Combat_SetLocalControlActionPressedState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_OpenJoystickConfigDialog_v129",
 				"to": "Combat_JoystickConfigDialogProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_OpenJoystickControlPanelApplet_v129",
+				"to": "Combat_HookJoystickControlPanelWindowThread_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HookJoystickControlPanelWindowThread_v129",
+				"to": "Combat_FindJoystickControlPanelWindowEnumProc_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -203,6 +248,41 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_JoystickConfigDialogProc_v129",
 				"to": "Combat_SaveJoystickKeymap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_BuildJoystickCapabilityFlagTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_FindJoystickCapabilityIndexByComboSelection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_FormatJoystickStatusSummary_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_RefreshJoystickCapabilitiesAndAxisConfig_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_OpenJoystickConfigDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_JoystickBindingDialogProc_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "Shell_JoystickOptionsPageProc_v129",
+				"to": "Combat_OpenJoystickControlPanelApplet_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -346,6 +426,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_TickLocalGroundMovementCadenceCue_v129",
+				"to": "Combat_SetAudioCuePan_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_ApplyDamagePairOrQueueEffect_v129",
 				"to": "Combat_PlayImpactCue_v129",
 				"kind": "ghidra-callee",
@@ -368,6 +453,31 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_UpdateCombatStartCountdownHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawActorStatusPanel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyDamageCodeValue_v129",
+				"to": "Combat_RecomputeWalkRunSpeedCaps_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyDetailRowDamageCode_v129",
+				"to": "Combat_RecomputeWalkRunSpeedCaps_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_PollJoystickButtonsAndHatBindings_v129",
+				"to": "Combat_SetLocalControlActionPressedState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DispatchMouseEventToWindowStack_v129",
+				"to": "Combat_SetLocalControlActionPressedState_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -493,6 +603,16 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_UpdateLocalThrottleFeedbackAudio_v129",
 				"to": "Combat_SetAudioCuePitch_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_TickLocalGroundMovementCadenceCue_v129",
+				"to": "Combat_PlayAudioCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SendLocalActorStateChecksum_v129",
+				"to": "System_UpdateCrc32_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -882,12 +1002,24 @@ const SUBSYSTEMS := {
 		],
 		"function_names": [
 			"Combat_UpdateJumpFuelReserve_v129",
+			"System_RoundFloatToNearestInt_v129",
+			"System_IntegerSquareRoot_v129",
 			"Combat_SetJumpFuelReadyIndicator_v129",
 			"Combat_UpdateJumpFuelGauge_v129",
 			"Frame_ReplacePaletteIndexInRect_v129",
 			"Frame_PresentFrameRect_v129",
 		],
 		"edges": [
+			{
+				"from": "Combat_UpdateJumpFuelReserve_v129",
+				"to": "System_RoundFloatToNearestInt_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTacticalRadarPanel_v129",
+				"to": "System_IntegerSquareRoot_v129",
+				"kind": "ghidra-callee",
+			},
 			{
 				"from": "Combat_UpdateJumpFuelReserve_v129",
 				"to": "Combat_SetJumpFuelReadyIndicator_v129",
@@ -992,6 +1124,12 @@ const SUBSYSTEMS := {
 			"Combat_UpdateRadarRangeHudIndicator_v129",
 			"Combat_UpdateHudZoomIndicators_v129",
 			"Combat_UpdateEjectStatusHudIndicator_v129",
+			"Combat_SetHudTimeoutSlotExpiry_v129",
+			"Combat_ProcessExpiredHudTimeoutSlots_v129",
+			"Combat_ClearCmbOrCmpHudToggleByHotkey_v129",
+			"Combat_SetCmbOrCmpHudToggleByHotkey_v129",
+			"Combat_ClearCmbOrCmpHudToggleByHotkeyThunk_v129",
+			"Combat_SetCmbOrCmpHudToggleByHotkeyThunk_v129",
 			"Combat_UpdateCmbHudToggle_v129",
 			"Combat_UpdateChbHudToggle_v129",
 			"Combat_UpdateLogHudToggle_v129",
@@ -1033,6 +1171,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_HandlePresentationHotkey_v129",
+				"to": "Combat_SetHudTimeoutSlotExpiry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_ProcessExpiredHudTimeoutSlots_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_UpdateRadarRangeHudIndicator_v129",
 				"to": "Combat_RenderTacticalRadarPanel_v129",
 				"kind": "shared-state",
@@ -1053,6 +1201,41 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_UpdateEjectStatusHudIndicator_v129",
+				"to": "Combat_SetHudTimeoutSlotExpiry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ClearCmbOrCmpHudToggleByHotkey_v129",
+				"to": "Combat_UpdateCmbHudToggle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ClearCmbOrCmpHudToggleByHotkey_v129",
+				"to": "Combat_UpdateCmpHudToggle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SetCmbOrCmpHudToggleByHotkey_v129",
+				"to": "Combat_UpdateCmbHudToggle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SetCmbOrCmpHudToggleByHotkey_v129",
+				"to": "Combat_UpdateCmpHudToggle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ClearCmbOrCmpHudToggleByHotkeyThunk_v129",
+				"to": "Combat_ClearCmbOrCmpHudToggleByHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SetCmbOrCmpHudToggleByHotkeyThunk_v129",
+				"to": "Combat_SetCmbOrCmpHudToggleByHotkey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_UpdateCmbHudToggle_v129",
 				"to": "Frame_DrawBitmapResourceAt_v129",
 				"kind": "ghidra-callee",
@@ -1105,6 +1288,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_UpdateCmpHudToggle_v129",
 				"to": "Frame_PresentFrameRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessExpiredHudTimeoutSlots_v129",
+				"to": "Combat_UpdateEjectStatusHudIndicator_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessExpiredHudTimeoutSlots_v129",
+				"to": "Combat_UpdateCmbHudToggle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessExpiredHudTimeoutSlots_v129",
+				"to": "Combat_UpdateCmpHudToggle_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -1196,6 +1394,7 @@ const SUBSYSTEMS := {
 			"Combat_StopLasrSequence_v129",
 			"Combat_TickLasrSoundState_v129",
 			"Combat_ResetLasrSoundState_v129",
+			"Combat_RegisterLasrSequenceCallback_v129",
 			"Combat_EndLasrSequence_v129",
 		],
 		"edges": [
@@ -1275,6 +1474,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_ResetLasrSoundState_v129",
+				"to": "Combat_RegisterLasrSequenceCallback_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_TickLasrSoundState_v129",
 				"to": "Combat_StepLasrProfileVolumeTowardTarget_v129",
 				"kind": "ghidra-callee",
@@ -1302,6 +1506,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_TickLasrSoundState_v129",
 				"to": "Combat_EndLasrSequence_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_TickLasrSoundState_v129",
+				"to": "Combat_RegisterLasrSequenceCallback_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1340,6 +1549,7 @@ const SUBSYSTEMS := {
 			"Combat_Cmd60_UpdateActorVoiceTransmissionState_v129",
 			"Combat_Cmd61_SetVoiceTransmissionTuneToChannelId_v129",
 			"Combat_AppendVoiceTransmissionHistoryEntry_v129",
+			"Combat_ShowTimedStatusMessage_v129",
 			"Combat_HandleVoiceTransmissionInput_v129",
 			"Combat_RebuildVoiceTransmissionRosterOrder_v129",
 			"Combat_InitializeVoiceTransmissionHudControls_v129",
@@ -1350,19 +1560,27 @@ const SUBSYSTEMS := {
 			"Combat_RedrawVoiceTransmissionHudHistory_v129",
 			"Combat_DrawVoiceTransmissionHudLabel_v129",
 			"Combat_DrawVoiceTransmissionStatusHud_v129",
+			"Combat_DrawSpeechOutActorLabels_v129",
+			"Combat_DrawOverlayTextLine_v129",
 			"Combat_FreeVoiceTransmissionHistoryBuffer_v129",
 			"Combat_SelectActiveVoiceTransmissionStatusMessage_v129",
 			"Combat_RedrawVoiceTransmissionHudRoster_v129",
 			"Combat_ScrollVoiceTransmissionHudHistory_v129",
 			"Combat_PresentCollapsedVoiceTransmissionHudPanel_v129",
+			"Combat_ResetVoiceTransmissionHudToggleAnimation_v129",
 			"Combat_TickVoiceTransmissionHudToggleAnimation_v129",
+			"Combat_IsVoiceTransmissionHudToggleAnimationActive_v129",
 			"Combat_RefreshOpenVoiceTransmissionHud_v129",
 			"Combat_SetVoiceTransmissionHudControlsEnabled_v129",
 			"Combat_RedrawVoiceTransmissionHudTransitionFrame_v129",
 			"Combat_RedrawVoiceTransmissionCmpStatusIcon_v129",
 			"Combat_SelectVoiceTransmissionTune_v129",
+			"Combat_ClearSpeechOutActorLabelSlots_v129",
+			"Combat_SetSpeechOutActorLabelSlot_v129",
+			"Combat_ClearSpeechOutActorLabelSlot_v129",
 			"Combat_SendVoiceTransmissionActorState_v129",
 			"Combat_SendVoiceTransmissionTuneToChannelId_v129",
+			"Combat_SendSpeechOutText_v129",
 			"Combat_SendVoiceTransmissionText_v129",
 			"Combat_TickVoiceTransmissionSpeechInState_v129",
 			"Combat_ToggleVoiceTransmissionActorState_v129",
@@ -1372,6 +1590,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_InitializeBattlefieldVisualState_v129",
 				"to": "Combat_InitializeVoiceTransmissionHudControls_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeVisualResourcesAndHudState_v129",
+				"to": "Combat_ClearSpeechOutActorLabelSlots_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1401,7 +1624,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_Cmd74_DisplayStatusMessage_v129",
+				"to": "Combat_ShowTimedStatusMessage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd74_DisplayStatusMessage_v129",
 				"to": "Combat_AppendVoiceTransmissionHistoryEntry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_TickVoiceTransmissionSpeechInState_v129",
+				"to": "Combat_ShowTimedStatusMessage_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1412,6 +1645,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_HandleVoiceTransmissionInput_v129",
 				"to": "Combat_SendVoiceTransmissionText_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleVoiceTransmissionInput_v129",
+				"to": "Combat_SendSpeechOutText_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1485,13 +1723,33 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_DrawVoiceTransmissionStatusHud_v129",
+				"to": "Combat_DrawOverlayTextLine_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_TickVoiceTransmissionHudToggleAnimation_v129",
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_InitializeBattlefieldVisualState_v129",
+				"to": "Combat_ResetVoiceTransmissionHudToggleAnimation_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_DrawVoiceTransmissionStatusHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_IsVoiceTransmissionHudToggleAnimationActive_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawSpeechOutActorLabels_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1530,6 +1788,26 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_UpdateCmpHudToggle_v129",
+				"to": "Combat_IsVoiceTransmissionHudToggleAnimationActive_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawVoiceTransmissionCmpStatusIcon_v129",
+				"to": "Combat_IsVoiceTransmissionHudToggleAnimationActive_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawVoiceTransmissionStatusHud_v129",
+				"to": "Combat_IsVoiceTransmissionHudToggleAnimationActive_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawVoiceTransmissionHudRoster_v129",
+				"to": "Combat_IsVoiceTransmissionHudToggleAnimationActive_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RedrawVoiceTransmissionHudTransitionFrame_v129",
 				"to": "Combat_PresentCollapsedVoiceTransmissionHudPanel_v129",
 				"kind": "ghidra-callee",
@@ -1553,6 +1831,15 @@ const SUBSYSTEMS := {
 			"Combat_MainLoop_v129",
 			"Shell_EnterDropScene_v129",
 			"Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+			"Combat_ResetPresentationStateSeedGuard_v129",
+			"Combat_CapturePresentationStateSeedTick_v129",
+			"Combat_AllocateActorPresentationStateTable_v129",
+			"Combat_FreeActorPresentationStateTable_v129",
+			"Combat_DecodePresentationStateGlobals_v129",
+			"Combat_InitializeActorPresentationStateTable_v129",
+			"Combat_FreeVisualResourcesAndLocationMap_v129",
+			"Combat_FreeVisualResourceTables_v129",
+			"Combat_ResetActorLookupState_v129",
 			"Combat_InitializeVisualResourcesAndHudState_v129",
 			"Combat_InitializeBattlefieldVisualState_v129",
 			"Combat_SetActiveTerrainPaletteTable_v129",
@@ -1573,6 +1860,51 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_EnterDropScene_v129",
 				"to": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_FreeActorPresentationStateTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_DecodePresentationStateGlobals_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_AllocateActorPresentationStateTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_ResetPresentationStateSeedGuard_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_CapturePresentationStateSeedTick_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_InitializeActorPresentationStateTable_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResetPresentationStateAndLoadVisualOptions_v129",
+				"to": "Combat_ResetActorLookupState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeVisualResourcesAndHudState_v129",
+				"to": "Combat_FreeVisualResourcesAndLocationMap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FreeVisualResourcesAndLocationMap_v129",
+				"to": "Combat_FreeVisualResourceTables_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1633,6 +1965,7 @@ const SUBSYSTEMS := {
 		"function_names": [
 			"Combat_HandlePresentationHotkey_v129",
 			"Combat_HandleVoiceTransmissionInput_v129",
+			"Combat_ShowTimedStatusMessage_v129",
 			"Combat_PlayAudioCue_v129",
 		],
 		"edges": [
@@ -1644,6 +1977,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_HandlePresentationHotkey_v129",
 				"to": "Combat_PlayAudioCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandlePresentationHotkey_v129",
+				"to": "Combat_ShowTimedStatusMessage_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -1660,15 +1998,23 @@ const SUBSYSTEMS := {
 			"Combat_MainLoop_v129",
 			"Combat_RenderActorWorldMarkers_v129",
 			"Combat_DrawFrameRateOverlay_v129",
+			"Combat_DrawHeadingTapeHud_v129",
+			"Combat_DrawOffscreenActorEdgeMarkers_v129",
+			"Combat_DrawOffscreenActorEdgeMarker_v129",
+			"Combat_MapActorColorCodeToPaletteIndex_v129",
+			"Combat_DrawOverlayTextLine_v129",
+			"System_GetCentisecondTickCount_v129",
 			"Combat_DrawCombatHelpOverlay_v129",
 			"Combat_SelectNextTrackedActor_v129",
 			"Combat_DrawTrackedActorScreenBracket_v129",
 			"Combat_DrawTrackedActorInfoLabel_v129",
 			"Combat_DrawWeaponAimCursor_v129",
 			"Combat_RenderTacticalRadarPanel_v129",
+			"Combat_DrawTacticalRadarRangeRings_v129",
 			"Combat_BuildTacticalRadarContactMarker_v129",
 			"Combat_TickRemoteActorPresentationState_v129",
 			"Combat_RenderTerrainSceneryProjection_v129",
+			"Combat_ProjectWorldPointToScreenVertex_v129",
 		],
 		"edges": [
 			{
@@ -1684,6 +2030,41 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_DrawFrameRateOverlay_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawHeadingTapeHud_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_DrawOffscreenActorEdgeMarkers_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawFrameRateOverlay_v129",
+				"to": "System_GetCentisecondTickCount_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawOffscreenActorEdgeMarkers_v129",
+				"to": "Combat_MapActorColorCodeToPaletteIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawOffscreenActorEdgeMarkers_v129",
+				"to": "Combat_DrawOffscreenActorEdgeMarker_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawHeadingTapeHud_v129",
+				"to": "Combat_DrawOverlayTextLine_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawFrameRateOverlay_v129",
+				"to": "Combat_DrawOverlayTextLine_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1718,7 +2099,22 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderActorWorldMarkers_v129",
+				"to": "Combat_ProjectWorldPointToScreenVertex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActorWorldMarkers_v129",
+				"to": "Combat_MapActorColorCodeToPaletteIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActorWorldMarkers_v129",
 				"to": "Combat_DrawTrackedActorInfoLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DrawTrackedActorInfoLabel_v129",
+				"to": "Combat_DrawOverlayTextLine_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1738,7 +2134,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_RenderTacticalRadarPanel_v129",
+				"to": "Combat_MapActorColorCodeToPaletteIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTacticalRadarPanel_v129",
 				"to": "Combat_BuildTacticalRadarContactMarker_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTacticalRadarPanel_v129",
+				"to": "Combat_DrawTacticalRadarRangeRings_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -1764,6 +2170,9 @@ const SUBSYSTEMS := {
 			"Combat_CopyFixedMatrix4x4_v129",
 			"Combat_BuildInverseAffineMatrix4x4_v129",
 			"Combat_SetFixedMatrix4x4Identity_v129",
+			"Combat_ComputeFixedSinCos_v129",
+			"Combat_TransformPointListByMatrix4x4_v129",
+			"Combat_TransformVectorByMatrix3x3_v129",
 			"Combat_ApplyEulerRotationTripletToMatrix4x4_v129",
 			"Combat_RotateMatrix4x4AroundX_v129",
 			"Combat_RotateMatrix4x4AroundY_v129",
@@ -1785,6 +2194,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_ApplyEulerRotationTripletToMatrix4x4_v129",
 				"to": "Combat_RotateMatrix4x4AroundX_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyEulerRotationTripletToMatrix4x4_v129",
+				"to": "Combat_ComputeFixedSinCos_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -1870,6 +2284,56 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_UpdateProjectileEffectState_v129",
 				"to": "Combat_SetFixedMatrix4x4Identity_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTerrainSceneryProjection_v129",
+				"to": "Combat_TransformPointListByMatrix4x4_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTerrainSceneryProjection_v129",
+				"to": "Combat_ProjectWorldPointToScreenVertex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
+				"to": "Combat_TransformPointListByMatrix4x4_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderEffectTrailStrip_v129",
+				"to": "Combat_TransformPointListByMatrix4x4_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderTacticalRadarPanel_v129",
+				"to": "Combat_TransformVectorByMatrix3x3_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderActorPreviewPanel_v129",
+				"to": "Combat_TransformVectorByMatrix3x3_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_TransformVectorByMatrix3x3_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RotateMatrix4x4AroundX_v129",
+				"to": "Combat_ComputeFixedSinCos_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RotateMatrix4x4AroundY_v129",
+				"to": "Combat_ComputeFixedSinCos_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RotateMatrix4x4AroundZ_v129",
+				"to": "Combat_ComputeFixedSinCos_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -2164,6 +2628,7 @@ const SUBSYSTEMS := {
 			"Combat_SetTerrainAssetSet_v129",
 			"Combat_LoadTerrainPaletteOverrides_v129",
 			"Combat_DecodeTerrainSceneryConfig_v129",
+			"Combat_DecodeTerrainProjectionOutlinePoints_v129",
 			"Combat_InitializeTerrainSceneryField_v129",
 			"Combat_BuildTerrainSceneryField_v129",
 			"Combat_AllocateTerrainSceneryPlacementBands_v129",
@@ -2195,6 +2660,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_Cmd72_InitLocalActor_v129",
 				"to": "Combat_DecodeTerrainSceneryConfig_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd72_InitLocalActor_v129",
+				"to": "Combat_DecodeTerrainProjectionOutlinePoints_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2299,6 +2769,11 @@ const SUBSYSTEMS := {
 			"Combat_FreeAmbientGroundDetailSeeds_v129",
 			"Combat_RenderAmbientGroundDetail_v129",
 			"Combat_RenderSkyAndGroundBackdrop_v129",
+			"Combat_InterpolateClippedPolygonVertexAttributes_v129",
+			"Combat_ComputeClipPlaneIntersectionCoords_v129",
+			"Combat_ClipPolygonToViewVolume_v129",
+			"Combat_ProjectClippedPolygonToScreen_v129",
+			"Combat_ExpandIndexedPolygonVertexList_v129",
 		],
 		"edges": [
 			{
@@ -2316,6 +2791,26 @@ const SUBSYSTEMS := {
 				"to": "Combat_RenderAmbientGroundDetail_v129",
 				"kind": "ghidra-callee",
 			},
+			{
+				"from": "Combat_RenderAmbientGroundDetail_v129",
+				"to": "Combat_ExpandIndexedPolygonVertexList_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderAmbientGroundDetail_v129",
+				"to": "Combat_ClipPolygonToViewVolume_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
+				"to": "Combat_ClipPolygonToViewVolume_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderSkyAndGroundBackdrop_v129",
+				"to": "Combat_ProjectClippedPolygonToScreen_v129",
+				"kind": "ghidra-callee",
+			},
 		],
 	},
 	"combat-terrain-contact": {
@@ -2329,6 +2824,7 @@ const SUBSYSTEMS := {
 			"Combat_MainLoop_v129",
 			"Combat_ResolveLandingOrGroundContact_v129",
 			"Combat_ProcessLocalMechContact_v129",
+			"Combat_SendLocalMechContactUpdate_v129",
 			"Combat_QueryTerrainScenerySupportAtCoord_v129",
 			"Combat_FindTerrainSceneryInstanceAtCoord_v129",
 			"Combat_ComputeTerrainSceneryFaceHeightAtCoord_v129",
@@ -2364,6 +2860,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Combat_ProcessLocalMechContact_v129",
 				"to": "Combat_ComputeVelocityMagnitude3_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ProcessLocalMechContact_v129",
+				"to": "Combat_SendLocalMechContactUpdate_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2431,6 +2932,7 @@ const SUBSYSTEMS := {
 			"Shell_CloseTimedArchiveSlideshow_v129",
 			"Shell_OpenTimedArchiveSlideshow_v129",
 			"Shell_ShowTitleAndCreditsSequence_v129",
+			"Shell_GetVersionString_v129",
 			"Shell_TickTimedArchiveSlideshow_v129",
 			"ResourceArchive_CloseTaggedArchive_v129",
 			"ResourceArchive_OpenTaggedArchive_v129",
@@ -2560,6 +3062,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_ShowTitleAndCreditsSequence_v129",
+				"to": "Shell_GetVersionString_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_ShowCenteredArchiveBitmap_v129",
 				"to": "Frame_ClearActiveFrameAndPresent_v129",
 				"kind": "ghidra-callee",
@@ -2678,6 +3185,36 @@ const SUBSYSTEMS := {
 		],
 		"function_names": [
 			"Shell_RunFrontendMain_v129",
+			"Shell_HandleSocketWindowCreationFailure_v129",
+			"System_OpenNoGameCpuCheckDialog_v129",
+			"System_NoGameCpuCheckDialogProc_v129",
+			"System_ResolveSpeechCpuCheckMode_v129",
+			"System_SpeechCpuCheckDialogProc_v129",
+			"System_IsProcessorTypeAtLeast_v129",
+			"System_VerifyManifestFiles_v129",
+			"System_SaveFrontendConfigToRegistry_v129",
+			"System_LoadOrInitializeFrontendConfig_v129",
+			"System_StartAolPaletteWatcherTimer_v129",
+			"System_TickAolPaletteWatcher_v129",
+			"System_ClickAolPaletteOkButton_v129",
+			"System_DoesRegistryKeyExist_v129",
+			"System_CreateCurrentUserRegistryKey_v129",
+			"System_DeleteRegistryKeyIfPresent_v129",
+			"System_LoadStringResource_v129",
+			"System_GetDirectDrawErrorString_v129",
+			"System_UpdateCrc32_v129",
+			"Shell_OpenOptionsPropertySheet_v129",
+			"Shell_TickOptionsPropertySheetAudio_v129",
+			"Shell_InitializePropertySheetPage_v129",
+			"Shell_OptionsPropertySheetInitCallback_v129",
+			"Shell_AudioOptionsPageProc_v129",
+			"Shell_JoystickOptionsPageProc_v129",
+			"Shell_ShutdownFrontendResourcesAndAudio_v129",
+			"Shell_StartInactivityShutdownTimer_v129",
+			"Shell_StopInactivityShutdownTimer_v129",
+			"Shell_HandleInactivityShutdownTimer_v129",
+			"Shell_OpenInactivityShutdownWarningDialog_v129",
+			"Shell_InactivityShutdownDialogProc_v129",
 			"Shell_ServiceNetworkStateLoop_v129",
 			"Shell_RunWorldStateTick_v129",
 			"Shell_RunCombatStateTick_v129",
@@ -2701,18 +3238,42 @@ const SUBSYSTEMS := {
 			"Shell_RespondToFrq_v129",
 			"Shell_PlayUiRejectCue_v129",
 			"Shell_TickScrollingStatusMarquee_v129",
+			"Frame_CaptureDisplayPaletteState_v129",
+			"Shell_ShowModalMessageBox_v129",
+			"Shell_OpenStatusTextDialog_v129",
+			"Shell_CloseStatusTextDialog_v129",
+			"Shell_StatusTextDialogProc_v129",
+			"Shell_ConfirmClientExit_v129",
 			"World_TickAnimatedShellBitmaps_v129",
 			"Shell_HandlePostVersionBannerLine_v129",
+			"System_WriteCaptureLogEntry_v129",
 			"System_ToggleCaptureLog_v129",
+			"System_ReportBterrorEvent_v129",
 			"Shell_HandlePreVersionBannerLine_v129",
+			"Shell_InitializeVersionString_v129",
 			"Shell_ClassifyBannerLine_v129",
 			"Shell_AppendEscDelimitedStreamChunk_v129",
 			"Shell_ValidateAndDispatchEscCommandBuffer_v129",
 			"Shell_VerifyEscCommandChecksum_v129",
 			"Shell_DispatchValidatedCommandBuffer_v129",
 			"Shell_AppendOutboundCommandOpcode_v129",
+			"Shell_AppendBannerStateChangeControlFrame_v129",
+			"Shell_ResetOutboundCommandBuffer_v129",
 			"Shell_FlushOutboundCommandBuffer_v129",
+			"Shell_BuildExecutableDirectoryPath_v129",
+			"Shell_CreateMainWindow_v129",
+			"Shell_ResetQueuedInboundLineQueueState_v129",
+			"Shell_ClearQueuedInboundLineQueue_v129",
+			"Shell_CreateQueuedInboundLineBuffer_v129",
+			"Shell_FreeQueuedInboundLineBuffer_v129",
+			"Shell_EnqueueQueuedInboundLineBuffer_v129",
+			"Shell_DequeueQueuedInboundLineBuffer_v129",
+			"Shell_CreateQueuedInboundLineQueueNode_v129",
+			"Shell_FreeQueuedInboundLineQueueNode_v129",
+			"Shell_SendCloseCommandsToVisibleThreadWindow_v129",
 			"Shell_SendCloseCommandsToVisibleThreadWindows_v129",
+			"Shell_InitializeFrontendAudio_v129",
+			"Shell_ShutdownFrontendAudio_v129",
 			"Shell_InitializeFrontendResourcesAndAudio_v129",
 			"Shell_EnterDropScene_v129",
 			"Combat_Cmd63_ResultSceneInit_v129",
@@ -2724,8 +3285,173 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "Shell_InitializeFrontendAudio_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_BuildExecutableDirectoryPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_CreateMainWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_StartAolPaletteWatcherTimer_v129",
+				"to": "System_TickAolPaletteWatcher_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_TickAolPaletteWatcher_v129",
+				"to": "System_ClickAolPaletteOkButton_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_ResetQueuedInboundLineQueueState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_ClearQueuedInboundLineQueue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShutdownFrontendResourcesAndAudio_v129",
+				"to": "Combat_FreeVisualResourceTables_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShutdownFrontendResourcesAndAudio_v129",
+				"to": "Shell_ShutdownFrontendAudio_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_InitializeVersionString_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_ShutdownFrontendResourcesAndAudio_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_OpenOptionsPropertySheet_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Shell_InitializePropertySheetPage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Shell_TickOptionsPropertySheetAudio_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Shell_OptionsPropertySheetInitCallback_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Shell_AudioOptionsPageProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Shell_JoystickOptionsPageProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_TickOptionsPropertySheetAudio_v129",
+				"to": "Combat_TickLasrSoundState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_AudioOptionsPageProc_v129",
+				"to": "Combat_SetJoystickCapabilitySummaryControlText_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "Shell_HandleSocketWindowCreationFailure_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_OpenNoGameCpuCheckDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Shell_RunFrontendMain_v129",
 				"to": "Shell_LoadMessageCatalog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_VerifyManifestFiles_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RunFrontendMain_v129",
+				"to": "System_LoadOrInitializeFrontendConfig_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_OpenNoGameCpuCheckDialog_v129",
+				"to": "System_IsProcessorTypeAtLeast_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_NoGameCpuCheckDialogProc_v129",
+				"to": "System_DoesRegistryKeyExist_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_NoGameCpuCheckDialogProc_v129",
+				"to": "System_CreateCurrentUserRegistryKey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_NoGameCpuCheckDialogProc_v129",
+				"to": "System_DeleteRegistryKeyIfPresent_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_LoadOrInitializeFrontendConfig_v129",
+				"to": "System_SaveFrontendConfigToRegistry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ResolveSpeechCpuCheckMode_v129",
+				"to": "System_DoesRegistryKeyExist_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_OpenNoGameCpuCheckDialog_v129",
+				"to": "System_NoGameCpuCheckDialogProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_SpeechCpuCheckDialogProc_v129",
+				"to": "System_DoesRegistryKeyExist_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_SpeechCpuCheckDialogProc_v129",
+				"to": "System_CreateCurrentUserRegistryKey_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_SpeechCpuCheckDialogProc_v129",
+				"to": "System_DeleteRegistryKeyIfPresent_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2745,7 +3471,47 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "Frame_LoadBitmapFontDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
 				"to": "Shell_ResetFrontendTransientState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShutdownFrontendResourcesAndAudio_v129",
+				"to": "Frame_FreeBitmapFontDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShutdownFrontendResourcesAndAudio_v129",
+				"to": "Shell_StopInactivityShutdownTimer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "Shell_StartInactivityShutdownTimer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_InitializeFrontendResourcesAndAudio_v129",
+				"to": "System_ResolveSpeechCpuCheckMode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ResolveSpeechCpuCheckMode_v129",
+				"to": "System_IsProcessorTypeAtLeast_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ResolveSpeechCpuCheckMode_v129",
+				"to": "System_SpeechCpuCheckDialogProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_SendCloseCommandsToVisibleThreadWindows_v129",
+				"to": "Shell_SendCloseCommandsToVisibleThreadWindow_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2755,7 +3521,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Shell_ServiceNetworkStateLoop_v129",
+				"to": "Shell_DequeueQueuedInboundLineBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ServiceNetworkStateLoop_v129",
 				"to": "Shell_HandlePostVersionBannerLine_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ServiceNetworkStateLoop_v129",
+				"to": "Shell_FreeQueuedInboundLineBuffer_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2769,6 +3545,26 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_ClearQueuedInboundLineQueue_v129",
+				"to": "Shell_DequeueQueuedInboundLineBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ClearQueuedInboundLineQueue_v129",
+				"to": "Shell_FreeQueuedInboundLineBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ClearQueuedInboundLineQueue_v129",
+				"to": "Shell_ResetQueuedInboundLineQueueState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_DequeueQueuedInboundLineBuffer_v129",
+				"to": "Shell_FreeQueuedInboundLineQueueNode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Shell_HandlePostVersionBannerLine_v129",
 				"to": "Shell_SelectInboundCommandTable_v129",
 				"kind": "ghidra-callee",
@@ -2779,8 +3575,58 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_HandlePostVersionBannerLine_v129",
+				"to": "System_ReportBterrorEvent_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "System_ToggleCaptureLog_v129",
 				"to": "Shell_GetActiveMessageCatalogLine_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ToggleCaptureLog_v129",
+				"to": "System_WriteCaptureLogEntry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ToggleCaptureLog_v129",
+				"to": "Combat_ShowTimedStatusMessage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_ShowTimedStatusMessage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ToggleInvertedMouseThrottle_v129",
+				"to": "Combat_ShowTimedStatusMessage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_AppendVoiceTransmissionHistoryEntry_v129",
+				"to": "System_WriteCaptureLogEntry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_SendHeartbeat_v129",
+				"to": "System_LoadStringResource_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_PresentFrameRect_v129",
+				"to": "System_GetDirectDrawErrorString_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_SendHeartbeat_v129",
+				"to": "System_ReportBterrorEvent_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_RespondToFrq_v129",
+				"to": "System_ReportBterrorEvent_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2844,6 +3690,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_HandlePostVersionBannerLine_v129",
+				"to": "Shell_AppendBannerStateChangeControlFrame_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Shell_HandlePreVersionBannerLine_v129",
 				"to": "Shell_ClassifyBannerLine_v129",
 				"kind": "ghidra-callee",
@@ -2859,6 +3710,66 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Shell_HandlePreVersionBannerLine_v129",
+				"to": "Shell_CloseStatusTextDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ReportBterrorEvent_v129",
+				"to": "Shell_ShowModalMessageBox_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ShowModalMessageBox_v129",
+				"to": "Frame_CaptureDisplayPaletteState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenStatusTextDialog_v129",
+				"to": "Frame_CaptureDisplayPaletteState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ConfirmClientExit_v129",
+				"to": "Frame_CaptureDisplayPaletteState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_ConfirmClientExit_v129",
+				"to": "Frame_UpdateFullPalette_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Frame_CaptureDisplayPaletteState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenOptionsPropertySheet_v129",
+				"to": "Frame_UpdateFullPalette_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_HandleInactivityShutdownTimer_v129",
+				"to": "Shell_OpenInactivityShutdownWarningDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_HandleInactivityShutdownTimer_v129",
+				"to": "System_ReportBterrorEvent_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenInactivityShutdownWarningDialog_v129",
+				"to": "Frame_CaptureDisplayPaletteState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_OpenInactivityShutdownWarningDialog_v129",
+				"to": "Shell_InactivityShutdownDialogProc_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Shell_PlayUiRejectCue_v129",
 				"to": "Combat_PlayAudioCue_v129",
 				"kind": "ghidra-callee",
@@ -2866,6 +3777,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_HandlePreVersionBannerLine_v129",
 				"to": "Shell_EnterDropScene_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_HandlePreVersionBannerLine_v129",
+				"to": "Shell_AppendBannerStateChangeControlFrame_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -2923,6 +3839,11 @@ const SUBSYSTEMS := {
 				"to": "Shell_FlushOutboundCommandBuffer_v129",
 				"kind": "ghidra-callee",
 			},
+			{
+				"from": "Shell_FlushOutboundCommandBuffer_v129",
+				"to": "Shell_ResetOutboundCommandBuffer_v129",
+				"kind": "ghidra-callee",
+			},
 		],
 	},
 	"frame-protocol-codec": {
@@ -2948,6 +3869,7 @@ const SUBSYSTEMS := {
 			"Frame_EncodeType1Arg_v129",
 			"Frame_EncodeType1StringArg_v129",
 			"Shell_AppendOutboundCommandOpcode_v129",
+			"Shell_ResetOutboundCommandBuffer_v129",
 			"Shell_FlushOutboundCommandBuffer_v129",
 			"Shell_ValidateAndDispatchEscCommandBuffer_v129",
 			"Shell_VerifyEscCommandChecksum_v129",
@@ -2972,6 +3894,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Shell_ValidateAndDispatchEscCommandBuffer_v129",
 				"to": "Shell_FlushOutboundCommandBuffer_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_FlushOutboundCommandBuffer_v129",
+				"to": "Shell_ResetOutboundCommandBuffer_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3018,7 +3945,7 @@ const SUBSYSTEMS := {
 	},
 	"combat-actor-preview": {
 		"title": "Combat Actor Preview Panels",
-		"summary": "Retail self/target actor preview panel renderer used by the combat main loop.",
+		"summary": "Retail self/target actor preview panel renderer and section-status color prep used by the combat main loop.",
 		"implementation_status": "metadata-only",
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
@@ -3027,6 +3954,7 @@ const SUBSYSTEMS := {
 		"function_names": [
 			"Combat_MainLoop_v129",
 			"Combat_BuildActorAnimationPose_v129",
+			"Combat_UpdateActorPreviewSectionStatusColors_v129",
 			"Combat_RenderActorPreviewPanel_v129",
 			"Combat_RenderModelAttachments_v129",
 			"Frame_DrawGlyph_v129",
@@ -3038,6 +3966,11 @@ const SUBSYSTEMS := {
 			"Frame_MeasureStringWidth_v129",
 		],
 		"edges": [
+			{
+				"from": "Combat_MainLoop_v129",
+				"to": "Combat_UpdateActorPreviewSectionStatusColors_v129",
+				"kind": "ghidra-callee",
+			},
 			{
 				"from": "Combat_MainLoop_v129",
 				"to": "Combat_RenderActorPreviewPanel_v129",
@@ -3104,8 +4037,22 @@ const SUBSYSTEMS := {
 			"Frame_BlitRelativeRect_v129",
 			"Frame_BlitBitmapWithTransparentKey_v129",
 			"Frame_BlitBitmapPixels_v129",
+			"Frame_EncodeTransparentBitmapCommandStream_v129",
+			"Frame_EncodeTransparentBitmapCommandRow_v129",
+			"Frame_EmitTransparentBitmapRunCommand_v129",
+			"Frame_ComputeTransparentBitmapCommandBounds_v129",
+			"Frame_BlitTransparentBitmapCommandClipped_v129",
+			"Frame_BlitTransparentBitmapCommandFast_v129",
+			"Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129",
+			"Frame_BlitPaletteMappedTransparentBitmapCommandFast_v129",
+			"Frame_BlitTransformedTransparentBitmapCommand_v129",
+			"Frame_GetTransparentBitmapCommandSize_v129",
+			"Frame_GetTransparentBitmapCommandOrigin_v129",
+			"Frame_TransformPointAroundPivotByAngleAndScale_v129",
+			"Frame_GetFixedCosSinByAngle_v129",
 			"Frame_ActivateWindow_v129",
 			"Frame_ActivateTopWindowExcept_v129",
+			"Frame_FindTopFullscreenWindowInStack_v129",
 			"Frame_AllocateEditableTextBuffer_v129",
 			"Frame_AllocateSelectionValueTable_v129",
 			"Frame_CopyBitmapPixelsToBuffer_v129",
@@ -3114,9 +4061,15 @@ const SUBSYSTEMS := {
 			"Frame_ClearPaletteToBlack_v129",
 			"Frame_CopyBitmapPaletteToBuffer_v129",
 			"Frame_CyclePaletteEntries_v129",
+			"Frame_CreateRootWindow_v129",
 			"Frame_CreateWindow_v129",
+			"Frame_SetActiveFont_v129",
+			"Frame_ConfigureTextGridMetrics_v129",
 			"Frame_DecodeBitmapRleData_v129",
+			"Frame_DefaultTextDecorationPointerHandler_v129",
+			"Frame_DisableTextDecorationByIndex_v129",
 			"Frame_DispatchMouseEventToWindowStack_v129",
+			"Frame_DispatchTextDecorationActionById_v129",
 			"Frame_TranslateKeyMessageToNormalizedKey_v129",
 			"Frame_UpdateModifierKeyState_v129",
 			"Frame_HandleCtrlShiftDebugToggleChord_v129",
@@ -3129,44 +4082,69 @@ const SUBSYSTEMS := {
 			"Frame_FreeBitmapLookupTableCache_v129",
 			"Frame_LoadBitmapBufferFromArchive_v129",
 			"Frame_LoadBitmapFromFile_v129",
+			"Frame_LoadBitmapPixelPayload_v129",
+			"Frame_LoadBitmapFontDescriptor_v129",
+			"Frame_InitializeBitmapFontDescriptorAdvances_v129",
+			"Frame_FreeBitmapFontDescriptor_v129",
 			"Frame_LoadMwPictureArchivesAndTables_v129",
 			"Frame_FreeBitmap_v129",
+			"Frame_FreeBitmapOwnedBuffers_v129",
 			"ResourceArchive_OpenTaggedArchive_v129",
 			"ResourceArchive_SeekTaggedEntry_v129",
 			"Frame_DrawBitmapResourceAt_v129",
 			"Frame_DrawBitmapResourceTransparentAt_v129",
 			"Frame_DrawLine_v129",
 			"Frame_DrawLineAndPresent_v129",
+			"Frame_NormalizeRect_v129",
 			"Frame_DrawBeveledRectAndPresent_v129",
 			"Frame_DrawBeveledFillBar_v129",
 			"Frame_DrawFilledBoxOrBitmapDecoration_v129",
+			"Frame_DrawRectOutline_v129",
+			"Frame_InvertRectPixels_v129",
 			"Frame_DrawBeveledBorderDecoration_v129",
 			"Frame_DrawBeveledRect_v129",
 			"Frame_DrawFilledCircleSector_v129",
+			"Frame_DrawEllipseOutline_v129",
+			"Frame_CopyOrFillClippedRect_v129",
 			"Frame_DrawStringAt_v129",
 			"Frame_DrawCenteredStringInWidth_v129",
 			"Frame_DrawFormattedText_v129",
+			"System_ParseComstarIdCode_v129",
+			"System_Base36StringToInt_v129",
 			"Frame_DrawGlyph_v129",
 			"Frame_DrawString_v129",
 			"Frame_DrawTextDecorationByIndex_v129",
+			"Frame_RegisterTextDecoration_v129",
+			"Frame_SetTextDecorationBevelPalettePairByIndex_v129",
+			"Frame_SetTextDecorationBitmapPairByIndex_v129",
 			"Frame_DrawWrappedLine_v129",
 			"Frame_DrawWrappedTextBlock_v129",
+			"Frame_EnableTextDecorationByIndex_v129",
+			"Frame_FindEnabledTextDecorationAtPoint_v129",
 			"Frame_GetCurrentWrappedLineText_v129",
 			"Frame_GetFontLineHeight_v129",
 			"Frame_GetGlyphAdvance_v129",
 			"Frame_GetPaletteEntryRgb_v129",
+			"Frame_FindTopWindowAtPoint_v129",
 			"Frame_FindWindowStackIndex_v129",
 			"Frame_LayoutAndDrawWrappedFormattedText_v129",
 			"Frame_MeasureGlyphRunWidth_v129",
 			"Frame_MeasureStringWidth_v129",
 			"Frame_RedrawWindowStackFrom_v129",
+			"Frame_ResetWindowStack_v129",
+			"Frame_ResetRootWindowTextLayout_v129",
 			"Frame_ResetTextLayoutState_v129",
 			"Frame_ResetTextLayoutStateWithInsets_v129",
 			"Frame_RedrawRegisteredTextDecorations_v129",
 			"Frame_ResolveInlineBitmapTag_v129",
 			"Frame_SeedEditableTextBuffer_v129",
 			"Frame_SetPaletteEntryRgb_v129",
+			"Frame_InvertTextDecorationPaletteByIndex_v129",
+			"Frame_SetTextDecorationTextByIndex_v129",
+			"Frame_IsTextDecorationToggleStateSetByIndex_v129",
+			"Frame_SetTextDecorationToggleStateByIndex_v129",
 			"Shell_ShowTitleAndCreditsSequence_v129",
+			"Frame_ClearCurrentTextLine_v129",
 			"Frame_FillDisplayRect_v129",
 			"Frame_FillRect_v129",
 			"Frame_ShowCenteredArchiveBitmap_v129",
@@ -3176,11 +4154,14 @@ const SUBSYSTEMS := {
 			"Frame_SwapPaletteIndicesInRect_v129",
 			"Frame_UpdateFullPalette_v129",
 			"Frame_UpdatePaletteRange_v129",
+			"Frame_RestoreSavedCursor_v129",
+			"Frame_HideCursor_v129",
 			"Frame_UpdateTextCursorHighlight_v129",
 			"Frame_WriteCharAtCursorAndPresent_v129",
 			"Frame_WriteCharAtCursor_v129",
 			"Frame_WriteCharAtLineColumn_v129",
 			"Frame_ScrollTextViewportUpIfAtBottom_v129",
+			"Frame_ScrollClippedRectWithWrapOrFill_v129",
 			"Frame_AppendWrappedInputChar_v129",
 			"Frame_BackspaceWrappedInputChar_v129",
 			"Frame_DrawInlineAssetRuns_v129",
@@ -3205,13 +4186,48 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_DestroyWindow_v129",
+				"to": "Frame_FindTopFullscreenWindowInStack_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_SeedEditableTextBuffer_v129",
 				"to": "Frame_DrawFormattedText_v129",
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_LoadBitmapFontDescriptor_v129",
+				"to": "Frame_InitializeBitmapFontDescriptorAdvances_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeVisualResourcesAndHudState_v129",
+				"to": "Frame_FreeBitmapFontDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_InitializeVisualResourcesAndHudState_v129",
+				"to": "Frame_LoadBitmapFontDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Frame_FreeBitmapFontDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd63_ResultSceneInit_v129",
+				"to": "Frame_LoadBitmapFontDescriptor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_FlashHotkeyControl_v129",
 				"to": "Frame_DrawBeveledBorderDecoration_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_FlashHotkeyControl_v129",
+				"to": "Frame_InvertTextDecorationPaletteByIndex_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3228,6 +4244,31 @@ const SUBSYSTEMS := {
 				"from": "Frame_CreateWindow_v129",
 				"to": "Frame_ResetTextLayoutState_v129",
 				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_CreateRootWindow_v129",
+				"to": "Frame_CreateWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_CreateWindow_v129",
+				"to": "Frame_SetActiveFont_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_CreateWindow_v129",
+				"to": "Frame_DefaultTextDecorationPointerHandler_v129",
+				"kind": "shared-state",
+			},
+			{
+				"from": "Frame_CreateWindow_v129",
+				"to": "Frame_DispatchTextDecorationActionById_v129",
+				"kind": "shared-state",
+			},
+			{
+				"from": "Frame_ConfigureTextGridMetrics_v129",
+				"to": "Frame_SetTextCursorPixelPos_v129",
+				"kind": "shared-state",
 			},
 			{
 				"from": "Frame_CyclePaletteEntries_v129",
@@ -3250,6 +4291,36 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_ResetRootWindowTextLayout_v129",
+				"to": "Frame_ResetTextLayoutState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_ClearCurrentTextLine_v129",
+				"to": "Frame_FillRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DispatchMouseEventToWindowStack_v129",
+				"to": "Frame_FindTopWindowAtPoint_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DefaultTextDecorationPointerHandler_v129",
+				"to": "Frame_FindEnabledTextDecorationAtPoint_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DefaultTextDecorationPointerHandler_v129",
+				"to": "Frame_InvertTextDecorationPaletteByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DefaultTextDecorationPointerHandler_v129",
+				"to": "Frame_DispatchTextDecorationActionById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_ClearActiveFrameAndPresent_v129",
 				"to": "Frame_FillRect_v129",
 				"kind": "ghidra-callee",
@@ -3266,6 +4337,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Frame_DrawLineAndPresent_v129",
+				"to": "Frame_NormalizeRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DrawLineAndPresent_v129",
 				"to": "Frame_PresentFrameRect_v129",
 				"kind": "ghidra-callee",
 			},
@@ -3277,6 +4353,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Frame_RedrawWindowStackFrom_v129",
 				"to": "Frame_PresentFrameRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_ResetWindowStack_v129",
+				"to": "Frame_CreateRootWindow_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3470,6 +4551,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_RegisterTextDecoration_v129",
+				"to": "Frame_DrawTextDecorationByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_SetTextDecorationBitmapPairByIndex_v129",
+				"to": "Frame_DrawTextDecorationByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_DrawTextDecorationByIndex_v129",
 				"to": "Frame_GetFontLineHeight_v129",
 				"kind": "ghidra-callee",
@@ -3477,6 +4568,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Frame_DrawTextDecorationByIndex_v129",
 				"to": "Frame_DrawFilledBoxOrBitmapDecoration_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DrawFilledBoxOrBitmapDecoration_v129",
+				"to": "Frame_DrawRectOutline_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3520,6 +4616,91 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_EncodeTransparentBitmapCommandStream_v129",
+				"to": "Frame_EncodeTransparentBitmapCommandRow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_EncodeTransparentBitmapCommandRow_v129",
+				"to": "Frame_EmitTransparentBitmapRunCommand_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitTransparentBitmapCommandClipped_v129",
+				"to": "Frame_BlitTransparentBitmapCommandFast_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129",
+				"to": "Frame_BlitPaletteMappedTransparentBitmapCommandFast_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitTransformedTransparentBitmapCommand_v129",
+				"to": "Frame_BlitTransparentBitmapCommandClipped_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitTransformedTransparentBitmapCommand_v129",
+				"to": "Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitTransformedTransparentBitmapCommand_v129",
+				"to": "Frame_GetTransparentBitmapCommandSize_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitTransformedTransparentBitmapCommand_v129",
+				"to": "Frame_GetTransparentBitmapCommandOrigin_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_BlitTransformedTransparentBitmapCommand_v129",
+				"to": "Frame_TransformPointAroundPivotByAngleAndScale_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_TransformPointAroundPivotByAngleAndScale_v129",
+				"to": "Frame_GetFixedCosSinByAngle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateRadarRangeHudIndicator_v129",
+				"to": "Frame_CopyOrFillClippedRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SetJumpFuelReadyIndicator_v129",
+				"to": "Frame_CopyOrFillClippedRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RedrawVoiceTransmissionHudTransitionFrame_v129",
+				"to": "Frame_CopyOrFillClippedRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawLocationBrowserSelectionDetails_v129",
+				"to": "Frame_CopyOrFillClippedRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_ScrollTextViewportUpIfAtBottom_v129",
+				"to": "Frame_ScrollClippedRectWithWrapOrFill_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_ScrollClippedRectWithWrapOrFill_v129",
+				"to": "Frame_CopyOrFillClippedRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_ScrollClippedRectWithWrapOrFill_v129",
+				"to": "Frame_FillRect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_GetCachedBitmapBuffer_v129",
 				"to": "Frame_LoadBitmapBufferFromArchive_v129",
 				"kind": "ghidra-callee",
@@ -3545,6 +4726,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Frame_LoadBitmapFromFile_v129",
+				"to": "Frame_LoadBitmapPixelPayload_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_CopyBitmapPixelsToBuffer_v129",
 				"to": "Frame_DecodeBitmapRleData_v129",
 				"kind": "ghidra-callee",
@@ -3552,6 +4738,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "Frame_LoadBitmapFromFile_v129",
 				"to": "Frame_FreeBitmap_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_FreeBitmap_v129",
+				"to": "Frame_FreeBitmapOwnedBuffers_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3620,8 +4811,23 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_RenderTacticalRadarPanel_v129",
+				"to": "Frame_DrawEllipseOutline_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Frame_DrawFormattedText_v129",
 				"to": "Frame_ResolveInlineBitmapTag_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Frame_DrawFormattedText_v129",
+				"to": "System_ParseComstarIdCode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_ParseComstarIdCode_v129",
+				"to": "System_Base36StringToInt_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -3812,7 +5018,10 @@ const SUBSYSTEMS := {
 			"Combat_Cmd68_SpawnWeaponEffect_v129",
 			"Combat_Cmd69_ImpactEffectAtCoord_v129",
 			"Combat_Cmd71_ResetEffectState_v129",
+			"Combat_SendWeaponEffectUpdate_v129",
+			"Combat_SendLocalWeaponEffectUpdate_v129",
 			"Combat_ApplyDamagePairOrQueueEffect_v129",
+			"Combat_ApplyActiveTerrainPaletteForDuration_v129",
 			"Combat_ApplyDamageCodeValue_v129",
 			"Combat_BuildCameraShakeOffsets_v129",
 			"Combat_BuildImpactScreenShakeOffsets_v129",
@@ -3835,6 +5044,7 @@ const SUBSYSTEMS := {
 			"Combat_CollectVisibleEffectSprites_v129",
 			"Combat_SpawnEffectSprite_v129",
 			"Combat_RenderEffectSprite_v129",
+			"Combat_ProjectWorldPointToScreenVertex_v129",
 			"Combat_InitializeActiveEffectRenderPools_v129",
 			"Combat_ResetActiveEffectRenderPools_v129",
 			"Combat_FreeActiveEffectRenderPools_v129",
@@ -3854,7 +5064,21 @@ const SUBSYSTEMS := {
 			"Combat_SpawnTerrainSceneryImpactTrailBursts_v129",
 			"Combat_RenderEffectTrailStrip_v129",
 			"Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129",
+			"Combat_ClipLineSegmentToViewVolume_v129",
 			"Combat_RenderWeaponEffectModelOrFallback_v129",
+			"Combat_RenderImmediateWeaponFireOverlay_v129",
+			"Combat_GetWeaponSlotMuzzleOrigin_v129",
+			"Combat_ComputeEffectAimAnglesToPoint_v129",
+			"Combat_ComputePointDistance_v129",
+			"Combat_BuildWeaponEffectSpawnGeometry_v129",
+			"Combat_SpawnActiveWeaponEffect_v129",
+			"Combat_CanAppendDamageCodeValueToActiveEffect_v129",
+			"Combat_AppendDamageCodeValueToActiveEffect_v129",
+			"Combat_GetLastSpawnedWeaponEffectSlotIndex_v129",
+			"Combat_ResolveLocalWeaponFallbackImpactPoint_v129",
+			"Combat_WeaponTypeUsesCachedEffectModel_v129",
+			"Combat_WeaponTypeUsesProjectileEffectPath_v129",
+			"Combat_WeaponTypeUsesBeamEffectPath_v129",
 			"Combat_ResetImpactScreenShakeState_v129",
 			"Combat_ResetWeaponFireScreenShakeState_v129",
 			"Combat_SpawnImpactEffectAtAttachmentOrCoord_v129",
@@ -3878,8 +5102,93 @@ const SUBSYSTEMS := {
 				"kind": "research-linked",
 			},
 			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_SendLocalWeaponEffectUpdate_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_SpawnActiveWeaponEffect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_HandleLocalControlHotkey_v129",
+				"to": "Combat_RenderImmediateWeaponFireOverlay_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_SendLocalWeaponEffectUpdate_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_SpawnActiveWeaponEffect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_WeaponTypeUsesCachedEffectModel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_WeaponTypeUsesProjectileEffectPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_FireWeaponBank_v129",
+				"to": "Combat_RenderImmediateWeaponFireOverlay_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SendLocalWeaponEffectUpdate_v129",
+				"to": "Combat_SendWeaponEffectUpdate_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd68_SpawnWeaponEffect_v129",
+				"to": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd68_SpawnWeaponEffect_v129",
+				"to": "Combat_GetLastSpawnedWeaponEffectSlotIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_Cmd68_SpawnWeaponEffect_v129",
+				"to": "Combat_SpawnActiveWeaponEffect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_ApplyDamagePairOrQueueEffect_v129",
 				"to": "Combat_PlayImpactCue_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyDamagePairOrQueueEffect_v129",
+				"to": "Combat_ApplyActiveTerrainPaletteForDuration_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyDamagePairOrQueueEffect_v129",
+				"to": "Combat_CanAppendDamageCodeValueToActiveEffect_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ApplyDamagePairOrQueueEffect_v129",
+				"to": "Combat_AppendDamageCodeValueToActiveEffect_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4018,6 +5327,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_RenderEffectModelAndCheckCursorHit_v129",
+				"to": "Combat_ProjectWorldPointToScreenVertex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_RenderActiveEffectsPass_v129",
 				"to": "Combat_RenderEffectSprite_v129",
 				"kind": "ghidra-callee",
@@ -4093,6 +5407,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "Combat_UpdateProjectileEffectState_v129",
+				"to": "Combat_ComputeEffectAimAnglesToPoint_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"to": "Combat_GetWeaponSlotMuzzleOrigin_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "Combat_UpdateActiveProjectileEffects_v129",
 				"to": "Combat_UpdateProjectileEffectState_v129",
 				"kind": "ghidra-callee",
@@ -4114,7 +5438,52 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_UpdateActiveProjectileEffects_v129",
+				"to": "Combat_WeaponTypeUsesBeamEffectPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_UpdateActiveProjectileEffects_v129",
 				"to": "Combat_ResolveProjectileImpactDamage_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"to": "Combat_ComputeEffectAimAnglesToPoint_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_BuildWeaponEffectSpawnGeometry_v129",
+				"to": "Combat_ResolveLocalWeaponFallbackImpactPoint_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnActiveWeaponEffect_v129",
+				"to": "Combat_WeaponTypeUsesCachedEffectModel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnActiveWeaponEffect_v129",
+				"to": "Combat_WeaponTypeUsesProjectileEffectPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_SpawnActiveWeaponEffect_v129",
+				"to": "Combat_WeaponTypeUsesBeamEffectPath_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129",
+				"to": "Combat_GetWeaponSlotMuzzleOrigin_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129",
+				"to": "Combat_ProjectWorldPointToScreenVertex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129",
+				"to": "Combat_ClipLineSegmentToViewVolume_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4184,6 +5553,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "Combat_ResolveProjectileImpactDamage_v129",
+				"to": "Combat_ApplyActiveTerrainPaletteForDuration_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_ResolveProjectileImpactDamage_v129",
 				"to": "Combat_QueueImpactScreenShake_v129",
 				"kind": "ghidra-callee",
 			},
@@ -4243,6 +5617,12 @@ const SUBSYSTEMS := {
 			"World_Cmd40_LocationBrowser_v129",
 			"World_Cmd43_GroupedLocationBrowser_v129",
 			"World_Cmd45_ScrollListShell_v129",
+			"Frame_SetActiveFont_v129",
+			"World_ScrollListShell_HandleInput_v129",
+			"World_ScrollListShell_HandleMouse_v129",
+			"World_ScrollListShell_ToggleRowHighlight_v129",
+			"World_ScrollListShell_UpdateSelectionHighlight_v129",
+			"World_OpenScrollListEntryActionDialog_v129",
 			"World_Cmd47_SetLocationLabelCode_v129",
 			"World_Cmd49_MapConnectorOverlay_v129",
 			"World_Cmd50_ClearLocationBrowserSelectionHighlight_v129",
@@ -4280,9 +5660,14 @@ const SUBSYSTEMS := {
 			"World_LoadLocationMapDataFile_v129",
 			"World_OpenLocationBrowserDistrictListWindow_v129",
 			"World_DrawTravelCompassPageFrameArt_v129",
+			"World_IsTravelCompassCurrentLabelPictureId_v129",
+			"World_IsTravelCompassDistrictLabelPictureId_v129",
+			"World_SendTravelCompassMouseControlFrame_v129",
 			"World_DrawTravelCompassSlotHatchFill_v129",
 			"World_RedrawTravelCompassPageArt_v129",
 			"World_RedrawTravelCompassPageHighlights_v129",
+			"World_ActivateTravelCompassCmpButton_v129",
+			"World_OpenByteSelectionMenuHelp_v129",
 			"World_SendTravelCompassSlotSelection_v129",
 			"World_SendMenuSelection_v129",
 			"World_TravelCompassPage_HandleInput_v129",
@@ -4298,6 +5683,51 @@ const SUBSYSTEMS := {
 			"World_SendHotkeySelectionMenuControlFrame_v129",
 		],
 		"edges": [
+			{
+				"from": "World_Cmd45_ScrollListShell_v129",
+				"to": "World_ScrollListShell_HandleInput_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_Cmd45_ScrollListShell_v129",
+				"to": "World_ScrollListShell_HandleMouse_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_Cmd45_ScrollListShell_v129",
+				"to": "World_ScrollListShell_UpdateSelectionHighlight_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_Cmd45_ScrollListShell_v129",
+				"to": "Frame_SetActiveFont_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_ScrollListShell_HandleInput_v129",
+				"to": "World_OpenScrollListEntryActionDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_ScrollListShell_HandleInput_v129",
+				"to": "World_ScrollListShell_UpdateSelectionHighlight_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_ScrollListShell_HandleMouse_v129",
+				"to": "World_ScrollListShell_UpdateSelectionHighlight_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_ScrollListShell_HandleMouse_v129",
+				"to": "World_OpenScrollListEntryActionDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_ScrollListShell_UpdateSelectionHighlight_v129",
+				"to": "World_ScrollListShell_ToggleRowHighlight_v129",
+				"kind": "ghidra-callee",
+			},
 			{
 				"from": "World_Cmd04_TravelCompassPage_v129",
 				"to": "World_TravelCompassPage_HandleInput_v129",
@@ -4316,6 +5746,16 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_Cmd04_TravelCompassPage_v129",
 				"to": "World_DrawTravelCompassPageFrameArt_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TravelCompassPage_HandleInput_v129",
+				"to": "World_ActivateTravelCompassCmpButton_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TravelCompassPage_HandleMouse_v129",
+				"to": "World_ActivateTravelCompassCmpButton_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4444,6 +5884,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_DrawLocationBrowserSelectionMarker_v129",
+				"to": "Frame_InvertRectPixels_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_DrawLocationBrowserWindow_v129",
 				"to": "World_FormatLocationBrowserDistanceScaleString_v129",
 				"kind": "ghidra-callee",
@@ -4539,6 +5984,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_Cmd04_TravelCompassPage_v129",
+				"to": "World_IsTravelCompassCurrentLabelPictureId_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd04_TravelCompassPage_v129",
+				"to": "World_IsTravelCompassDistrictLabelPictureId_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_TravelCompassPage_HandleInput_v129",
 				"to": "World_CloseLocationBrowserDistrictListWindow_v129",
 				"kind": "ghidra-callee",
@@ -4549,6 +6004,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_ByteSelectionMenu_HandleInput_v129",
+				"to": "World_OpenByteSelectionMenuHelp_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_ByteSelectionMenu_HandleInput_v129",
+				"to": "Shell_OpenOptionsPropertySheet_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_TravelCompassPage_HandleInput_v129",
 				"to": "World_OpenCachedNamedEntrySelectionDialog_v129",
 				"kind": "ghidra-callee",
@@ -4565,6 +6030,11 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "World_TravelCompassPage_HandleMouse_v129",
+				"to": "World_SendTravelCompassMouseControlFrame_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TravelCompassPage_HandleMouse_v129",
 				"to": "World_OpenCachedNamedEntrySelectionDialog_v129",
 				"kind": "ghidra-callee",
 			},
@@ -4576,11 +6046,51 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_TravelCompassPage_HandleMouse_v129",
 				"to": "World_SendTravelCompassSlotSelection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TravelCompassPage_HandleMouse_v129",
+				"to": "Shell_ConfirmClientExit_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TravelCompassPage_HandleMouse_v129",
+				"to": "Shell_OpenOptionsPropertySheet_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TravelCompassPage_HandleInput_v129",
+				"to": "Shell_OpenOptionsPropertySheet_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenByteSelectionMenuHelp_v129",
+				"to": "Frame_HideCursor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenByteSelectionMenuHelp_v129",
+				"to": "Frame_RestoreSavedCursor_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_MenuDialog_HandleInput_v129",
+				"to": "Shell_ConfirmClientExit_v129",
 				"kind": "ghidra-callee",
 			},
 			{
 				"from": "World_RedrawTravelCompassPageHighlights_v129",
 				"to": "World_RedrawTravelCompassPageArt_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawTravelCompassPageArt_v129",
+				"to": "World_IsTravelCompassCurrentLabelPictureId_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawTravelCompassPageArt_v129",
+				"to": "World_IsTravelCompassDistrictLabelPictureId_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4635,6 +6145,8 @@ const SUBSYSTEMS := {
 			"World_CreateShellWindowByStyle_v129",
 			"World_FindCachedNamedEntrySlotById_v129",
 			"World_OpenCachedNamedEntrySelectionDialog_v129",
+			"World_CachedNamedEntrySelectionDialog_ToggleSelectionHighlight_v129",
+			"World_CachedNamedEntrySelectionDialog_UpdateSelectionHighlight_v129",
 			"World_CachedNamedEntrySelectionDialog_HandleInput_v129",
 		],
 		"edges": [
@@ -4660,7 +6172,17 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "World_OpenCachedNamedEntrySelectionDialog_v129",
+				"to": "World_CachedNamedEntrySelectionDialog_UpdateSelectionHighlight_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_OpenCachedNamedEntrySelectionDialog_v129",
 				"to": "World_CreateShellWindowByStyle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_CachedNamedEntrySelectionDialog_UpdateSelectionHighlight_v129",
+				"to": "World_CachedNamedEntrySelectionDialog_ToggleSelectionHighlight_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4683,6 +6205,8 @@ const SUBSYSTEMS := {
 			"World_Cmd09_OpenNumberedTextSelection_v129",
 			"World_Cmd08_MenuClose_v129",
 			"World_Cmd14_PersonnelRecord_v129",
+			"System_FormatComstarIdCode_v129",
+			"System_IntToBase36String_v129",
 			"World_Cmd15_OpenNumericPrompt_v129",
 			"World_Cmd20_ParseTextDialog_v129",
 			"World_CreateShellWindowByStyle_v129",
@@ -4690,10 +6214,14 @@ const SUBSYSTEMS := {
 			"World_OpenStackedShellWindow_v129",
 			"World_OpenStackedTextDialog_v129",
 			"World_OpenNumberedTextSelectionDialog_v129",
+			"World_NumberedTextSelectionDialog_HandleInput_v129",
 			"World_NumericPrompt_HandleInput_v129",
+			"World_ModalTextWindow_HandleInput_v129",
 			"World_OpenModalTextWindow_v129",
 			"World_OpenTextSelectionModalWindow_v129",
 			"World_SendLegacySelectionResponse_v129",
+			"World_SendLegacyTextResponse_v129",
+			"World_SendNumberedTextSelectionResponse_v129",
 		],
 		"edges": [
 			{
@@ -4707,9 +6235,24 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_Cmd08_MenuClose_v129",
+				"to": "World_ModalTextWindow_HandleInput_v129",
+				"kind": "research-linked",
+			},
+			{
 				"from": "World_Cmd14_PersonnelRecord_v129",
 				"to": "World_OpenModalTextWindow_v129",
 				"kind": "research-adjacent",
+			},
+			{
+				"from": "World_Cmd14_PersonnelRecord_v129",
+				"to": "System_FormatComstarIdCode_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "System_FormatComstarIdCode_v129",
+				"to": "System_IntToBase36String_v129",
+				"kind": "ghidra-callee",
 			},
 			{
 				"from": "World_Cmd15_OpenNumericPrompt_v129",
@@ -4742,13 +6285,38 @@ const SUBSYSTEMS := {
 				"kind": "research-adjacent",
 			},
 			{
+				"from": "World_OpenTextSelectionModalWindow_v129",
+				"to": "World_ModalTextWindow_HandleInput_v129",
+				"kind": "research-linked",
+			},
+			{
 				"from": "World_OpenNumberedTextSelectionDialog_v129",
 				"to": "World_CreateShellWindowByStyle_v129",
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_OpenNumberedTextSelectionDialog_v129",
+				"to": "World_NumberedTextSelectionDialog_HandleInput_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_NumberedTextSelectionDialog_HandleInput_v129",
+				"to": "World_SendNumberedTextSelectionResponse_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_OpenModalTextWindow_v129",
 				"to": "World_CreateShellWindowByStyle_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenModalTextWindow_v129",
+				"to": "World_ModalTextWindow_HandleInput_v129",
+				"kind": "research-linked",
+			},
+			{
+				"from": "World_ModalTextWindow_HandleInput_v129",
+				"to": "World_SendLegacyTextResponse_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4772,6 +6340,8 @@ const SUBSYSTEMS := {
 			"res://scripts/net/world_client.gd",
 		],
 		"function_names": [
+			"Frame_SetTextDecorationToggleStateByIndex_v129",
+			"Frame_IsTextDecorationToggleStateSetByIndex_v129",
 			"World_Cmd42_BitmaskSelectionList_v129",
 			"World_Cmd48_KeyedTripleStringList_v129",
 			"World_CreateShellWindowByStyle_v129",
@@ -4793,6 +6363,11 @@ const SUBSYSTEMS := {
 				"from": "World_Cmd42_BitmaskSelectionList_v129",
 				"to": "World_BitmaskSelectionList_HandleInput_v129",
 				"kind": "research-linked",
+			},
+			{
+				"from": "World_Cmd42_BitmaskSelectionList_v129",
+				"to": "Frame_SetTextDecorationToggleStateByIndex_v129",
+				"kind": "ghidra-callee",
 			},
 			{
 				"from": "World_Cmd48_KeyedTripleStringList_v129",
@@ -4829,6 +6404,16 @@ const SUBSYSTEMS := {
 				"to": "World_CloseStackedShellWindow_v129",
 				"kind": "ghidra-callee",
 			},
+			{
+				"from": "World_BitmaskSelectionList_HandleInput_v129",
+				"to": "Frame_SetTextDecorationToggleStateByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_BitmaskSelectionList_HandleInput_v129",
+				"to": "Frame_IsTextDecorationToggleStateSetByIndex_v129",
+				"kind": "ghidra-callee",
+			},
 		],
 	},
 	"world-paged-mech-list": {
@@ -4845,6 +6430,7 @@ const SUBSYSTEMS := {
 			"World_Cmd27_AlternateMechChooser_v129",
 			"World_Cmd32_AlternateRankingList_v129",
 			"World_OpenPagedMechListWindow_v129",
+			"World_DrawPagedMechListShellFrame_v129",
 			"World_RedrawPagedMechListWindow_v129",
 			"World_RedrawPagedMechListChoiceLabels_v129",
 			"World_ClearPagedMechListSelectionHighlight_v129",
@@ -4853,6 +6439,7 @@ const SUBSYSTEMS := {
 			"World_PagedMechList_HandlePointer_v129",
 			"World_PagedMechList_ActivatePointerSelection_v129",
 			"World_SendPagedMechListControlFrame_v129",
+			"World_SendPagedMechListAlternateChoiceTable_v129",
 			"World_PagedMechList_HandleInput_v129",
 			"World_SendMenuSelection_v129",
 		],
@@ -4875,6 +6462,31 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_OpenPagedMechListWindow_v129",
 				"to": "Frame_CreateWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenPagedMechListWindow_v129",
+				"to": "Frame_RegisterTextDecoration_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenPagedMechListWindow_v129",
+				"to": "Frame_DisableTextDecorationByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenPagedMechListWindow_v129",
+				"to": "Frame_ConfigureTextGridMetrics_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenPagedMechListWindow_v129",
+				"to": "Frame_SetTextDecorationBevelPalettePairByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_OpenPagedMechListWindow_v129",
+				"to": "World_DrawPagedMechListShellFrame_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4919,6 +6531,21 @@ const SUBSYSTEMS := {
 			},
 			{
 				"from": "World_RedrawPagedMechListWindow_v129",
+				"to": "World_DrawPagedMechListShellFrame_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawPagedMechListWindow_v129",
+				"to": "Frame_EnableTextDecorationByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawPagedMechListWindow_v129",
+				"to": "Frame_DisableTextDecorationByIndex_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_RedrawPagedMechListWindow_v129",
 				"to": "Frame_DrawStringAt_v129",
 				"kind": "ghidra-callee",
 			},
@@ -4945,6 +6572,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_PagedMechList_HandleInput_v129",
 				"to": "World_SendMenuSelection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_PagedMechList_HandleInput_v129",
+				"to": "World_SendPagedMechListAlternateChoiceTable_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -4980,6 +6612,9 @@ const SUBSYSTEMS := {
 			"World_QueueTransientNotice_v129",
 			"World_ShowNextTransientNotice_v129",
 			"World_HandleTransientNoticeInput_v129",
+			"World_RestoreTransientNoticeWindowFocus_v129",
+			"World_TransientNoticeDialog_HandleInput_v129",
+			"World_SendTransientNoticeResponse_v129",
 		],
 		"edges": [
 			{
@@ -5018,6 +6653,11 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_ShowNextTransientNotice_v129",
+				"to": "World_TransientNoticeDialog_HandleInput_v129",
+				"kind": "research-linked",
+			},
+			{
 				"from": "World_OpenStackedTransientNoticeWindow_v129",
 				"to": "World_CloseStackedShellWindow_v129",
 				"kind": "ghidra-callee",
@@ -5030,6 +6670,21 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_HandleTransientNoticeInput_v129",
 				"to": "World_CloseStackedShellWindow_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd04_TravelCompassPage_v129",
+				"to": "World_RestoreTransientNoticeWindowFocus_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TransientNoticeDialog_HandleInput_v129",
+				"to": "World_SendTransientNoticeResponse_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_TransientNoticeDialog_HandleInput_v129",
+				"to": "World_ShowNextTransientNotice_v129",
 				"kind": "ghidra-callee",
 			},
 		],
@@ -5050,9 +6705,17 @@ const SUBSYSTEMS := {
 			"Frame_DecodeArg_v129",
 			"World_Cmd36_MessageView_v129",
 			"World_Cmd37_OpenCompose_v129",
+			"Shell_OpenCmpActionDialog_v129",
+			"Shell_CmpActionDialogProc_v129",
+			"Shell_OpenCmpInfoDialog_v129",
+			"Shell_CmpInfoDialogProc_v129",
+			"Shell_OpenCmpMessageEntryDialog_v129",
+			"Shell_CmpMessageEntryDialogProc_v129",
+			"Shell_SendCmpDialogCommand_v129",
 			"World_MessageView_HandleInput_v129",
 			"World_MessageView_DispatchNormalizedKey_v129",
 			"World_MessageView_ExtractReplyPrefixTags_v129",
+			"World_ActivateTravelCompassCmpButton_v129",
 			"World_FreeShellWindowAuxBuffers_v129",
 			"World_OpenComposeEditor_v129",
 			"World_ComposeEditor_SubmitMessage_v129",
@@ -5083,6 +6746,41 @@ const SUBSYSTEMS := {
 				"from": "World_Cmd36_MessageView_v129",
 				"to": "World_MessageView_DispatchNormalizedKey_v129",
 				"kind": "research-linked",
+			},
+			{
+				"from": "Combat_UpdateCmpHudToggle_v129",
+				"to": "Shell_OpenCmpActionDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_ActivateTravelCompassCmpButton_v129",
+				"to": "Shell_OpenCmpActionDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_CmpActionDialogProc_v129",
+				"to": "Shell_OpenCmpInfoDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_CmpActionDialogProc_v129",
+				"to": "Shell_OpenCmpMessageEntryDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_CmpActionDialogProc_v129",
+				"to": "Shell_SendCmpDialogCommand_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_CmpMessageEntryDialogProc_v129",
+				"to": "Shell_OpenCmpInfoDialog_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Shell_CmpMessageEntryDialogProc_v129",
+				"to": "Shell_SendCmpDialogCommand_v129",
+				"kind": "ghidra-callee",
 			},
 			{
 				"from": "World_Cmd37_OpenCompose_v129",
@@ -5134,13 +6832,79 @@ const SUBSYSTEMS := {
 			"RESEARCH.md:3621-3624",
 		],
 		"function_names": [
+			"Combat_DecodeLocalActorMechState_v129",
 			"Mech_InitRuntimeStateFromRecord_v129",
 			"Mech_InitComponentStatusFromRecord_v129",
+			"Mech_GetInternalStructureMaxByTonnageAndSection_v129",
+			"Mech_GetVariantCodeById_v129",
+			"Mech_GetChassisDisplayNameById_v129",
+			"Mech_SeedRecordCipherFromFilenameSuffix_v129",
+			"Mech_XorRecordBufferWithCipherStream_v129",
+			"Mech_NextRecordCipherWord_v129",
+			"Mech_AllocateAndLoadRecordById_v129",
+			"Mech_LoadRecordIntoBufferById_v129",
+			"Mech_MapDetailRowToInternalStructureSection_v129",
 			"World_Cmd26_ParseMechList_v129",
 			"World_Cmd30_MechStatusOptionPage_v129",
 			"World_Cmd31_MechComponentActionPage_v129",
 		],
-		"edges": [],
+		"edges": [
+			{
+				"from": "Combat_Cmd72_InitLocalActor_v129",
+				"to": "Combat_DecodeLocalActorMechState_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DecodeLocalActorMechState_v129",
+				"to": "Mech_AllocateAndLoadRecordById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DecodeLocalActorMechState_v129",
+				"to": "Mech_InitRuntimeStateFromRecord_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Combat_DecodeLocalActorMechState_v129",
+				"to": "Mech_InitComponentStatusFromRecord_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_InitRuntimeStateFromRecord_v129",
+				"to": "Mech_GetVariantCodeById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_InitRuntimeStateFromRecord_v129",
+				"to": "Mech_GetChassisDisplayNameById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_AllocateAndLoadRecordById_v129",
+				"to": "Mech_LoadRecordIntoBufferById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_LoadRecordIntoBufferById_v129",
+				"to": "Mech_SeedRecordCipherFromFilenameSuffix_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_LoadRecordIntoBufferById_v129",
+				"to": "Mech_XorRecordBufferWithCipherStream_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_XorRecordBufferWithCipherStream_v129",
+				"to": "Mech_NextRecordCipherWord_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "Mech_InitComponentStatusFromRecord_v129",
+				"to": "Mech_GetInternalStructureMaxByTonnageAndSection_v129",
+				"kind": "ghidra-callee",
+			},
+		],
 	},
 	"world-mech-management-pages": {
 		"title": "World Mech Management Pages",
@@ -5159,6 +6923,14 @@ const SUBSYSTEMS := {
 			"World_MechStatusOptionPage_GetWeaponRangeBandIndex_v129",
 			"World_MechStatusOptionPage_ClassifyWeaponDamageTier_v129",
 			"World_MechStatusOptionPage_GetWeaponDamageTierLabel_v129",
+			"Mech_GetVariantCodeById_v129",
+			"Mech_GetChassisDisplayNameById_v129",
+			"Mech_GetWeaponTypeLabelById_v129",
+			"Mech_ClassifyPagedListStatusById_v129",
+			"Mech_AllocateAndLoadRecordById_v129",
+			"Mech_LoadRecordIntoBufferById_v129",
+			"Mech_MapDetailRowToInternalStructureSection_v129",
+			"Mech_GetInternalStructureMaxByTonnageAndSection_v129",
 			"World_GetMechDetailRowCount_v129",
 			"World_GetMechDetailRowSection_v129",
 			"World_SetMechDetailRowConditionValue_v129",
@@ -5209,6 +6981,16 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_Cmd30_MechStatusOptionPage_v129",
+				"to": "Mech_MapDetailRowToInternalStructureSection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd30_MechStatusOptionPage_v129",
+				"to": "Mech_GetInternalStructureMaxByTonnageAndSection_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_GetMechDetailRowSection_v129",
 				"to": "World_GetMechDetailRowCount_v129",
 				"kind": "ghidra-callee",
@@ -5226,6 +7008,11 @@ const SUBSYSTEMS := {
 			{
 				"from": "World_Cmd31_MechComponentActionPage_v129",
 				"to": "World_GetMechDetailRowConditionPercent_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_GetMechDetailRowConditionPercent_v129",
+				"to": "Mech_GetInternalStructureMaxByTonnageAndSection_v129",
 				"kind": "ghidra-callee",
 			},
 			{
@@ -5274,8 +7061,48 @@ const SUBSYSTEMS := {
 				"kind": "ghidra-callee",
 			},
 			{
+				"from": "World_Cmd32_AlternateRankingList_v129",
+				"to": "Mech_GetVariantCodeById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd32_AlternateRankingList_v129",
+				"to": "Mech_GetChassisDisplayNameById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd32_AlternateRankingList_v129",
+				"to": "Mech_ClassifyPagedListStatusById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd30_MechStatusOptionPage_v129",
+				"to": "Mech_AllocateAndLoadRecordById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_Cmd31_MechComponentActionPage_v129",
+				"to": "Mech_AllocateAndLoadRecordById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
 				"from": "World_MechComponentActionPage_UpdateSelectionHeader_v129",
 				"to": "World_GetMechDetailRowLabel_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_MechComponentActionPage_UpdateSelectionHeader_v129",
+				"to": "Mech_AllocateAndLoadRecordById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_GetMechDetailRowLabel_v129",
+				"to": "Mech_GetChassisDisplayNameById_v129",
+				"kind": "ghidra-callee",
+			},
+			{
+				"from": "World_GetMechDetailRowLabel_v129",
+				"to": "Mech_GetWeaponTypeLabelById_v129",
 				"kind": "ghidra-callee",
 			},
 			{
