@@ -79,6 +79,54 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_SetActorAnimationState11_ThenIdle_v129": {
+		"family": "Animation",
+		"summary": "Starts retail animation state `11` and returns the actor to grounded idle when that intermediate transition completes.",
+		"notes": [
+			"Thin wrapper over Combat_SetActorAnimationState_v129 with state id `11` and callback `Combat_SetGroundedIdleAnimation_v129`.",
+			"Combat_Cmd70_ActorAnimState_v129 uses it when a remote actor receives state `0` while the controller is currently in retail state `7` (or queued state `7` through controller state `0x16`).",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetActorAnimationState12_ThenIdle_v129": {
+		"family": "Animation",
+		"summary": "Starts retail animation state `12` and returns the actor to grounded idle when that intermediate transition completes.",
+		"notes": [
+			"Thin wrapper over Combat_SetActorAnimationState_v129 with state id `12` and callback `Combat_SetGroundedIdleAnimation_v129`.",
+			"Combat_Cmd70_ActorAnimState_v129 uses it when a remote actor receives state `0` while the controller is currently in retail state `8` (or queued state `8` through controller state `0x16`).",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetActorAnimationState14_ThenFallDown_v129": {
+		"family": "Animation",
+		"summary": "Starts retail animation state `14` and chains into the fall-down/recovery-block path when that transition completes.",
+		"notes": [
+			"Thin wrapper over Combat_SetActorAnimationState_v129 with state id `14` and callback `Combat_StartFallDownAnim_SetRecoveryBlock_v129`.",
+			"Combat_Cmd70_ActorAnimState_v129 uses it when a remote actor receives state `0` while the controller is currently in retail state `10` (or queued state `10` through controller state `0x16`).",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SetActorAnimationState13_ThenFallDown_v129": {
+		"family": "Animation",
+		"summary": "Starts retail animation state `13` and chains into the fall-down/recovery-block path when that transition completes.",
+		"notes": [
+			"Thin wrapper over Combat_SetActorAnimationState_v129 with state id `13` and callback `Combat_StartFallDownAnim_SetRecoveryBlock_v129`.",
+			"Combat_Cmd70_ActorAnimState_v129 uses it when a remote actor receives state `0` while the controller is currently in retail state `9` (or queued state `9` through controller state `0x16`).",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_SetAnimationNodeStatePoseDisabledByTag_v129": {
 		"family": "Animation",
 		"summary": "Sets or clears the per-node flag that suppresses state-pose interpolation for the tagged animation node.",
@@ -1161,6 +1209,42 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_RasterizeDitheredGouraudPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Fills one screen-space polygon while interpolating an 8-bit shade term and alternating the shade phase across adjacent scanlines.",
+		"notes": [
+			"Consumes the same six-word-per-vertex projected polygon payload as Combat_RasterizeGouraudPolygon_v129, still treating vertex field `2` as the interpolated shade term, but seeds an alternating per-scanline phase through the extra caller-supplied shade offset parameter before writing each covered byte.",
+			"The inner loop writes the interpolated shade bytes directly into the destination surface and flips the phase terms `DAT_00481cdc` / `DAT_00481ce0` after each scanline, yielding the retail dithered Gouraud companion beside the non-dithered rasterizer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ApplyLookupTableToProjectedPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Applies a caller-supplied 256-entry lookup table to every destination byte covered by one projected screen-space polygon.",
+		"notes": [
+			"Uses the same six-word-per-vertex scan-conversion setup as the solid polygon rasterizers, but instead of sourcing a new color from vertex attributes it treats the destination surface as the input stream and rewrites each covered byte through the table pointer supplied in `param_4`.",
+			"The inner loop includes a word-at-a-time fast path that remaps packed destination byte pairs through the lookup table before storing them back in place.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_RasterizeAdditiveDitheredGouraudPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Fills one screen-space polygon by additively accumulating an interpolated dithered shade term into the destination surface.",
+		"notes": [
+			"Shares the same projected polygon payload and alternating per-scanline shade-phase setup as Combat_RasterizeDitheredGouraudPolygon_v129, including the use of vertex field `2` as the interpolated shade byte.",
+			"Instead of overwriting the covered pixels, the inner loop adds each interpolated shade byte onto the existing destination byte, making it the additive blend companion to the direct-write dithered Gouraud rasterizer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_RenderActorWorldMarkers_v129": {
 		"family": "CombatOverlay",
 		"summary": "Draws the retail world-screen actor marker overlays for the local actor and every active remote mech.",
@@ -1549,6 +1633,7 @@ const OVERRIDES := {
 		"summary": "Initializes the retail ambient ground-detail runtime state, including random anchor points, GRD bitmaps, and the special cached support mesh.",
 		"notes": [
 			"Loads the special cached 3d object record `0x10000`, allocates 800 random `(x, y, variant)` anchor triplets, and caches the `GRD0` / `GRD1` bitmaps later used by the ambient ground-detail renderer.",
+			"It also seeds the caller-specific raster state block at `DAT_0048f5d0` so Combat_RenderAmbientGroundDetail_v129 can dispatch its clipped support mesh through Combat_SoftwareRasterizerAmbientGroundDetailSpan_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1568,7 +1653,19 @@ const OVERRIDES := {
 		"summary": "Renders the retail ambient ground-detail sprites at their randomized world anchors using the cached `GRD0` / `GRD1` bitmaps.",
 		"notes": [
 			"Uses the detail level selected through `DAT_0047a048` to choose how many anchors to sample, expands the indexed support mesh through Combat_ExpandIndexedPolygonVertexList_v129, clips it with Combat_ClipPolygonToViewVolume_v129, projects the surviving textured vertices through Combat_ProjectClippedPolygonToTexturedRenderVertices_v129, and draws the selected GRD bitmap only for anchors that remain near enough to the active view.",
-			"The surviving linked render vertices are handed directly to Combat_RasterizeTexturedPolygon_v129 together with the caller-specific textured-span state block for the chosen ground-detail bitmap.",
+			"The surviving linked render vertices are handed directly to Combat_RasterizeTexturedPolygon_v129 together with the caller-specific textured-span state block rooted at Combat_SoftwareRasterizerAmbientGroundDetailSpan_v129 for the chosen ground-detail bitmap.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerAmbientGroundDetailSpan_v129": {
+		"family": "CombatBackdrop",
+		"summary": "Caller-specific self-patching textured-span kernel used by the GRD ambient ground-detail pass.",
+		"notes": [
+			"Installed into the raster state block that Combat_InitializeAmbientGroundDetail_v129 seeds at `DAT_0048f5d0`, then selected by Combat_RenderAmbientGroundDetail_v129 when one randomized ground-detail anchor survives clipping and projection.",
+			"Patches embedded bitmap row pointers and perspective step constants from the active `GRD0` / `GRD1` bitmap, samples only nonzero texels, and writes the surviving pixels into the destination surface in unrolled 16-pixel spans.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1624,6 +1721,52 @@ const OVERRIDES := {
 		"summary": "Projects one already clipped polygon vertex list into integer screen coordinates and tracks its screen-space bounds.",
 		"notes": [
 			"Converts each surviving homogeneous vertex into `(x, y)` pixels using the active viewport fields at `+0x68` and `+0x6c`, preserves either the caller-supplied depth slot or the vertex payload slot `5`, and updates the shared min/max bounds globals used by the follow-up raster path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_DispatchProjectedPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Submits one already projected screen-space polygon directly to the retail solid-polygon render callback table.",
+		"notes": [
+			"Stores the caller's projected vertex range, color/state payload, and callback parameters into the shared polygon-dispatch globals, then invokes the callback slot selected by the render-mode key at `DAT_004587e8 + mode * 4` when that slot is populated.",
+			"Combat_RenderImmediateWeaponFireOverlay_v129 and Combat_RenderSkyAndGroundBackdrop_v129 both use it after they build screen-space quads that are already known to lie inside the active viewport, so no extra clipping step is needed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeRoundedShift30Quotient_v129": {
+		"family": "CombatRender3d",
+		"summary": "Computes the signed rounded quotient `(numerator << 30) / denominator`.",
+		"notes": [
+			"Normalizes both operands to positive magnitude, performs the 64-bit shifted divide with round-to-nearest behavior, and reapplies the combined sign bit to the final 32-bit result.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ComputeRoundedShift46Reciprocal_v129": {
+		"family": "CombatRender3d",
+		"summary": "Computes the signed rounded reciprocal `(1 << 46) / value`.",
+		"notes": [
+			"Uses the same round-to-nearest remainder test as Combat_ComputeRoundedShift30Quotient_v129, but with a fixed numerator of `0x400000000000` before restoring the original sign.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_ClipAndDispatchProjectedPolygon_v129": {
+		"family": "CombatRender3d",
+		"summary": "Clips one projected screen-space polygon to the active viewport rectangle and dispatches the surviving polygon to the retail solid render path.",
+		"notes": [
+			"Walks the projected six-word-per-vertex polygon through the four screen bounds stored in the active render context, interpolating X/Y plus the optional depth and payload slots into the scratch buffer at `DAT_004838e8` whenever an edge crosses a viewport boundary.",
+			"Once the clipped polygon still has at least three vertices it writes the surviving range back into the shared dispatch globals and invokes the same render callback table used by Combat_DispatchProjectedPolygon_v129. Combat_RenderFlatShadedPolygonGroup_v129, Combat_RenderLitClippedPolygon_v129, and Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129 all reuse it.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1723,7 +1866,90 @@ const OVERRIDES := {
 		"summary": "Rasterizes one linked textured polygon into the destination surface using the retail software span-walker path.",
 		"notes": [
 			"Consumes the linked render-vertex list emitted by Combat_ProjectClippedPolygonToTexturedRenderVertices_v129, walks the polygon from top to bottom, computes the left/right edge slopes plus reciprocal-depth-adjusted UV increments, and dispatches the caller-supplied raster state block across each scanline span.",
-			"Combat_RenderTexturedPolygonGroup_v129, Combat_RenderSkyAndGroundBackdrop_v129, and Combat_RenderAmbientGroundDetail_v129 all call it directly with state blocks that point at the active texture bitmap and the self-patching span routine rooted at `FUN_0046a764`.",
+			"Combat_RenderTexturedPolygonGroup_v129, Combat_RenderSkyAndGroundBackdrop_v129, and Combat_RenderAmbientGroundDetail_v129 all call it directly with state blocks that point at the active texture bitmap and the self-patching span routine rooted at Combat_SoftwareRasterizerTexturedSpan_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerTexturedSpan_v129": {
+		"family": "CombatRender3d",
+		"summary": "Root self-patching textured-span kernel used by the retail software rasterizer.",
+		"notes": [
+			"Owns the mutable span-code block that System_InitializeSoftwareRasterizerSpanCode_v129 unlocks with `VirtualProtect` and that Combat_RasterizeTexturedPolygon_v129 state blocks point at for the generic textured-polygon path.",
+			"The routine patches embedded destination and texture-step constants inside its own code region, then walks one textured scanline span in unrolled chunks using the reciprocal-step constants prepared at startup.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerPaletteMapped16BitTexturedSpan_v129": {
+		"family": "CombatRender3d",
+		"summary": "Self-patching textured-span kernel that maps each sampled texel through a 256-entry duplicated-16-bit color table before writing one word per destination pixel.",
+		"notes": [
+			"Reads the active texture through the same perspective-correct UV walk as Combat_SoftwareRasterizerTexturedSpan_v129, but translates each 8-bit texel through the lookup table pointer cached at `DAT_004859a0[0xc5]`.",
+			"The inner loop writes overlapped dword stores at `+0,+2,+4...` so each lookup entry can hold the same 16-bit color in both halves, letting the span emit one 16-bit destination pixel per sample while still using wide stores.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerPaletteMapped16BitDoubleWideTexturedSpan_v129": {
+		"family": "CombatRender3d",
+		"summary": "Self-patching textured-span kernel that expands each sampled texel into two adjacent 16-bit destination pixels through the active color lookup table.",
+		"notes": [
+			"Uses the same lookup table at `DAT_004859a0[0xc5]` as Combat_SoftwareRasterizerPaletteMapped16BitTexturedSpan_v129, but stores one full dword per sample so the duplicated 16-bit color fills a double-wide pair of destination pixels.",
+			"The interpolation step constants are doubled relative to the single-width 16-bit variant, matching the two-pixel horizontal expansion pattern seen in the unrolled loop and remainder writer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerClippedTexturedSpan_v129": {
+		"family": "CombatRender3d",
+		"summary": "Textured-span kernel that pre-applies the current left/right clip offsets before dispatching the generic 8-bit software rasterizer path.",
+		"notes": [
+			"Subtracts the active clipped bounds from `DAT_00485970` / `DAT_00485974`, advances the reciprocal-depth-adjusted UV state to the surviving span start, and then emits packed 8-bit texels with the same four-pixels-per-dword write pattern as Combat_SoftwareRasterizerTexturedSpan_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerClippedPaletteMapped16BitTexturedSpan_v129": {
+		"family": "CombatRender3d",
+		"summary": "Clipped 16-bit palette-mapped textured-span kernel that advances into the surviving span before emitting one looked-up destination word per texel.",
+		"notes": [
+			"Combines the left/right clipped-start correction from Combat_SoftwareRasterizerClippedTexturedSpan_v129 with the duplicated-16-bit color lookup used by Combat_SoftwareRasterizerPaletteMapped16BitTexturedSpan_v129.",
+			"Starts writing at `DAT_00485998 + clipped_x * 2`, confirming that the destination stride is treated as 16-bit pixels after the clip delta is applied.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerClippedPaletteMapped16BitDoubleWideTexturedSpan_v129": {
+		"family": "CombatRender3d",
+		"summary": "Clipped double-wide 16-bit textured-span kernel that expands each sampled texel into a duplicated 16-bit pair after the span start is clip-adjusted.",
+		"notes": [
+			"Matches the double-wide color-lookup writer from Combat_SoftwareRasterizerPaletteMapped16BitDoubleWideTexturedSpan_v129, but first advances the perspective-correct UV state and destination pointer to the clipped start column.",
+			"Writes from `DAT_00485998 + clipped_x * 2` while using the wider two-pixel expansion step, making it the clip-aware sibling of the non-clipped double-wide 16-bit kernel.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Combat_SoftwareRasterizerSpanCodeDeadLoop_v129": {
+		"family": "CombatRender3d",
+		"summary": "Unreachable infinite-loop sentinel left at the tail of the unlocked software-rasterizer span-code block.",
+		"notes": [
+			"Sits between System_GetSoftwareRasterizerSpanCodeSize_v129 and Combat_RasterizeTexturedPolygonToSurface_v129 inside the mutable span-code region that System_InitializeSoftwareRasterizerSpanCode_v129 unlocks.",
+			"Ghidra decompiles it as a pure `do { } while (true);` block with no inbound references, so the name stays descriptive without assigning it a missing render responsibility.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -1752,11 +1978,22 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_TransformTerrainSceneryObjectVertices_v129": {
+		"family": "CombatRender3d",
+		"summary": "Transforms one terrain-scenery object's cached vertex list into the shared render scratch buffer.",
+		"notes": [
+			"Called only by Combat_RenderTerrainSceneryObjectRecord_v129. It walks the record's cached six-word vertex rows, applies the supplied object-to-camera matrix to the planar source coordinates, copies the trailing per-vertex attributes unchanged, and advances the shared scratch-vertex count at `DAT_004e948c`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Combat_RenderTerrainSceneryObjectRecord_v129": {
 		"family": "CombatRender3d",
 		"summary": "Transforms and renders one cached terrain-scenery object record through the retail polygon-group render path.",
 		"notes": [
-			"Called only by Combat_RenderTerrainSceneryProjection_v129 after each active scenery instance's transform is rebuilt into camera space. It transforms the record's cached vertex list into the shared scratch buffer and then dispatches each polygon group through Combat_RenderTexturedPolygonGroup_v129 or Combat_RenderFlatShadedPolygonGroup_v129 based on the group's face flags.",
+			"Called only by Combat_RenderTerrainSceneryProjection_v129 after each active scenery instance's transform is rebuilt into camera space. It first expands the record's cached vertex list through Combat_TransformTerrainSceneryObjectVertices_v129 and then dispatches each polygon group through Combat_RenderTexturedPolygonGroup_v129 or Combat_RenderFlatShadedPolygonGroup_v129 based on the group's face flags.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -2567,6 +2804,19 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Combat_NoOpMissedPacketLog_v129": {
+		"family": "CombatEffects",
+		"summary": "Compiled-out missed-packet logger sink used by a few combat packet handlers on retail fallback/error paths.",
+		"notes": [
+			"The body ignores its pushed arguments and immediately returns zero, so the retail build keeps it as a no-op stub rather than an active logger.",
+			"All recovered callers push `packet.log` plus one of the literal lines `Missed packet!<P>`, `Missed packet!<D>`, or `Missed packet!<S>` before tail-returning, anchoring it as the stripped sink for those missed-packet diagnostics in Combat_Cmd65_UpdateActorPosition_v129, Combat_ApplyDamagePairOrQueueEffect_v129, and Combat_Cmd68_SpawnWeaponEffect_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
+	},
 	"Combat_GetLastSpawnedWeaponEffectSlotIndex_v129": {
 		"family": "WeaponFire",
 		"summary": "Returns the active effect-pool index most recently reserved by Combat_SpawnActiveWeaponEffect_v129.",
@@ -3302,12 +3552,26 @@ const OVERRIDES := {
 		"summary": "Spawns the retail impact effect at a target attachment when available, or falls back to explicit world coordinates.",
 		"notes": [
 			"When the target actor/attachment cannot be resolved, it falls back to the provided impact coordinates and only emits the ordinary impact cue if the caller's effect flags request it.",
+			"Both the fallback coordinate path and the projectile-update impact handoff pass through Combat_NoOpImpactEffectHook_v129 after the visible impact sprite/cue work is queued, but the retail build leaves that hook empty.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/combat/combat.gd",
 		],
 		"research_refs": ["RESEARCH.md:4160-4179", "RESEARCH.md:4738-4739"],
+	},
+	"Combat_NoOpImpactEffectHook_v129": {
+		"family": "CombatEffects",
+		"summary": "Compiled-out impact-effect hook that retail leaves empty after projectile and fallback impact visuals are armed.",
+		"notes": [
+			"Called from Combat_SpawnImpactEffectAtAttachmentOrCoord_v129 after the fallback world-coordinate impact sprite/cue path and from Combat_UpdateProjectileEffectState_v129 when an in-flight projectile effect collapses into its final impact state.",
+			"The body is a true no-op, so the name stays explicit about the missing behavior rather than claiming an effect side path the retail build no longer performs.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/net/arena_client.gd",
+		],
 	},
 	"Combat_ResolveProjectileImpactDamage_v129": {
 		"family": "CombatEffects",
@@ -3706,6 +3970,7 @@ const OVERRIDES := {
 		"summary": "Advances one active projectile/effect toward its impact point, refreshing target-attachment coordinates until the effect lands.",
 		"notes": [
 			"When the target attachment is still valid it recomputes the world impact point from that attachment; otherwise it counts down against the last stored destination. The helper also emits periodic in-flight particles and arms the final impact handoff once the remaining travel distance collapses below the retail threshold.",
+			"When the effect reaches that impact threshold it drops into the same empty Combat_NoOpImpactEffectHook_v129 used by the fallback impact helper before the subsequent damage-resolution path takes over.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4711,7 +4976,20 @@ const OVERRIDES := {
 		"summary": "Initializes the shared combat render/projection context blocks used by the backdrop, terrain projection, tactical radar, and active-effects passes.",
 		"notes": [
 			"Called only from Combat_ResetPresentationStateAndLoadVisualOptions_v129 during combat presentation reset. It clears and seeds the fixed world-camera panel descriptor at `DAT_004e6f20`, the player-centered radar/projection descriptor at `DAT_004e5fc0`, and the companion effect-panel descriptor rooted at `DAT_004e6ba0` from the active root surface pointer in `DAT_0047d4b0 + 0x4c`.",
-			"It finishes by restoring the shared render limit globals through `FUN_00469e29(0x8000, 0)`, after which Combat_RenderSkyAndGroundBackdrop_v129, Combat_RenderTerrainSceneryProjection_v129, and Combat_RenderActiveEffectsPass_v129 all consume those same default retail bounds and projection constants.",
+			"It finishes by restoring the shared render limit globals through Combat_SetSharedRenderLimitGlobals_v129, after which Combat_RenderSkyAndGroundBackdrop_v129, Combat_RenderTerrainSceneryProjection_v129, and Combat_RenderActiveEffectsPass_v129 all consume those same default retail bounds and projection constants.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Combat_SetSharedRenderLimitGlobals_v129": {
+		"family": "CombatInit",
+		"summary": "Stores the shared render-limit globals consumed by the retail combat projection and backdrop passes.",
+		"notes": [
+			"Called only from Combat_InitializeSharedRenderProjectionContexts_v129, which restores the default pair `(0x8000, 0)` after reseeding the combat projection panels.",
+			"Combat_RenderSkyAndGroundBackdrop_v129, Combat_RenderTerrainSceneryProjection_v129, and Combat_RenderActiveEffectsPass_v129 later consume those same globals when rebuilding their shared retail projection bounds and depth constants.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4849,6 +5127,7 @@ const OVERRIDES := {
 		"summary": "Main retail frontend entry path that initializes the client windowing/network stack, runs the shell message loop, and shuts down on exit.",
 		"notes": [
 			"Performs the single-instance check, resolves the working directory, initializes the cached shell version banner through Shell_InitializeVersionString_v129, creates the Win32 shell window and message queue, initializes the DirectDraw display path through System_InitializeDirectDrawDisplay_v129, unlocks the software rasterizer span code through System_InitializeSoftwareRasterizerSpanCode_v129, sets up the frontend bootstrap through Shell_InitializeFrontendResourcesAndAudio_v129, then services inbound shell/network frames until shutdown.",
+			"On exit it tears the frontend back down, clears the queued inbound-line state, and releases the DirectDraw display objects through System_ShutdownDirectDrawDisplay_v129 before returning to WinMain.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -4883,11 +5162,24 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"System_ShutdownDirectDrawDisplay_v129": {
+		"family": "System",
+		"summary": "Releases the retail DirectDraw display path, including the primary surfaces, clipper chain, and root DirectDraw object.",
+		"notes": [
+			"Called only from Shell_RunFrontendMain_v129 during frontend shutdown. It releases the active display surface in `DAT_0047a064`, the optional auxiliary surfaces in `DAT_00498df8` and `DAT_0047a05c`, and finally the root DirectDraw object in `DAT_00498980`, clearing each stored handle after the corresponding COM `Release` call.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"System_InitializeSoftwareRasterizerSpanCode_v129": {
 		"family": "System",
 		"summary": "Unlocks and seeds the retail software-rasterizer span code used by the combat polygon fill routines.",
 		"notes": [
-			"Called only from Shell_RunFrontendMain_v129 after System_InitializeDirectDrawDisplay_v129 succeeds. Uses VirtualProtect on the self-patching rasterizer block rooted at `FUN_0046a764` so the inner span code can update its embedded surface and step constants at runtime.",
+			"Called only from Shell_RunFrontendMain_v129 after System_InitializeDirectDrawDisplay_v129 succeeds. Uses VirtualProtect on the self-patching rasterizer block rooted at Combat_SoftwareRasterizerTexturedSpan_v129 so the inner span code can update its embedded surface and step constants at runtime.",
 			"It also precomputes the reciprocal step constant `DAT_004859b8 = 1.0 / DAT_004859b4`; the span walker at `FUN_0046d8f4` consumes that value when the textured path expands its 16-pixel interpolation increments.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
@@ -4900,7 +5192,8 @@ const OVERRIDES := {
 		"family": "System",
 		"summary": "Returns the byte size of the self-patching software-rasterizer span-code block.",
 		"notes": [
-			"Currently returns the fixed size `0x30ac`, which System_InitializeSoftwareRasterizerSpanCode_v129 passes to VirtualProtect when unlocking the span-code region rooted at `FUN_0046a764`.",
+			"Currently returns the fixed size `0x30ac`, which System_InitializeSoftwareRasterizerSpanCode_v129 passes to VirtualProtect when unlocking the span-code region rooted at Combat_SoftwareRasterizerTexturedSpan_v129.",
+			"That unlocked block also contains the palette-mapped, clipped, double-wide, and dead-loop siblings that live between Combat_SoftwareRasterizerTexturedSpan_v129 and Combat_RasterizeTexturedPolygonToSurface_v129.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -5229,6 +5522,18 @@ const OVERRIDES := {
 			"res://scenes/main/main.gd",
 		],
 	},
+	"__NLG_Notify": {
+		"family": "SystemRuntime",
+		"summary": "CRT unwind-notification helper that snapshots the current unwind callback context for the debugger/runtime globals.",
+		"notes": [
+			"`__local_unwind2` calls it immediately before invoking one pending unwind callback, and the helper records the callback target, live EAX value, and active frame pointer into the shared `__NLG_*` globals.",
+			"The recovered body matches published MSVC `__NLG_Notify` stubs: store arg3, arg1, and arg2 into three globals, then return arg1.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
 	"System_ReportRuntimeErrorMessage_v129": {
 		"family": "SystemRuntime",
 		"summary": "Reports one retail CRT runtime-error message to stderr or a modal dialog.",
@@ -5247,6 +5552,127 @@ const OVERRIDES := {
 		"notes": [
 			"Validates the descriptor slot, resolves the backing OS handle with `__get_osfhandle`, and calls `FlushFileBuffers`, translating failure into the same runtime error globals used by the descriptor layer.",
 			"`_fflush` uses it for descriptor-backed streams whose flags request a hard OS-level commit after the buffered CRT flush completes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_RefreshTimeZoneState_v129": {
+		"family": "SystemRuntime",
+		"summary": "Refreshes the retail timezone offset, DST bias, and timezone-name caches from `TZ` or Win32.",
+		"notes": [
+			"Parses the `TZ` environment variable when present, caching the current standard/daylight abbreviations plus the active UTC bias in the shared CRT timezone globals; otherwise it falls back to `GetTimeZoneInformation` and converts the returned wide timezone names into ANSI buffers.",
+			"`___tzset` calls it on demand before `_localtime` and `___loctotime_t` use the cached timezone state, and repeated calls short-circuit when the cached `TZ` string has not changed.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_IsTmInDaylightSavingTime_v129": {
+		"family": "SystemRuntime",
+		"summary": "Checks whether one broken-down local `tm` record falls inside the cached daylight-saving interval.",
+		"notes": [
+			"Uses the transition rules stored by System_RefreshTimeZoneState_v129 to derive the start and end day/time cutovers for the target year, then compares the caller-provided `tm_yday` and time-of-day against those cutovers.",
+			"`_localtime` and `___loctotime_t` both rely on it to decide whether the daylight-saving bias in `DAT_004864a8` should be applied for one converted local timestamp.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_GetWideStringLength_v129": {
+		"family": "SystemRuntime",
+		"summary": "Returns the character length of one NUL-terminated wide string.",
+		"notes": [
+			"Walks the input `wchar_t*` until the terminator and returns the number of wide characters before the trailing NUL.",
+			"Used only by System_ConvertWideStringToMultiByte_v129 when the runtime is operating in the simple single-byte locale path and only needs the source length.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ConvertWideStringToMultiByte_v129": {
+		"family": "SystemRuntime",
+		"summary": "Converts one wide-character string into the active multibyte code page with CRT-style bounds handling.",
+		"notes": [
+			"Returns the required output length when the destination buffer is null, performs a direct narrow copy in the simple single-byte locale, and otherwise routes through `WideCharToMultiByte` while surfacing conversion failures through the shared runtime error globals.",
+			"System_RefreshTimeZoneState_v129 uses it to copy the standard/daylight timezone names that `GetTimeZoneInformation` exposes as wide strings into the cached ANSI buffers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_CountWideCharsWithLimit_v129": {
+		"family": "SystemRuntime",
+		"summary": "Counts wide characters up to one caller-supplied limit, including the terminator when it fits.",
+		"notes": [
+			"Walks forward until either `limit` wide characters have been consumed or a NUL terminator is found, returning the shorter span and including the trailing terminator when it was encountered before the cap.",
+			"Used only by System_ConvertWideStringToMultiByte_v129 for the code-page path that must precompute the exact bounded source span passed into `WideCharToMultiByte`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ProbeStackPages_v129": {
+		"family": "SystemRuntime",
+		"summary": "Touches each intervening stack page before a large retail stack allocation commits.",
+		"notes": [
+			"Walks backward in `0x1000`-byte steps from the current stack frame until the requested allocation size has been probed, matching the standard MSVC `__chkstk` page-touch pattern.",
+			"Only appears where the compiler injected a large-stack guard probe, such as the temporary zero-fill buffer path inside System_SetFileDescriptorLength_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ReportFloatingPointSupportNotLoaded_v129": {
+		"family": "SystemRuntime",
+		"summary": "Raises the retail CRT fatal error for missing floating-point runtime support.",
+		"notes": [
+			"Immediately calls `__amsg_exit(2)`, which is the MSVC runtime failure path for the classic `R6002`/floating-point-support-not-loaded condition.",
+			"The uninitialized fpmath dispatch slots referenced by System_FormatPrintfCore_v129 and System_ScanFormatCore_v129 point at this trap until System_InitializeFpmathDispatchTable_v129 installs the real floating-point helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_MultiplyExtendedFloat80_v129": {
+		"family": "SystemRuntime",
+		"summary": "Multiplies two 80-bit extended-float values and stores the normalized result in place.",
+		"notes": [
+			"Treats both operands as the retail CRT 12-byte/80-bit extended-float layout, performs the mantissa cross-products, normalizes the result, and handles the overflow/underflow cases by emitting the corresponding zero or infinity-style encoding.",
+			"`___multtenpow12` and `$I10_OUTPUT` both use it while scaling extended-precision values during the CRT floating-point formatting path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/main/main.gd",
+		],
+	},
+	"System_ConvertIntegerDifferenceToExtendedFloat80_v129": {
+		"family": "SystemRuntime",
+		"summary": "Subtracts one 32-bit integer from another and returns the difference as an 80-bit extended-float value.",
+		"notes": [
+			"Implements the exact low-level sequence `fild(param_1 - param_2)` without any additional scaling or normalization.",
+			"Shell_DispatchValidatedCommandBuffer_v129 uses it on `_time()` snapshots before comparing the elapsed command-handler duration against the slow-handler threshold.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/server_bridge.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"System_PutEnvironmentStringA_v129": {
+		"family": "SystemRuntime",
+		"summary": "Applies one ANSI `NAME=VALUE` environment assignment to the retail CRT environment tables.",
+		"notes": [
+			"Splits the caller-supplied assignment at `=`, grows or compacts the live `environ` pointer table at `DAT_00485f18` as needed, and frees removed heap-owned entries when the assignment deletes a variable.",
+			"When the caller requests an OS update it also calls `SetEnvironmentVariableA`, and `___wtomb_environ` reuses it without the OS update path while syncing the wide environment table back into the ANSI table.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -6188,6 +6614,19 @@ const OVERRIDES := {
 			"res://scripts/net/server_bridge.gd",
 		],
 	},
+	"Shell_SendOutboundCommand06ByteArg_v129": {
+		"family": "ShellUI",
+		"summary": "Emits outbound retail shell command opcode `0x06` with one encoded byte argument and flushes the completed command frame.",
+		"notes": [
+			"Builds the frame by calling Shell_AppendOutboundCommandOpcode_v129 with opcode `0x06`, encoding the single payload byte through Frame_EncodeByteArg_v129, and then immediately finalizing/sending it through Shell_FlushOutboundCommandBuffer_v129.",
+			"The only recovered raw wrapper at `00401a12` also sets `DAT_0047a040 |= 2` before returning, but that side effect lives in the wrapper rather than in this wire-level sender.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/net/server_bridge.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"Shell_AppendOutboundCommandChecksumTrailer_v129": {
 		"family": "ShellUI",
 		"summary": "Appends the retail checksum/trailer bytes that finalize one outbound shell command frame.",
@@ -6241,11 +6680,36 @@ const OVERRIDES := {
 		"summary": "Handles inbound shell/banner lines during the retail pre-version negotiation phase.",
 		"notes": [
 			"Uses Shell_ClassifyBannerLine_v129 to recognize the introductory banner lines, arms the shell for version exchange when the expected pre-version banner arrives, and enters the DROP scene path when the alternate banner is encountered.",
+			"On the state-3 transition path it clears the status marquee, resets the cached travel-compass label bitmap, passes through Shell_NoOpPreVersionBannerLineHook_v129, and then appends the outbound banner-state change control frame.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
 			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_NoOpPreVersionBannerLineHook_v129": {
+		"family": "ShellUI",
+		"summary": "Compiled-out pre-version banner-line hook that retail leaves empty before the negotiated state-change frame is sent.",
+		"notes": [
+			"Called only from Shell_HandlePreVersionBannerLine_v129 after Shell_ClearStatusMarqueeBuffer_v129 and World_ResetLocationLabelBitmapCache_v129, immediately before Shell_AppendBannerStateChangeControlFrame_v129.",
+			"The body is a true no-op, so the name keeps the narrow caller context explicit without inventing a missing side effect.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scripts/net/server_bridge.gd",
+		],
+	},
+	"Shell_StackCleanupReturnStub_v129": {
+		"family": "ShellUI",
+		"summary": "Orphaned shell-region stack-cleanup epilogue stub that only pops `ebx`, drops `0x54` stack bytes, and returns.",
+		"notes": [
+			"Decompiles as an isolated `pop ebx; add esp, 0x54; ret 0x10` chunk with no inbound references, so it is best treated as a leftover compiler epilogue stub rather than a missing gameplay helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
 		],
 	},
 	"Shell_ClassifyBannerLine_v129": {
@@ -6289,7 +6753,7 @@ const OVERRIDES := {
 		"family": "ShellUI",
 		"summary": "Clears the active shell/world UI and enters the retail DROP scene card flow from SCENES.DAT.",
 		"notes": [
-			"Resets the active world/shell widgets, clears the stacked-shell active bit through World_ClearStackedShellActiveFlag_v129, drops the lingering scroll-list and mech-management page flags through World_ClearScrollListShellActiveFlag_v129 and World_ClearPagedMechListAndComponentActionFlags_v129, shows the DROP bitmap through Frame_ShowCenteredArchiveBitmap_v129, optionally starts the associated scene audio cue, and clears shell-state flags before the next transition continues.",
+			"Resets the active world/shell widgets, clears the world-child active bit through World_ClearWorldUiChildrenActiveFlag_v129, clears the stacked-shell active bit through World_ClearStackedShellActiveFlag_v129, drops the lingering scroll-list and mech-management page flags through World_ClearScrollListShellActiveFlag_v129 and World_ClearPagedMechListAndComponentActionFlags_v129, shows the DROP bitmap through Frame_ShowCenteredArchiveBitmap_v129, optionally starts the associated scene audio cue, and clears shell-state flags before the next transition continues.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7018,7 +7482,23 @@ const OVERRIDES := {
 	"World_ClearWorldUiChildren_v129": {
 		"family": "WorldUI",
 		"summary": "Clears active world UI children before rebuilding a panel/browser surface.",
+		"notes": [
+			"Consumes bit `0x20` in `DAT_0047d4ec` as the world-child active flag, closes the stacked-shell child window chain when that bit is set, destroys each tracked child handle in the shared table at `DAT_0048fd20`, and finally clears both the child count and the active bit.",
+			"Shell_EnterDropScene_v129 first calls World_ClearWorldUiChildrenActiveFlag_v129 when it wants the same flag cleared without walking the tracked child-window table.",
+		],
 		"implementation_status": STATUS_PARTIAL_ANALOG,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_ClearWorldUiChildrenActiveFlag_v129": {
+		"family": "WorldUI",
+		"summary": "Clears the shared world-child active flag without destroying the tracked child-window table.",
+		"notes": [
+			"ANDs `DAT_0047d4ec` with `~0x20`, which is the same active bit consumed by World_ClearWorldUiChildren_v129 when it decides whether to walk and destroy the current world child-window chain.",
+			"Shell_EnterDropScene_v129 uses it immediately before World_ClearWorldUiChildren_v129 so the DROP transition can suppress that extra child-window teardown pass while still resetting the shared world-shell state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
 		],
@@ -7106,8 +7586,20 @@ const OVERRIDES := {
 		"family": "WorldUI",
 		"summary": "Builds the early-world travel-compass page with one center slot, four surrounding travel slots, and fixed byte-selection actions.",
 		"notes": [
-			"Clears the active world root surface, resets the shared compass-label strip counter, latches the current slot and flag tables, optionally refreshes the cached four outer slot ids plus byte-selection state, and redraws the five-slot picture layout before restoring the arrow cursor.",
+			"Clears the active world root surface, resets the shared compass-label strip counter, latches the current slot and flag tables, optionally refreshes the cached four outer slot ids plus byte-selection state, redraws the five-slot picture layout, and then passes through World_NoOpTravelCompassPageSetupHook_v129 before restoring the arrow cursor.",
 			"Installs World_TravelCompassPage_HandleInput_v129 and World_TravelCompassPage_HandleMouse_v129 as the page callbacks. Special picture ids reuse the cached location-label bitmap built by World_LoadLocationLabelBitmap_v129 instead of a static PIC entry.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_NoOpTravelCompassPageSetupHook_v129": {
+		"family": "WorldUI",
+		"summary": "Compiled-out travel-compass page setup hook that retail leaves empty after the fixed frame art is drawn.",
+		"notes": [
+			"Called only from World_Cmd04_TravelCompassPage_v129 immediately after World_DrawTravelCompassPageFrameArt_v129 and before the page callbacks plus selection state are installed.",
+			"The body is empty in retail v1.29, so the name keeps the setup-hook context explicit without inventing missing side effects.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7158,11 +7650,47 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"World_Cmd33_NoOp_v129": {
+		"family": "WorldUI",
+		"summary": "Inert world command slot 33 that retail leaves as a zero-return stub.",
+		"notes": [
+			"Ghidra's saved world dispatch table places 0x004468b0 in command slot 33.",
+			"The body performs no packet decoding, no state mutation, and no redraw work before returning zero.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_Cmd34_TravelCompassLabelStrip_v129": {
 		"family": "WorldUI",
 		"summary": "Updates the upper label strip on the early-world travel-compass page from streamed text rows.",
 		"notes": [
 			"Decodes one string per call, clears the strip and draws the shared heading resource on the first row, then blits each decoded label into the next `0x50`-wide column while advancing the shared travel-compass column counter.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd35_RequestClientExit_v129": {
+		"family": "WorldUI",
+		"summary": "Requests immediate client shutdown from the world command stream.",
+		"notes": [
+			"Ghidra's saved world dispatch table places 0x004031a0 in command slot 35.",
+			"The body posts shell command `2` to the main frontend window `DAT_0047a050` and then sets the shared exit flag bit `0x800` in `DAT_0047a040`, matching the shutdown side effect that Shell_ConfirmClientExit_v129 performs after a local confirmation succeeds.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd38_NoOp_v129": {
+		"family": "WorldUI",
+		"summary": "Inert world command slot 38 that retail leaves as a zero-return stub.",
+		"notes": [
+			"Ghidra currently classifies 0x004467a0 as world-mode dispatch slot 38 in the v1.29 command table.",
+			"The body performs no decoding, no state mutation, and no redraw work before returning zero, so the safest stable name is an explicit no-op command stub.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -7500,7 +8028,20 @@ const OVERRIDES := {
 		"summary": "Shared input handler for the retail modal text window and its text-entry variants.",
 		"notes": [
 			"Handles `Tab` by focusing the child edit field when one exists, `Esc` by sending an empty string response through the old text-response helper, and `Enter` by copying the current edit text into a local buffer before dispatching the window-specific follow-up action.",
-			"For the generic text-response path it forwards the typed string through World_SendLegacyTextResponse_v129, then closes the stacked shell and flushes the outbound buffer. Special follow-up ids branch into the retail shortcut-binding flow, the numbered text-selection reopen path, and the local file-open path used by the late-world shell.",
+			"For the generic text-response path it forwards the typed string through World_SendLegacyTextResponse_v129, then closes the stacked shell and flushes the outbound buffer. Special follow-up ids branch into the retail shortcut-binding flow, the numbered text-selection reopen path, and World_LoadTextFileIntoModalTextWindow_v129 for the late-world local file-open path.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"World_LoadTextFileIntoModalTextWindow_v129": {
+		"family": "WorldUI",
+		"summary": "Loads a local text file into the active modal world text window's editable buffer.",
+		"notes": [
+			"Reads the opened file stream byte-by-byte into the active modal edit buffer, rewriting hard newlines to the retail backslash line-break marker and respecting the window's 400-character capacity guard.",
+			"When the window is in selection/edit mode it splices the imported text into the current wrapped-line location, then reruns the wrapped-text layout, redraws the window stack, and refreshes the live cursor highlight. World_ModalTextWindow_HandleInput_v129 uses it for follow-up id `0x3FC` after the player enters a local path.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -8941,6 +9482,141 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_InsertInlineBitmapTagIntoEditableText_v129": {
+		"family": "FrameText",
+		"summary": "Inserts one inline bitmap marker into an editable wrapped text buffer, rerenders the field, and refreshes the cursor metrics.",
+		"notes": [
+			"Builds the retail `[type offset tag]` marker string for either the current house icon, the currently selected unit bitmap, or a caller-supplied four-character asset tag, then verifies the tag through Frame_ResolveInlineBitmapTag_v129 before writing it into the frame's editable buffer.",
+			"After inserting the marker it resets the wrapped text layout with fixed insets, redraws the full wrapped block, presents the updated frame, recomputes the live cursor pixel offset from the wrapped-line metadata, and reenables the text cursor highlight. Frame_ConvertTrailingBitmapTokenToInlineTag_v129, Frame_InsertSelectedUnitBitmapTagIntoEditableText_v129, and Frame_InsertCurrentHouseBitmapTagIntoEditableText_v129 are thin specializations over this helper.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_ConvertTrailingBitmapTokenToInlineTag_v129": {
+		"family": "FrameText",
+		"summary": "Converts the trailing five-character bitmap token in the editable buffer into a validated inline bitmap marker.",
+		"notes": [
+			"Pulls the five-byte token immediately before the cursor, or from the active wrapped-line selection span when the editor is in selection mode, deletes that raw token from the editable buffer, and forwards it to Frame_InsertInlineBitmapTagIntoEditableText_v129 as the custom type-2 inline-bitmap payload.",
+			"Used by the retail inline-art editor path to turn a typed alignment-plus-tag token into the stored `[type offset tag]` marker form without leaving the raw token text behind in the buffer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_ClassifyEditableTextKeyAction_v129": {
+		"family": "FrameText",
+		"summary": "Maps one editable-text keypress to the retail editor action id used by the shared text-entry handler.",
+		"notes": [
+			"Frame_IsPrintableEditableTextChar_v129 lets ordinary ASCII text fall through as raw input, while the hard-coded editor shortcuts map `R`, `S`, `U`, `H`, and `D` to dedicated action ids and only allow `]` to close an inline bitmap marker when the text immediately before the cursor already matches the retail `[P` or `[R` tag prefix.",
+			"The shared text-entry handler calls it before dispatching to the wrapped-cursor movement and inline-bitmap editing helpers so special keys can be routed without inserting their raw character byte into the buffer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_InsertHardLineBreakMarker_v129": {
+		"family": "FrameText",
+		"summary": "Inserts the retail hard line-break marker into the editable wrapped text buffer and refreshes the cursor state.",
+		"notes": [
+			"Appends a literal backslash byte to the editable text buffer when capacity allows and the active wrapped-line count has not reached the retail limit, then reruns wrapped layout, redraws the window stack, and restores the cursor highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_InsertSelectedUnitBitmapTagIntoEditableText_v129": {
+		"family": "FrameText",
+		"summary": "Inserts the currently selected retail unit bitmap token into the editable wrapped text buffer.",
+		"notes": [
+			"Performs the same width guard and editor-state reset as the other inline-art action handlers, then delegates to Frame_InsertInlineBitmapTagIntoEditableText_v129 with the type-1 mode that formats the current `U###` or `u###` unit token before redraw.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_MoveWrappedTextCursorRight_v129": {
+		"family": "FrameText",
+		"summary": "Advances the editable-text cursor one wrapped-text position to the right.",
+		"notes": [
+			"Moves within the current wrapped line when possible, otherwise jumps to the start of the next wrapped line and refreshes the saved cursor pixel offset / line index fields before reenabling the highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_MoveWrappedTextCursorLeft_v129": {
+		"family": "FrameText",
+		"summary": "Moves the editable-text cursor one wrapped-text position to the left.",
+		"notes": [
+			"When the cursor is already at the line start it jumps to the end of the previous wrapped line, accounting for the retail trailing backslash line-break marker before restoring the highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_MoveWrappedTextCursorUp_v129": {
+		"family": "FrameText",
+		"summary": "Moves the editable-text cursor up one wrapped line while preserving the preferred horizontal offset.",
+		"notes": [
+			"Uses the cached cursor pixel offset when available, steps to the previous wrapped line, clamps the offset to that line's rendered width, and then redraws the cursor highlight in the new row.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_MoveWrappedTextCursorDown_v129": {
+		"family": "FrameText",
+		"summary": "Moves the editable-text cursor down one wrapped line while preserving the preferred horizontal offset.",
+		"notes": [
+			"Uses the cached cursor pixel offset when available, advances to the next wrapped line, clamps the offset to that line's rendered width, and updates the saved cursor line/offset pair before reenabling the highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_IsPrintableEditableTextChar_v129": {
+		"family": "FrameText",
+		"summary": "Returns whether one key code is a printable ASCII character accepted by the retail editable-text handler.",
+		"notes": [
+			"Accepts only the plain ASCII range `0x20` through `0x7E`. Frame_ClassifyEditableTextKeyAction_v129 uses it to separate raw text insertion from the editor's special action-key dispatch.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_InsertCurrentHouseBitmapTagIntoEditableText_v129": {
+		"family": "FrameText",
+		"summary": "Inserts the current retail house crest bitmap token into the editable wrapped text buffer.",
+		"notes": [
+			"Uses the type-0 inline-bitmap insertion mode so Frame_InsertInlineBitmapTagIntoEditableText_v129 formats the active `HOU#` house token, validates it, redraws the wrapped text field, and refreshes the cursor highlight.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Frame_ShowCenteredArchiveBitmap_v129": {
 		"family": "FrameBlit",
 		"summary": "Loads a bitmap from a named retail archive, centers it on the active frame, presents it, and releases the temporary bitmap.",
@@ -9060,6 +9736,47 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_CreateDirectDrawSurface_v129": {
+		"family": "FrameWindow",
+		"summary": "Creates one DirectDraw surface for a frame-owned backing store and reports any retail DirectDraw failure through the shared bterror path.",
+		"notes": [
+			"Builds a retail DirectDraw surface descriptor from the requested width and height, calls the active DirectDraw object's surface-creation vtable entry, then returns the created surface while handing the surface metadata fields back through the caller-supplied out pointers.",
+			"Frame_CreateWindow_v129 uses it to allocate each frame's backing surface, Frame_RedrawWindowStackFrom_v129 uses it to lazily allocate the shared 640x480 composite redraw surface, and Combat_InitializeVoiceTransmissionHudControls_v129 reuses it for the dedicated voice HUD backing surface. Any DirectDraw failure is translated through System_GetDirectDrawErrorString_v129 and reported via System_ReportBterrorEvent_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitDirectDrawSurfaceToDisplay_v129": {
+		"family": "FrameBlit",
+		"summary": "Blits a raw DirectDraw surface rectangle to the active display surface, choosing the retail fast or clipped path as needed.",
+		"notes": [
+			"Used only by Frame_RedrawWindowStackFrom_v129 when the caller is marked fullscreen. Without an active clipper it forwards the copy through the DirectDraw `BltFast` path; otherwise it builds destination and source rects and falls back to the regular `Blt` call before reporting any failure through Shell_ShowModalMessageBox_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_RestoreActiveDisplaySurface_v129": {
+		"family": "FrameBlit",
+		"summary": "Restores the active DirectDraw display surface after a lost-surface event and reports any failure through the shared bterror path.",
+		"notes": [
+			"Calls the active display surface object's `Restore` vtable entry and returns the resulting HRESULT to the caller.",
+			"When the restore fails it formats the DirectDraw error through System_GetDirectDrawErrorString_v129 and reports the failure through System_ReportBterrorEvent_v129. The recovered xref lands in the low-level shell window/message path rather than the higher-level frame redraw helpers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_SetActiveFont_v129": {
 		"family": "FrameText",
 		"summary": "Stores the active bitmap-font descriptor on a retail frame and refreshes the font-derived row metrics that travel with it.",
@@ -9119,7 +9836,7 @@ const OVERRIDES := {
 		"family": "FrameWindow",
 		"summary": "Recomposites visible retail windows starting at a given frame and presents the affected screen region.",
 		"notes": [
-			"Finds the supplied frame's index in the global window stack, copies each visible backing surface from that point upward into the shared full-screen compose buffer, and then either presents the caller's rectangle or refreshes the full display when the frame is marked fullscreen. Title/credits, timed slideshow, world menus, and wrapped-text editors all route their display refresh through this helper.",
+			"Finds the supplied frame's index in the global window stack, copies each visible backing surface from that point upward into the shared full-screen compose buffer, and then either presents the caller's rectangle or refreshes the full display through Frame_BlitDirectDrawSurfaceToDisplay_v129 when the frame is marked fullscreen. Title/credits, timed slideshow, world menus, and wrapped-text editors all route their display refresh through this helper.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -9285,6 +10002,17 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_NoOpSingleByteNormalizedKeyHook_v129": {
+		"family": "FrameControl",
+		"summary": "Compiled-out single-byte normalized-key hook that retail still calls from the raw pre-dispatch wrapper before handing control to the active window.",
+		"notes": [
+			"The body is empty, but the only remaining raw caller checks `key <= 0xff`, pushes that normalized key, invokes this stub, and then returns immediately before the neighboring Frame_DispatchNormalizedKeyToActiveWindow_v129 entrypoint.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"Frame_TranslateKeyMessageToNormalizedKey_v129": {
 		"family": "FrameControl",
 		"summary": "Translates a packed retail key message into the normalized key code used by frame callbacks and text-entry handling.",
@@ -9378,6 +10106,58 @@ const OVERRIDES := {
 			"res://scenes/combat/combat.gd",
 		],
 	},
+	"Frame_CopyCString_v129": {
+		"family": "FrameText",
+		"summary": "Copies one null-terminated C string into another frame-text buffer, preserving the trailing zero byte.",
+		"notes": [
+			"Scans the source for its terminating zero and then copies the full byte span through the local memcpy-backed helper body.",
+			"Frame_InsertCStringAtOffset_v129 and Frame_DeleteCStringRangeInPlace_v129 both reuse it while shifting text in-place, and Frame_CountWrappedTextLines_v129 uses it to seed the temporary normalized buffer before retail wrap processing rewrites formatting markers.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_InsertCStringAtOffset_v129": {
+		"family": "FrameText",
+		"summary": "Inserts one null-terminated string into another retail text buffer at the requested byte offset.",
+		"notes": [
+			"Shifts the existing tail text to the right by the inserted string length and then copies the new substring into the opened gap through Frame_CopyCString_v129.",
+			"Used by Frame_ReplaceCStringInTextBuffer_v129 after it removes the old match span and needs to splice the replacement text into the same editable-buffer backing store.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_DeleteCStringRangeInPlace_v129": {
+		"family": "FrameText",
+		"summary": "Deletes one byte range from an in-place retail text buffer by sliding the trailing text over the removed span.",
+		"notes": [
+			"Treats the caller's offset and length as a substring span inside the destination buffer, then copies the tail text from `offset + length` back down onto `offset` through Frame_CopyCString_v129, preserving the terminating zero.",
+			"Frame_ReplaceCStringInTextBuffer_v129 uses it before reinserting a longer or shorter replacement string when the old and new substring lengths differ.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_ReplaceCStringInTextBuffer_v129": {
+		"family": "FrameText",
+		"summary": "Replaces every occurrence of one substring inside a retail text buffer, honoring the caller's maximum buffer size.",
+		"notes": [
+			"Handles equal-length replacements as an in-place overwrite, but when the replacement length changes it first removes the matched span through Frame_DeleteCStringRangeInPlace_v129 and then reinserts the replacement text through Frame_InsertCStringAtOffset_v129.",
+			"Frame_CountWrappedTextLines_v129 uses it to normalize editable text before measuring wrapped line counts, including the retail `&` to tab and newline to backslash rewrites.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
 	"Frame_BlitRelativeRect_v129": {
 		"family": "FrameBlit",
 		"summary": "Normalizes a frame-local rectangle, offsets it by the owning panel origin, and blits that region through the retail surface-present path.",
@@ -9447,7 +10227,21 @@ const OVERRIDES := {
 		"family": "FrameText",
 		"summary": "Builds the cached printable glyph-advance table for a loaded retail bitmap font descriptor.",
 		"notes": [
-			"Seeds the descriptor's advance cache with the retail default width marker and then walks the printable ASCII range, reading each glyph's stored advance from the raw TFONT blob so later text measurement and drawing paths can use constant-time lookups.",
+			"Seeds the descriptor's advance cache with the retail default width marker and then walks the printable ASCII range, reading each glyph's stored advance from the raw TFONT blob through Frame_GetBitmapFontGlyphDescriptor_v129 so later text measurement and drawing paths can use constant-time lookups.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetBitmapFontGlyphDescriptor_v129": {
+		"family": "FrameText",
+		"summary": "Returns the first descriptor dword for one glyph from a loaded retail TFONT blob.",
+		"notes": [
+			"Uses the per-character offset table rooted at descriptor offset `+0x10`, rebases the chosen glyph record against the loaded TFONT blob, and returns the descriptor's first dword. Frame_InitializeBitmapFontDescriptorAdvances_v129 consumes the low byte of that dword as the cached printable glyph advance.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -9681,6 +10475,45 @@ const OVERRIDES := {
 			"res://scenes/world/world.gd",
 		],
 	},
+	"Frame_MeasureNextWrappedTokenWidth_v129": {
+		"family": "FrameText",
+		"summary": "Measures the pixel width and byte span of the next whitespace-delimited token in a retail wrapped text buffer.",
+		"notes": [
+			"Skips any leading whitespace, advances through the next non-whitespace run, returns that consumed byte count through the out parameter, and measures the same span through Frame_MeasureStringWidth_v129.",
+			"Frame_InsertSoftWrapsIntoTextBuffer_v129 calls it repeatedly while deciding where one wrapped line can break without exceeding the active pixel width.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_InsertSoftWrapsIntoTextBuffer_v129": {
+		"family": "FrameText",
+		"summary": "Walks a retail text buffer token by token and inserts soft line breaks when the accumulated pixel width exceeds the requested wrap width.",
+		"notes": [
+			"Uses Frame_MeasureNextWrappedTokenWidth_v129 to accumulate token widths, resets the per-line running width when a break is needed, and rewrites the previous separator byte to `\\n` so the caller can later distinguish inserted wrap points from the original source text.",
+			"Frame_CountWrappedTextLines_v129 uses it on a temporary normalized copy of the candidate string before counting how many wrapped rows the text will occupy in the current frame.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
+	"Frame_CountWrappedTextLines_v129": {
+		"family": "FrameText",
+		"summary": "Normalizes one retail text string and returns how many wrapped lines it will occupy inside the current frame width.",
+		"notes": [
+			"Copies the source text into a temporary heap buffer through Frame_CopyCString_v129, rewrites retail formatting escapes such as `&` and explicit newline separators into the normalized buffer form expected by the wrapped-text helpers, truncates at the first hard break, and then invokes Frame_InsertSoftWrapsIntoTextBuffer_v129 with the active text area width.",
+			"Returns the wrapped line count on success or `-1` when temporary allocation or wrap normalization fails. The surrounding unnamed `004461**` editor helpers currently use it as a line-count probe rather than as a persistent transformed buffer builder.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+		],
+	},
 	"Frame_AppendWrappedInputChar_v129": {
 		"family": "FrameText",
 		"summary": "Appends one character to an editable wrapped text buffer, enforcing width limits and rerendering when the current line overflows.",
@@ -9747,10 +10580,35 @@ const OVERRIDES := {
 		"family": "FramePalette",
 		"summary": "Zeroes the shared RGB palette-fade target buffer so the next retail fade interpolates toward black.",
 		"notes": [
-			"Clears the 64-dword scratch table at `DAT_004e7e90`, which the palette-fade helper at `FUN_004583a9` reads as a packed RGB destination buffer.",
+			"Clears the 64-dword scratch table at `DAT_004e7e90`, which Frame_FadeBitmapPaletteTowardTarget_v129 reads as a packed RGB destination buffer.",
 			"Shell_OpenTimedArchiveSlideshow_v129, Shell_ShowTitleAndCreditsSequence_v129, and Combat_InitializeCombatHudAndControlState_v129 call it before black-palette transitions so later fades do not reuse stale RGB values from an earlier bitmap palette.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"Frame_FadeBitmapPaletteTowardTarget_v129": {
+		"family": "FramePalette",
+		"summary": "Animates the palette entries actually used by one bitmap toward a target RGB palette buffer over the requested retail delay budget.",
+		"notes": [
+			"Builds the unique color list for the source bitmap, snapshots the current RGB values for those palette entries, computes the per-channel signed deltas against the caller-supplied target buffer, and then steps the live palette toward that destination while repeatedly calling Frame_UpdateFullPalette_v129 and System_WaitForVerticalBlank_v129.",
+			"Shell_ShowTitleAndCreditsSequence_v129, Shell_TickTimedArchiveSlideshow_v129, and Shell_CloseTimedArchiveSlideshow_v129 reuse it for the title-card and slideshow fade transitions so only the colors touched by the displayed bitmap are morphed each frame.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+		],
+	},
+	"System_WaitForVerticalBlank_v129": {
+		"family": "System",
+		"summary": "Blocks until the active DirectDraw display reaches the next vertical blank interval.",
+		"notes": [
+			"Thin wrapper over the active DirectDraw object's `WaitForVerticalBlank(1, 0)` call stored at `DAT_00498980`. Frame_CyclePaletteEntries_v129 and Frame_FadeBitmapPaletteTowardTarget_v129 both use it to pace visible palette animation work to display refresh boundaries.",
+		],
+		"implementation_status": STATUS_EXTERNAL_RUNTIME,
 		"godot_targets": [
 			"res://scenes/world/world.gd",
 			"res://scenes/combat/combat.gd",
@@ -9786,6 +10644,20 @@ const OVERRIDES := {
 		"summary": "Fills a clipped rectangle inside a frame's backing buffer with one palette index value.",
 		"notes": [
 			"Clamps the requested rectangle to the frame bounds, then writes the fill byte directly across each affected scanline in the backing pixel buffer. Many HUD, message, world-map, and fallback shell draw paths use it before presenting the affected region.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+		],
+	},
+	"Frame_FillRelativeRect_v129": {
+		"family": "FrameBlit",
+		"summary": "Fills one frame-local rectangle, offset relative to the owning panel clip, with a solid palette index.",
+		"notes": [
+			"Offsets the requested left/top/right/bottom coordinates by the frame-local clip origin, clamps the resulting rectangle against the backing surface bounds, and writes the supplied palette byte across each surviving scanline.",
+			"It is the relative-coordinate counterpart to Frame_FillRect_v129, keeping the caller-facing rectangle in panel-local space instead of consuming the frame's full active rect.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -9921,7 +10793,7 @@ const OVERRIDES := {
 		"family": "FramePalette",
 		"summary": "Rotates a contiguous palette range at a fixed tick interval and uploads the updated entries.",
 		"notes": [
-			"Reads the current RGB triplets from the frame palette table, shifts the requested entry range by one slot, writes the rotated colors back, and then pushes the modified palette range to the active palette object.",
+			"Reads the current RGB triplets from the frame palette table, shifts the requested entry range by one slot, writes the rotated colors back, pushes the modified palette range to the active palette object, and then waits for the next display vblank through System_WaitForVerticalBlank_v129 before the next visible cycle step.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -10135,6 +11007,20 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_SetTransparentBitmapPaletteLookupTable_v129": {
+		"family": "FrameBlit",
+		"summary": "Loads the active 256-entry palette lookup table used by the palette-mapped transparent bitmap command blitters.",
+		"notes": [
+			"Copies exactly `0x100` remap bytes into `DAT_00483658`, the active lookup table read by both Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129 and Frame_BlitPaletteMappedTransparentBitmapCommandFast_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_BlitPaletteMappedTransparentBitmapCommandClipped_v129": {
 		"family": "FrameBlit",
 		"summary": "Blits one retail transparent bitmap command-stream entry into the destination frame after remapping each source palette index through the active lookup table, with clip handling.",
@@ -10181,6 +11067,150 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_SetTransformedBitmapPaletteLookupTable_v129": {
+		"family": "FrameBlit",
+		"summary": "Loads the active 256-entry palette lookup table used by the palette-mapped transformed-bitmap span callbacks.",
+		"notes": [
+			"Copies exactly `0x100` remap bytes into `DAT_00481cfc`, the lookup table sampled by Frame_BlitTransformedBitmapPaletteMappedOpaqueSpan_v129 and Frame_BlitTransformedBitmapPaletteMappedTransparentSpan_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransformedBitmapCore_v129": {
+		"family": "FrameBlit",
+		"summary": "Scan-converts one transformed source bitmap quadrilateral into the destination frame using one of four span callbacks.",
+		"notes": [
+			"Consumes the temporary source surface descriptor built by the transformed transparent-command wrapper, walks the transformed corner/edge records, and advances the active left/right edges one scanline at a time.",
+			"Selects one sampler/writer from `PTR_DAT_004523e4`: raw opaque, palette-mapped opaque, raw transparent, or palette-mapped transparent.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransformedBitmapOpaqueSpan_v129": {
+		"family": "FrameBlit",
+		"summary": "Draws one opaque transformed-bitmap span by sampling the source surface and writing every decoded byte directly.",
+		"notes": [
+			"The inner loop walks the stepped source offsets from `DAT_00481cec`, unrolls six pixels at a time, and performs no transparent-key rejection.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransformedBitmapPaletteMappedOpaqueSpan_v129": {
+		"family": "FrameBlit",
+		"summary": "Draws one opaque transformed-bitmap span after remapping each sampled palette byte through the active transformed-bitmap lookup table.",
+		"notes": [
+			"Samples the stepped source bytes exactly like the raw opaque span variant but translates every emitted byte through `DAT_00481cfc` before storing it.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransformedBitmapTransparentSpan_v129": {
+		"family": "FrameBlit",
+		"summary": "Draws one transparent transformed-bitmap span by skipping sampled source bytes equal to the retail transparent key.",
+		"notes": [
+			"Uses the same stepped source walk as the opaque span variant but only writes samples whose raw byte value is not `0xff`/`-1`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitTransformedBitmapPaletteMappedTransparentSpan_v129": {
+		"family": "FrameBlit",
+		"summary": "Draws one transparent palette-mapped transformed-bitmap span by translating source bytes through the active lookup table and skipping translated transparent results.",
+		"notes": [
+			"Reads the same stepped source samples as the other transformed span callbacks, maps each byte through `DAT_00481cfc`, and only stores outputs whose translated value is not `-1`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_AdvanceTransformedBitmapEdgesAndDispatchSpan_v129": {
+		"family": "FrameBlit",
+		"summary": "Advances the active transformed-bitmap edge walkers to the next visible scanline and dispatches the selected span callback.",
+		"notes": [
+			"Called by all four transformed span callbacks after they finish consuming the current span width. It updates the left/right edge step counts, refreshes the interpolated source-step state, clamps the next visible X range into `DAT_00481cbc` and `DAT_00481cc0`, seeds the starting source coordinate in `DAT_00481cd0`, and indirect-calls the active callback stored in `_DAT_00481cd8`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ApplyTransparentBitmapCommandPaletteMapInPlace_v129": {
+		"family": "FrameBlit",
+		"summary": "Applies the active transparent-bitmap palette lookup table directly to one encoded command payload in place.",
+		"notes": [
+			"Resolves the command payload through the command-set entry's first offset, then walks the same skip/literal/repeated-byte command stream consumed by the transparent blitters and rewrites every emitted palette byte through `DAT_00483658`.",
+			"The helper mutates the encoded command entry itself rather than a destination RGB palette buffer, making it the in-place payload counterpart to Frame_ApplyTransparentBitmapCommandPaletteMapToBuffer_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetTransparentBitmapCommandSourceRectSize_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the stored source-rect size pair from one retail transparent bitmap command-stream entry header.",
+		"notes": [
+			"Fetches the first header dword written by Frame_EncodeTransparentBitmapCommandStream_v129, which preserves the original clipped source width/height deltas before the stream's tighter non-transparent bounds are applied.",
+			"Unlike Frame_GetTransparentBitmapCommandSize_v129, this helper does not read the trimmed left/top/right/bottom bounds; it returns the encoder's raw source-rect extent pair exactly as stored in the command entry header.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetTransparentBitmapCommandDestinationOrigin_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the stored destination origin pair from one retail transparent bitmap command-stream entry header.",
+		"notes": [
+			"Fetches the second header dword written by Frame_EncodeTransparentBitmapCommandStream_v129, preserving the command's original destination anchor `(x,y)` pair from the encoder call.",
+			"Unlike Frame_GetTransparentBitmapCommandOrigin_v129, which reads the trimmed non-transparent bounds offsets, this helper returns the unadjusted destination origin saved beside the header size pair.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_GetTransparentBitmapCommandSize_v129": {
 		"family": "FrameBlit",
 		"summary": "Returns the inclusive width and height of one retail transparent bitmap command-stream entry.",
@@ -10202,6 +11232,110 @@ const OVERRIDES := {
 		"notes": [
 			"Fetches the entry's stored left and top coordinates as a packed `(x,y)` pair without applying any mirroring or destination offset.",
 			"The transformed transparent-command wrapper uses it as the pivot/origin when it builds the intermediate source surface for later rotation and scaling.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ApplyTransparentBitmapCommandPaletteMapToBuffer_v129": {
+		"family": "FrameBlit",
+		"summary": "Applies one transparent-bitmap command palette-map table to a 256-color RGB buffer.",
+		"notes": [
+			"Reads the optional palette-map block referenced by the command-set entry's second offset, interprets each packed dword as `(palette_index, r, g, b)`, and writes the RGB triplet into the destination palette buffer at `index * 3`.",
+			"When the referenced palette-map block is null the helper leaves the destination buffer unchanged, matching the retail command-set behavior for entries that reuse the active palette unchanged.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CopyTransparentBitmapCommandPaletteMapEntries_v129": {
+		"family": "FrameBlit",
+		"summary": "Copies the packed palette-map dwords from one transparent-bitmap command-set entry into caller storage.",
+		"notes": [
+			"Reads the palette-map block referenced by the command-set entry's second offset, returns the stored entry count, and copies that many packed dwords into the caller buffer when one is supplied.",
+			"Each copied dword matches the layout consumed by Frame_ApplyTransparentBitmapCommandPaletteMapToBuffer_v129: one palette index byte followed by three RGB bytes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_StoreTransparentBitmapCommandPaletteMapEntries_v129": {
+		"family": "FrameBlit",
+		"summary": "Stores packed palette-map dwords into the palette-map block for one transparent-bitmap command-set entry.",
+		"notes": [
+			"Targets the same optional second-offset palette-map block used by Frame_CopyTransparentBitmapCommandPaletteMapEntries_v129, returns the stored entry count, and overwrites that many packed dwords from the caller buffer.",
+			"The helper performs no allocation or bounds growth; it only updates an already present palette-map block in place.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetTransparentBitmapCommandSetEntryCount_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the entry count stored in one transparent-bitmap command set header.",
+		"notes": [
+			"Fetches the dword at offset `+4` from the command-set header, which is the number of `(command_offset, palette_map_offset)` pairs that follow in the set table.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CountUniqueTransparentBitmapCommandEntries_v129": {
+		"family": "FrameBlit",
+		"summary": "Counts the distinct command-entry payload offsets referenced by one transparent-bitmap command set.",
+		"notes": [
+			"Walks the command set's `(command_offset, palette_map_offset)` pair table, compares only the first offset in each pair, and returns the number of distinct command payloads referenced by the set.",
+			"When an output buffer is supplied it stores the first command-set index that introduced each unique command payload offset.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CountUniqueTransparentBitmapCommandPaletteMaps_v129": {
+		"family": "FrameBlit",
+		"summary": "Counts the distinct palette-map payload offsets referenced by one transparent-bitmap command set.",
+		"notes": [
+			"Walks the command set's `(command_offset, palette_map_offset)` pair table, compares only the second offset in each pair, and returns the number of distinct palette-map blocks referenced by the set.",
+			"When an output buffer is supplied it stores the first command-set index that introduced each unique palette-map payload offset.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CollectBitmapRectUniquePaletteIndices_v129": {
+		"family": "FrameBlit",
+		"summary": "Scans one bitmap sub-rect and returns the distinct palette indices it contains.",
+		"notes": [
+			"Clears the 256-entry seen table at `DAT_00483041`, walks the requested bitmap rectangle row by row, and appends each newly encountered palette index to the optional caller buffer while counting the unique values.",
+			"The helper returns the unique-index count even when no output buffer is supplied, making it usable for both size-only probes and actual palette-index collection passes.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -10241,6 +11375,21 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_MultiplyFixed16_16Rounded_v129": {
+		"family": "FrameBlit",
+		"summary": "Multiplies two 16.16 fixed-point values and stores the rounded 16.16 result.",
+		"notes": [
+			"Computes `(lhs * rhs + 0x8000) >> 16` and writes the packed 32-bit fixed-point result through the caller-supplied out-pointer.",
+			"Sits immediately before Frame_TransformPointAroundPivotByAngleAndScale_v129 and implements the same rounded fixed-point multiply primitive that routine expands inline.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_BlitBitmapPixels_v129": {
 		"family": "FrameBlit",
 		"summary": "Blits a bitmap resource's full pixel payload into the clipped destination frame rectangle.",
@@ -10260,6 +11409,20 @@ const OVERRIDES := {
 		"summary": "Draws one clipped line segment into the frame surface using the requested palette index.",
 		"notes": [
 			"Shared by bevel/border builders and by the world map connector overlays. It draws directly into the frame's backing surface without presenting the affected region.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_DrawClippedLineCore_v129": {
+		"family": "FramePrimitive",
+		"summary": "Clips and rasterizes one line segment against the destination frame bounds, supporting solid-color, palette-remap, and callback-driven pixel modes.",
+		"notes": [
+			"Performs the retail rectangular clip test against the destination frame/surface bounds, handles vertical and horizontal fast paths, falls back to general line clipping for diagonal segments, and then steps the surviving pixels with Bresenham-style major-axis traversal.",
+			"When `mode == 0` it writes the supplied palette index directly, when `mode == 1` it remaps existing pixels through the caller-supplied lookup table, and otherwise it dispatches through the caller's pixel callback. Frame_DrawLine_v129, Frame_DrawLineAndPresent_v129, Frame_DrawRectOutline_v129, Frame_DrawEllipseOutline_v129, the tactical radar, heading tape, actor world markers, and the world map room-marker overlays all reuse this core primitive.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [
@@ -10351,6 +11514,280 @@ const OVERRIDES := {
 			"res://scenes/mech/mech_select.gd",
 		],
 	},
+	"Frame_FindIffBitmapChunkByTag_v129": {
+		"family": "FrameBlit",
+		"summary": "Walks a tagged IFF bitmap payload and returns the data pointer for the requested chunk tag.",
+		"notes": [
+			"Starts at the chunk table immediately after the outer FORM header, skips zero padding between records, compares each four-byte tag against the requested identifier, and advances by the chunk length stored in the record header until it finds the matching payload.",
+			"The nearby IFF helpers reuse it to locate `BMHD`, `CMAP`, and `BODY` inside the retail bitmap resource so width/height, palette bytes, and image data can be read without hard-coded offsets.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitIffBitmapToSurface_v129": {
+		"family": "FrameBlit",
+		"summary": "Locates the `BMHD` and `BODY` chunks in a retail IFF bitmap and blits the decoded rows into the destination surface.",
+		"notes": [
+			"Reads the bitmap header through Frame_FindIffBitmapChunkByTag_v129, clips the destination rectangle to the target surface, unpacks compressed BODY rows when the bitmap uses the retail PackBits-style row encoding, and converts `ILBM` bitplanes into chunky palette indices before writing each row.",
+			"Delegates each visible decoded row to Frame_CopyClippedBitmapRowToSurface_v129 so the same blitter handles clipped left/right edges whether the source BODY is planar `ILBM` or already chunky.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CopyIffBitmapPaletteToBuffer_v129": {
+		"family": "FrameBlit",
+		"summary": "Copies the `CMAP` chunk from a retail IFF bitmap into a 256-color palette buffer.",
+		"notes": [
+			"Looks up the `CMAP` chunk through Frame_FindIffBitmapChunkByTag_v129 and copies the fixed 768-byte RGB payload into the caller buffer while downshifting the stored channel bytes into the retail 6-bit palette space.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetIffBitmapDimensions_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the width and height stored in the `BMHD` chunk of a retail IFF bitmap.",
+		"notes": [
+			"Fetches the `BMHD` payload through Frame_FindIffBitmapChunkByTag_v129 and packs the first two 16-bit header fields so callers can read the bitmap dimensions without decoding the BODY data.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_BlitPcxBitmapToSurface_v129": {
+		"family": "FrameBlit",
+		"summary": "Decodes one retail PCX bitmap payload row by row and blits the expanded palette indices into the destination surface.",
+		"notes": [
+			"Treats the source as a PCX header beginning at byte `0x00`, reads the height from `ymax - ymin + 1`, reads `bytes_per_line` from header offset `0x42`, and starts decoding the image stream at offset `0x80`.",
+			"Expands the standard PCX run-length packets where the high two bits mark a repeat count, writes each fully decoded row into the shared row buffer at `DAT_00482341`, and then forwards that row through Frame_CopyClippedBitmapRowToSurface_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CopyPcxBitmapPaletteToBuffer_v129": {
+		"family": "FrameBlit",
+		"summary": "Copies the trailing 256-color PCX palette block into a caller buffer, downshifting the stored RGB bytes into the retail 6-bit palette space.",
+		"notes": [
+			"Starts from `base + file_size - 0x300` and copies exactly 768 palette bytes into the destination buffer after shifting each channel byte right by two.",
+			"This matches the retail 256-color PCX convention where the palette data lives at the end of the file payload rather than inside the fixed-size header.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetPcxBitmapDimensions_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the width and height stored in a retail PCX header.",
+		"notes": [
+			"Computes the dimensions from the standard PCX `xmin`, `ymin`, `xmax`, and `ymax` fields, returning `(xmax - xmin + 1, ymax - ymin + 1)` packed into one dword.",
+			"Useful when the caller needs the image bounds without decoding the PCX row data or trailing palette block.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_InitializeGifLzwCodeTable_v129": {
+		"family": "FrameBlit",
+		"summary": "Initializes the GIF/LZW code table for one retail GIF image decode pass.",
+		"notes": [
+			"Seeds the clear-code and end-code thresholds from the GIF minimum code size, fills the first dictionary range with literal byte values, and marks the remaining slots as unused before the main image decoder starts pulling variable-width codes.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ReadGifDataSubBlockByte_v129": {
+		"family": "FrameBlit",
+		"summary": "Reads the next byte from a GIF image-data sub-block stream.",
+		"notes": [
+			"Maintains the remaining-byte count for the current GIF data sub-block, consumes a new block-length byte when the prior block is exhausted, and returns the next payload byte to the LZW bit reader.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_ReadGifLzwCode_v129": {
+		"family": "FrameBlit",
+		"summary": "Pulls one variable-width LZW code from the current GIF image-data bitstream.",
+		"notes": [
+			"Refills the bit accumulator through Frame_ReadGifDataSubBlockByte_v129 as needed, masks off the requested code width, then shifts the accumulator state forward for the next decode step.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_AppendGifLzwCodeEntry_v129": {
+		"family": "FrameBlit",
+		"summary": "Adds one derived entry to the active GIF/LZW dictionary.",
+		"notes": [
+			"Stores the parent-code link plus the first/last byte for the new sequence, advances the next free dictionary slot, and widens the active code width when the decode crosses the next power-of-two threshold.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_EmitGifDecodedPixel_v129": {
+		"family": "FrameBlit",
+		"summary": "Appends one decoded GIF palette index to the temporary row buffer and flushes completed rows to the destination surface.",
+		"notes": [
+			"Accumulates decoded bytes into the shared row buffer at `DAT_00482341`, copies each completed row through Frame_CopyClippedBitmapRowToSurface_v129, and advances the output row index using either linear or GIF interlaced row stepping.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_DecodeGifImageToSurface_v129": {
+		"family": "FrameBlit",
+		"summary": "Decodes one GIF image descriptor and blits the resulting palette indices into the destination surface.",
+		"notes": [
+			"Skips the optional global and local color tables from the GIF headers, reads the image descriptor width, height, and interlace flag, initializes the LZW dictionary through Frame_InitializeGifLzwCodeTable_v129, and then expands the GIF image-data sub-block stream into output pixels.",
+			"Uses Frame_ReadGifLzwCode_v129, Frame_AppendGifLzwCodeEntry_v129, and Frame_EmitGifDecodedPixel_v129 to rebuild the decoded byte stream, including clear-code resets and row flushing into the clipped destination surface.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_CopyGifActivePaletteToBuffer_v129": {
+		"family": "FrameBlit",
+		"summary": "Copies the active GIF color table into a palette buffer, downshifting the stored RGB bytes into the retail 6-bit palette space.",
+		"notes": [
+			"Walks the GIF logical-screen descriptor, copies the global color table when it is present, and then overwrites the same caller buffer with the image-local color table when the first image descriptor declares one.",
+			"The result matches the active palette selection used by the retail GIF decoder: local image palette when available, otherwise the file-level global palette.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetGifImageDimensions_v129": {
+		"family": "FrameBlit",
+		"summary": "Returns the width and height stored in the first GIF image descriptor after the optional global color table.",
+		"notes": [
+			"Skips the GIF logical-screen descriptor and any global color table declared by the packed header bits, then packs the following image descriptor width and height fields for the caller.",
+			"Useful when the caller needs the decoded image size without running the full LZW expansion path in Frame_DecodeGifImageToSurface_v129.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_GetClippedPixel_v129": {
+		"family": "FramePrimitive",
+		"summary": "Returns one pixel from a clipped destination frame region, with negative status codes for invalid or out-of-bounds requests.",
+		"notes": [
+			"Validates the destination surface dimensions, clamps the caller-supplied clip rectangle against the frame bounds, translates the requested local offset into an absolute pixel address, and returns the byte stored at that location when it falls inside the surviving clip.",
+			"When the frame descriptor is invalid it returns `-1`, when the clip rectangle collapses it returns `-2`, and when the requested point falls outside the surviving clipped rectangle it returns `-3`.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"Frame_SetClippedPixelAndReturnPrevious_v129": {
+		"family": "FramePrimitive",
+		"summary": "Writes one pixel inside the clipped destination frame and returns the previous palette index from that location.",
+		"notes": [
+			"Clamps the destination rectangle against the frame bounds, converts the requested local pixel coordinate into the backing surface byte address, replaces that byte with the caller-supplied palette index, and returns the overwritten value.",
+			"World_Cmd56_MapRoomMarkerOverlay_v129 and World_Cmd60_MapRoomMarkerOverlayWide_v129 use it to stamp room-marker overlay pixels while preserving the prior byte so the overlay pass can restore or compare the underlying map pixel state.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"Frame_CopyCallbackStringToScratchBuffer_v129": {
+		"family": "FrameText",
+		"summary": "Invokes a zero-argument string callback, copies the returned C string into the shared frame scratch buffer, and returns that scratch pointer.",
+		"notes": [
+			"Calls the function pointer stored at the start of the supplied descriptor, then byte-copies the returned text into `DAT_00481dfc` including the trailing NUL.",
+			"The helper gives frame/UI code a stable writable copy of callback-produced text without retaining the original provider pointer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"Frame_ZeroCountScratchCopyStub_v129": {
+		"family": "FrameText",
+		"summary": "Dead scratch-copy stub that enters the same frame scratch buffer path as Frame_CopyCallbackStringToScratchBuffer_v129 but leaves the copy count at zero.",
+		"notes": [
+			"Sets up `DAT_00481dfc` as the destination and then executes `rep movsd` with `ecx = 0`, so no words are ever copied and the function has no observable effect.",
+			"The stub immediately follows Frame_CopyCallbackStringToScratchBuffer_v129 in the binary, but has no inbound references in the saved retail image.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+			"res://scenes/comstar/comstar.gd",
+		],
+	},
+	"Frame_CopyClippedBitmapRowToSurface_v129": {
+		"family": "FrameBlit",
+		"summary": "Copies one decoded bitmap row into the destination surface while clipping against the target bounds.",
+		"notes": [
+			"Normalizes the requested left, top, right, and bottom bounds against the destination surface descriptor, advances the source pointer past any clipped columns, rejects rows that fall fully outside the target rectangle, and then memcpy-style copies the surviving span into the destination row.",
+			"Frame_BlitIffBitmapToSurface_v129 and the nearby packed BODY row expanders reuse it as the final write step after they decode one source scanline into a temporary row buffer.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scenes/combat/combat.gd",
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
 	"Frame_DrawFilledBoxOrBitmapDecoration_v129": {
 		"family": "FrameText",
 		"summary": "Draws the simple filled-box decoration variant and the bitmap-backed decoration variant used by registered frame text decorations.",
@@ -10423,6 +11860,20 @@ const OVERRIDES := {
 		"notes": [
 			"Uses the midpoint-ellipse stepping logic to plot the four symmetric edge points, clipping each pixel against the frame bounds before writing the destination palette value.",
 			"When either radius is zero it falls back to the shared line helper, and the tactical radar reuses it for the small circular heading/marker outlines around the center panel.",
+		],
+		"implementation_status": STATUS_METADATA_ONLY,
+		"godot_targets": [
+			"res://scripts/ui/combat_radar.gd",
+			"res://scenes/world/world.gd",
+			"res://scenes/mech/mech_select.gd",
+		],
+	},
+	"Frame_DrawFilledEllipse_v129": {
+		"family": "FramePrimitive",
+		"summary": "Draws a filled ellipse centered at the requested point using the supplied radii and palette index.",
+		"notes": [
+			"When either radius collapses to zero it falls back to Frame_DrawClippedLineCore_v129 across the degenerate axis; otherwise it uses a midpoint-style ellipse walk to emit the symmetric horizontal fill spans for each scanline inside the clipped frame bounds.",
+			"Combat_RenderActorWorldMarkers_v129, Combat_RenderTacticalRadarPanel_v129, and Combat_RenderWeaponEffectFallbackSpriteOrBeam_v129 all reuse it for small filled marker and beam-impact blobs instead of outlining the ellipse perimeter only.",
 		],
 		"implementation_status": STATUS_METADATA_ONLY,
 		"godot_targets": [

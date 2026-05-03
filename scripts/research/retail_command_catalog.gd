@@ -122,10 +122,30 @@ const OVERRIDES := {
 		],
 		"research_refs": ["RESEARCH.md:1123"],
 	},
+	"World_Cmd33_NoOp_v129": {
+		"summary": "Compiled-out world dispatch slot that immediately returns zero.",
+		"notes": [
+			"Current v1.29 Ghidra dispatch-table state identifies 0x004468b0 as world-mode command slot 33.",
+			"The body performs no decoding or UI work and returns zero immediately, so retail leaves this slot inert.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
 	"World_Cmd34_TravelCompassLabelStrip_v129": {
 		"summary": "Travel-compass label-strip updater for the older world travel shell.",
 		"notes": [
 			"Decodes one label string per call and paints it into the next top-strip travel-compass column, clearing the strip and redrawing the shared heading on the first row.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
+	},
+	"World_Cmd35_RequestClientExit_v129": {
+		"summary": "Server-driven world command that requests immediate client shutdown without a confirmation prompt.",
+		"notes": [
+			"Current v1.29 Ghidra dispatch-table state identifies 0x004031a0 as world-mode command slot 35.",
+			"It posts shell command `2` to the main window and sets the shared exit bit in `DAT_0047a040`, matching the low-level shutdown action that Shell_ConfirmClientExit_v129 takes after the player accepts the local exit prompt.",
 		],
 		"godot_targets": [
 			"res://scenes/world/world.gd",
@@ -155,6 +175,16 @@ const OVERRIDES := {
 			"res://scripts/net/comstar_client.gd",
 		],
 		"research_refs": ["RESEARCH.md:1128", "RESEARCH.md:6753-6757"],
+	},
+	"World_Cmd38_NoOp_v129": {
+		"summary": "Compiled-out world dispatch slot that immediately returns zero.",
+		"notes": [
+			"Current v1.29 Ghidra state identifies 0x004467a0 as world-mode dispatch slot 38.",
+			"The body is just `return 0;`, so retail leaves this command id inert and without any packet-decoding or UI side effects.",
+		],
+		"godot_targets": [
+			"res://scenes/world/world.gd",
+		],
 	},
 	"World_Cmd40_LocationBrowser_v129": {
 		"summary": "Shared world location / scene browser builder.",
