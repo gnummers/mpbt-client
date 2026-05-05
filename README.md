@@ -2,7 +2,7 @@
 
 Modern **Godot 4** client for **Multiplayer BattleTech: Solaris**, designed to work alongside `mpbt-server` while preserving compatibility with the original retail **MPBT v1.29 client from 1999**.
 
-This repository is now in an active **retail-fidelity implementation** phase rather than an early scaffold stage. See [ROADMAP.md](ROADMAP.md) for the product and technical roadmap, and [PLAN.md](PLAN.md) for the client/server compatibility strategy.
+This repository is now in an active **retail-fidelity, RE-backed implementation** phase rather than an early scaffold stage. See [ROADMAP.md](ROADMAP.md) for the product and technical roadmap, and [PLAN.md](PLAN.md) for the client/server compatibility strategy.
 
 ## Goals
 
@@ -104,6 +104,16 @@ The retail client remains the compatibility oracle for:
 
 Modern UI may improve presentation and usability, but it should not redefine the core game model.
 
+## Reverse-Engineering Status
+
+The retail research layer is now materially complete at the named-function level for the live `MPBTWIN.EXE` Ghidra project:
+
+- The current live project has **no remaining `FUN_*` functions**.
+- `scripts/research/retail_function_catalog.gd` now imports the full live custom-name inventory: **1290 named functions**.
+- The companion command/helper/subsystem catalogs provide a behavior-first reference surface for continuing the Godot client and server work.
+
+This means the project does **not** need to pause for a full-source C++ reconstruction to keep moving. A source-like rebuild may still be useful later as a private/internal research tool for ambiguous subsystems, but the primary path remains the modern Godot client with targeted low-level ports only where needed.
+
 ## Rendering Strategy
 
 Use the original 640x480 retail layout as a reference coordinate system for UI/HUD composition, then scale and adapt it for modern displays.
@@ -175,7 +185,7 @@ The client is beyond the initial scaffold and currently includes:
 - Arena ready room: multi-player staging and match launch
 - 3D combat scene: WASD+mouse, live snapshot sync, HUD, match results
 - Solaris VII standings leaderboard
-- ComStar Terminal: private player-to-player messaging (inbox, compose, reply, delete)
+- ComStar Terminal: retail-shaped private messaging with a waiting inbox, compose, reply, and ComStar-ID-aware recipient targeting
 - In-app Settings screen (server URL, asset paths, display, input rebinding, audio)
 - Audio: volume settings (Master/Music/SFX), scene BGM hooks
 - Export presets for Windows, Linux, macOS, Android (Experimental), and iOS (Experimental)
@@ -186,10 +196,11 @@ The client is beyond the initial scaffold and currently includes:
 - Retail extracted-art integration for world/combat/non-combat screens: world shell chrome, district thumbnails, clickable travel map, Mech Bay portraits, ready-room backdrop, and a retail-style standings shell
 - Extracted asset pipeline fixes for palette-correct `ui/` and `combat/` output
 - Retail SFX extraction pipeline that converts raw PCM clips to Godot-friendly WAV, emits logical aliases such as `ui_click.wav` / `ui_hover.wav`, prefers decoded formats over PCM, and refreshes cached streams when the resolved file changes
+- A complete named-function retail research catalog for the live `MPBTWIN.EXE` project, with matching command/helper/subsystem metadata available to guide retail-accurate implementation
 
 ## Near-Term Focus
 
-The next highest-confidence step is to keep extending the screenshot-driven retail shell pass into the remaining bare non-combat scenes, starting with **ComStar** and then **Settings**, before returning to deeper combat posture/animation fidelity work.
+The next highest-confidence step is to keep extending the screenshot-driven retail shell pass into the remaining bare non-combat scenes, starting with **ComStar** and then **Settings**, before returning to deeper combat posture/animation fidelity work. The completed retail research catalogs should now be used as the primary oracle when tightening remaining world/combat behavior, and bounded parity slices should continue to audit `mpbt-server` first wherever canonical retail behavior differs.
 
 See [docs/PACKAGING.md](docs/PACKAGING.md) for export instructions, code signing, and the release checklist.
 See [docs/MOBILE.md](docs/MOBILE.md) for Android/iOS feasibility details and known limitations.

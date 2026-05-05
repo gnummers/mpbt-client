@@ -15,7 +15,7 @@ extends Node
 ##   send_failed(reason: String)            — POST /comstar failed
 ##   marked_read(message_id: int)           — PATCH /comstar/:id/read succeeded
 ##   mark_failed(reason: String)            — PATCH failed
-##   message_deleted(message_id: int)       — DELETE /comstar/:id succeeded
+##   message_deleted(message_id: int)       — DELETE /comstar/:id succeeded (retail-style dismiss)
 ##   delete_failed(reason: String)          — DELETE failed
 
 signal inbox_loaded(messages: Array)
@@ -72,9 +72,9 @@ func fetch_unread_count(base_url: String) -> void:
 	_unread_http.request(base_url + "/comstar/unread", _auth_headers())
 
 
-## Send a ComStar message.
-func send_message(base_url: String, to: String, subject: String, body: String) -> void:
-	var payload := JSON.stringify({"to": to, "subject": subject, "body": body})
+## Send a retail-style ComStar message.
+func send_message(base_url: String, to: String, body: String) -> void:
+	var payload := JSON.stringify({"to": to, "body": body})
 	var headers := PackedStringArray([
 		"X-Username: " + _display_name(),
 		"Content-Type: application/json",

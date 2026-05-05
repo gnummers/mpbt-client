@@ -10,11 +10,18 @@ const MECH_SCENE := "res://scenes/mech/mech_select.tscn"
 const STANDINGS_SCENE := "res://scenes/standings/standings.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings.tscn"
 const ARENA_SCENE := "res://scenes/arena/ready_room.tscn"
+const COMSTAR_REPLY_TAG_LENGTH := 9
+const COMSTAR_BODY_CHARS_PER_LINE := 92
+const COMSTAR_BODY_LINES_PER_PAGE := 12
 
 var _comstar: Node  # ComstarClient
 var _messages: Array = []
 var _selected_msg: Dictionary = {}
 var _command_texture: Texture2D = null
+var _selected_reply_prefix := ""
+var _compose_reply_prefix := ""
+var _message_body_pages: Array[String] = []
+var _message_body_page := 0
 
 @onready var _shell_north: TextureRect = $ShellNorth
 @onready var _shell_south: TextureRect = $ShellSouth
@@ -49,6 +56,7 @@ var _command_texture: Texture2D = null
 @onready var _inbox_list: VBoxContainer = $MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox/InboxScroll/InboxList
 @onready var _compose_btn: Button = $MainVBox/ContentHBox/InboxShell/InboxMargin/InboxVBox/ComposeButton
 @onready var _placeholder_label: Label = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/PlaceholderLabel
+@onready var _detail_title: Label = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailTitle
 @onready var _detail_view: VBoxContainer = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView
 @onready var _det_from: Label = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/FromLabel
 @onready var _det_subject: Label = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/SubjectLabel
@@ -58,6 +66,7 @@ var _command_texture: Texture2D = null
 @onready var _delete_btn: Button = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/DetailView/ActionBar/DeleteButton
 @onready var _compose_view: VBoxContainer = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView
 @onready var _to_field: LineEdit = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ToRow/ToField
+@onready var _subject_row: HBoxContainer = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/SubjectRow
 @onready var _subject_field: LineEdit = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/SubjectRow/SubjectField
 @onready var _body_field: TextEdit = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/BodyField
 @onready var _send_btn: Button = $MainVBox/ContentHBox/DetailShell/DetailMargin/DetailVBox/ComposeView/ActionBar/SendButton
@@ -69,6 +78,11 @@ func _ready() -> void:
 	_apply_retail_shell_art()
 	_refresh_command_bar()
 	_user_label.text = _user_summary()
+	_detail_title.text = "ComStar Message"
+	_subject_row.visible = false
+	_subject_field.text = ""
+	_to_field.placeholder_text = "Display name or 5-char ComStar ID"
+	_delete_btn.visible = false
 
 	_comstar = load("res://scripts/net/comstar_client.gd").new()
 	add_child(_comstar)
@@ -80,6 +94,8 @@ func _ready() -> void:
 	_comstar.mark_failed.connect(_on_mark_failed)
 	_comstar.message_deleted.connect(_on_message_deleted)
 	_comstar.delete_failed.connect(_on_delete_failed)
+	if not WSClient.comstar_message_received.is_connected(_on_comstar_message_received):
+		WSClient.comstar_message_received.connect(_on_comstar_message_received)
 
 	_show_detail(false)
 	_show_compose(false)
@@ -224,10 +240,14 @@ func _populate_inbox() -> void:
 	for msg_v in _messages:
 		var msg := msg_v as Dictionary
 		var btn := Button.new()
-		var prefix := "" if msg.get("readAt") != null else "[NEW] "
 		var from := str(msg.get("from", "?"))
-		var subj := str(msg.get("subject", "(no subject)"))
-		btn.text = "%s%s\n%s" % [prefix, from, subj]
+		var code := str(msg.get("fromComstarCode", ""))
+		var preview := _visible_comstar_body(str(msg.get("body", "")))
+		if preview.is_empty():
+			preview = _visible_comstar_body(str(msg.get("preview", "")))
+		preview = _build_preview(preview)
+		var label := from if code.is_empty() else "%s [%s]" % [from, code]
+		btn.text = "%s\n%s" % [label, preview]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.flat = true
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -236,10 +256,108 @@ func _populate_inbox() -> void:
 
 
 func _populate_detail(msg: Dictionary) -> void:
-	_det_from.text = "From: %s" % str(msg.get("from", "?"))
-	_det_subject.text = "Subject: %s" % str(msg.get("subject", "(no subject)"))
+	var from := str(msg.get("from", "?"))
+	var code := str(msg.get("fromComstarCode", ""))
+	var body_parts := _extract_reply_prefix_tags(str(msg.get("body", "")))
+	_selected_reply_prefix = str(body_parts.get("reply_prefix", ""))
+	_det_from.text = "From: %s" % from
+	_det_subject.visible = not code.is_empty()
+	_det_subject.text = "ComStar ID: %s" % code
 	_det_date.text = "Sent: %s" % _format_date(str(msg.get("sentAt", "")))
-	_det_body.text = str(msg.get("body", ""))
+	_set_message_body_pages(str(body_parts.get("body", "")))
+
+
+func _extract_reply_prefix_tags(body: String) -> Dictionary:
+	var visible := ""
+	var reply_prefix := ""
+	var i := 0
+	while i < body.length():
+		if _is_reply_prefix_tag_at(body, i):
+			reply_prefix += body.substr(i, COMSTAR_REPLY_TAG_LENGTH)
+			i += COMSTAR_REPLY_TAG_LENGTH
+			continue
+		visible += body.substr(i, 1)
+		i += 1
+	return {"body": visible, "reply_prefix": reply_prefix}
+
+
+func _visible_comstar_body(body: String) -> String:
+	return str(_extract_reply_prefix_tags(body).get("body", ""))
+
+
+func _is_reply_prefix_tag_at(body: String, index: int) -> bool:
+	if index + COMSTAR_REPLY_TAG_LENGTH > body.length():
+		return false
+	if body.substr(index, 1) != "[" or body.substr(index + 8, 1) != "]":
+		return false
+	var kind := body.substr(index + 1, 1).to_lower()
+	if kind != "p" and kind != "r":
+		return false
+	for i in range(index + 2, index + 8):
+		var code := body.unicode_at(i)
+		var is_digit := code >= 48 and code <= 57
+		var is_upper := code >= 65 and code <= 90
+		var is_lower := code >= 97 and code <= 122
+		if not is_digit and not is_upper and not is_lower:
+			return false
+	return true
+
+
+func _build_preview(body: String) -> String:
+	for line in body.split("\n", true):
+		var trimmed := str(line).strip_edges()
+		if not trimmed.is_empty():
+			return trimmed.substr(0, 84)
+	return ""
+
+
+func _set_message_body_pages(body: String) -> void:
+	_message_body_pages.clear()
+	_message_body_page = 0
+	var wrapped_lines := _wrap_message_body_lines(body)
+	if wrapped_lines.is_empty():
+		_message_body_pages.append("")
+	else:
+		var line_index := 0
+		while line_index < wrapped_lines.size():
+			var page_lines := wrapped_lines.slice(line_index, line_index + COMSTAR_BODY_LINES_PER_PAGE)
+			_message_body_pages.append("\n".join(page_lines))
+			line_index += COMSTAR_BODY_LINES_PER_PAGE
+	_render_message_body_page()
+
+
+func _wrap_message_body_lines(body: String) -> Array[String]:
+	var lines: Array[String] = []
+	var normalized := body.replace("\r\n", "\n").replace("\r", "\n")
+	for raw_line_v in normalized.split("\n", true):
+		var raw_line := str(raw_line_v)
+		if raw_line.is_empty():
+			lines.append("")
+			continue
+		var line := raw_line
+		while line.length() > COMSTAR_BODY_CHARS_PER_LINE:
+			var cut := line.rfind(" ", COMSTAR_BODY_CHARS_PER_LINE)
+			if cut < 40:
+				cut = COMSTAR_BODY_CHARS_PER_LINE
+			lines.append(line.substr(0, cut))
+			line = line.substr(cut).strip_edges(true, false)
+		lines.append(line)
+	return lines
+
+
+func _render_message_body_page() -> void:
+	if _message_body_pages.is_empty():
+		_det_body.text = ""
+		return
+	_message_body_page = clampi(_message_body_page, 0, _message_body_pages.size() - 1)
+	_det_body.text = _message_body_pages[_message_body_page]
+
+
+func _advance_message_body_page(delta: int) -> void:
+	if _message_body_pages.size() <= 1:
+		return
+	_message_body_page = clampi(_message_body_page + delta, 0, _message_body_pages.size() - 1)
+	_render_message_body_page()
 
 
 func _format_date(iso: String) -> String:
@@ -251,12 +369,18 @@ func _format_date(iso: String) -> String:
 
 func _show_detail(visible: bool) -> void:
 	_detail_view.visible = visible
+	if not visible:
+		_message_body_pages.clear()
+		_message_body_page = 0
+		_selected_reply_prefix = ""
 	_refresh_right_panel_visibility()
 	_refresh_detail_actions()
 
 
 func _show_compose(visible: bool) -> void:
 	_compose_view.visible = visible
+	if not visible:
+		_compose_reply_prefix = ""
 	_refresh_right_panel_visibility()
 	_refresh_detail_actions()
 
@@ -266,9 +390,13 @@ func _refresh_right_panel_visibility() -> void:
 
 
 func _refresh_detail_actions() -> void:
-	var can_manage := not _selected_msg.is_empty() and not ServerBridge.game_api_url.is_empty()
-	_reply_btn.disabled = not can_manage
-	_delete_btn.disabled = not can_manage
+	var can_reply := (
+		not _selected_msg.is_empty()
+		and not ServerBridge.game_api_url.is_empty()
+		and int(_selected_msg.get("replyTargetId", 0)) != 0
+	)
+	_reply_btn.disabled = not can_reply
+	_delete_btn.disabled = true
 
 
 func _on_inbox_loaded(messages: Array) -> void:
@@ -295,8 +423,8 @@ func _on_message_selected(msg: Dictionary) -> void:
 
 func _on_compose_pressed() -> void:
 	_show_detail(false)
+	_compose_reply_prefix = ""
 	_to_field.text = ""
-	_subject_field.text = ""
 	_body_field.text = ""
 	_show_compose(true)
 	_to_field.grab_focus()
@@ -305,12 +433,12 @@ func _on_compose_pressed() -> void:
 func _on_reply_pressed() -> void:
 	if _selected_msg.is_empty():
 		return
-	var from := str(_selected_msg.get("from", ""))
-	var orig_subject := str(_selected_msg.get("subject", ""))
-	var re_subject := orig_subject if orig_subject.begins_with("Re: ") else "Re: " + orig_subject
+	var reply_to := str(_selected_msg.get("fromComstarCode", ""))
+	if reply_to.is_empty():
+		reply_to = str(_selected_msg.get("from", ""))
+	_compose_reply_prefix = _selected_reply_prefix
 	_show_detail(false)
-	_to_field.text = from
-	_subject_field.text = re_subject
+	_to_field.text = reply_to
 	_body_field.text = ""
 	_show_compose(true)
 	_body_field.grab_focus()
@@ -324,7 +452,6 @@ func _on_cancel_pressed() -> void:
 
 func _on_send_pressed() -> void:
 	var to := _to_field.text.strip_edges()
-	var subject := _subject_field.text.strip_edges()
 	var body := _body_field.text.strip_edges()
 
 	if to.is_empty():
@@ -333,25 +460,22 @@ func _on_send_pressed() -> void:
 	if body.is_empty():
 		_set_status("Error: message body is required", Color(1.0, 0.45, 0.45))
 		return
-	if subject.length() > 100:
-		_set_status("Error: subject must be 100 characters or fewer", Color(1.0, 0.45, 0.45))
-		return
-	if body.length() > 1000:
-		_set_status("Error: message must be 1000 characters or fewer", Color(1.0, 0.45, 0.45))
-		return
 	if ServerBridge.game_api_url.is_empty():
 		_set_status("Server offline", Color(1.0, 0.45, 0.45))
 		return
 
 	_send_btn.disabled = true
 	_set_status("Sending...")
-	_comstar.send_message(ServerBridge.game_api_url, to, subject, body)
+	_comstar.send_message(ServerBridge.game_api_url, to, _compose_reply_prefix + body)
 
 
 func _on_message_sent() -> void:
 	_send_btn.disabled = false
 	_show_compose(false)
-	_set_status("Message sent.", Color(0.45, 1.0, 0.35))
+	_compose_reply_prefix = ""
+	_to_field.text = ""
+	_body_field.text = ""
+	_set_status("ComStar message queued.", Color(0.45, 1.0, 0.35))
 	if not ServerBridge.game_api_url.is_empty():
 		_comstar.fetch_inbox(ServerBridge.game_api_url)
 
@@ -372,27 +496,71 @@ func _on_message_deleted(message_id: int) -> void:
 	_delete_btn.disabled = false
 	_show_detail(false)
 	_selected_msg = {}
+	_selected_reply_prefix = ""
 	_messages = _messages.filter(func(m): return int(m.get("id", -1)) != message_id)
 	_populate_inbox()
-	_set_status("Message deleted.", Color(0.45, 1.0, 0.35))
+	_set_status("Message dismissed.", Color(0.45, 1.0, 0.35))
 
 
 func _on_delete_failed(reason: String) -> void:
 	_delete_btn.disabled = false
-	_set_status("Delete failed: %s" % reason, Color(1.0, 0.45, 0.45))
+	_set_status("Dismiss failed: %s" % reason, Color(1.0, 0.45, 0.45))
 
 
 func _on_marked_read(message_id: int) -> void:
-	for i in _messages.size():
-		if int(_messages[i].get("id", -1)) == message_id:
-			_messages[i] = _messages[i].duplicate()
-			_messages[i]["readAt"] = "now"
-			break
+	_messages = _messages.filter(func(m): return int(m.get("id", -1)) != message_id)
 	_populate_inbox()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey):
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus is LineEdit or focus is TextEdit:
+		if key_event.keycode == KEY_ESCAPE and _compose_view.visible:
+			_on_cancel_pressed()
+			get_viewport().set_input_as_handled()
+		return
+	if _compose_view.visible:
+		if key_event.keycode == KEY_ESCAPE:
+			_on_cancel_pressed()
+			get_viewport().set_input_as_handled()
+		return
+	if not _detail_view.visible:
+		return
+	match key_event.keycode:
+		KEY_R:
+			if not _reply_btn.disabled:
+				_on_reply_pressed()
+				get_viewport().set_input_as_handled()
+		KEY_SPACE, KEY_M, KEY_PAGEDOWN:
+			_advance_message_body_page(1)
+			get_viewport().set_input_as_handled()
+		KEY_PAGEUP:
+			_advance_message_body_page(-1)
+			get_viewport().set_input_as_handled()
+		KEY_TAB:
+			if key_event.shift_pressed:
+				_advance_message_body_page(-1)
+				get_viewport().set_input_as_handled()
+		KEY_ESCAPE, KEY_ENTER, KEY_KP_ENTER:
+			_show_detail(false)
+			_selected_msg = {}
+			get_viewport().set_input_as_handled()
 
 
 func _on_mark_failed(reason: String) -> void:
 	_set_status("Mark read failed: %s" % reason, Color(1.0, 0.45, 0.45))
+
+
+func _on_comstar_message_received() -> void:
+	if ServerBridge.game_api_url.is_empty():
+		return
+	_set_status("New ComStar message received.", Color(0.45, 1.0, 0.35))
+	_comstar.fetch_inbox(ServerBridge.game_api_url)
 
 
 func _on_help_pressed() -> void:

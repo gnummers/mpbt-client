@@ -15,8 +15,9 @@ Godot is the best fit for this project because the main gameplay is a 3D combat 
 Recommended stack:
 
 - **Godot 4.x** for the application, 3D combat scene, UI scenes, input, audio, packaging, and tooling.
-- **GDScript** for most client gameplay/UI code.
-- **C# or GDExtension** for performance-sensitive systems, shared model code, binary asset importers, or protocol tooling when GDScript becomes awkward.
+- **C#** as the preferred target for newly ported parity-critical client logic, shared model code, protocol surfaces, and importer/runtime helpers.
+- **GDScript** for existing scene glue and fast iteration where it does not become the long-term parity bottleneck.
+- **GDExtension** for the rare low-level or performance-sensitive systems that still need native code after C#.
 - **REST + WebSocket API** for the modern client.
 - `mpbt-server` retains the **retail v1.29 ARIES adapter** for the original 1999 client.
 
@@ -52,19 +53,23 @@ The roadmap below is still directionally correct, but current implementation is 
 
 - Auth/character flow, Solaris world shell, Mech Bay, arena ready room, standings, ComStar, settings, and a playable 3D combat scene are all in place.
 - Recent retail-fidelity work has focused on extracted art/audio integration: world-shell chrome, combat HUD art, non-combat scene artwork, palette-correct UI/combat extraction, and retail PCM-to-WAV SFX conversion with logical aliasing.
+- Reverse-engineering coverage is now materially stronger: the live `MPBTWIN.EXE` Ghidra project has no remaining `FUN_*` entries, and the client research layer imports the full **1290-function** custom-name inventory.
 - The active roadmap focus is now **M8: Retail Fidelity Pass** rather than M0/M1 setup work.
 
 Near-term highest-confidence work:
 
-1. Extend the retail shell/chrome pass into the remaining bare non-combat scenes (`ComStar`, then `Settings`).
-2. Tighten screenshot-driven spacing/layout polish across world and standings.
-3. Return to deeper combat posture/animation fidelity and Cmd70-aligned presentation work.
+1. Execute a bounded **ComStar** retail-parity slice across `mpbt-server` and `mpbt-client`, auditing server semantics first and then tightening the Godot client against the recovered behavior catalogs.
+2. Extend the retail shell/chrome pass into the remaining bare non-combat scenes (`ComStar`, then `Settings`) using the original retail extracted assets as the default presentation reference.
+3. Tighten screenshot-driven spacing/layout polish across world and standings.
+4. Return to deeper combat posture/animation fidelity and Cmd70-aligned presentation work.
 
 ## Important Compatibility Notes
 
 Reverse-engineering work indicates the retail v1.29 client is a Win32/x86 C++ program using DirectDraw-era 8-bit surfaces, software blits, palettes, custom image containers, custom terrain/model loaders, and fixed-size 640x480 assumptions.
 
 That does **not** require the new client to be written in C++. It does mean the renderer and asset layer should be designed with enough structure to reproduce old behavior when fidelity matters.
+
+With the named-function map now complete in the live Ghidra project, the highest-ROI path is a behavior-first Godot implementation backed by the research catalogs. A near-retail C++ rebuild is now better framed as optional private/internal tooling for unusually ambiguous subsystems, not as the main roadmap.
 
 Exact behavior for the following assets may become important:
 
@@ -96,6 +101,16 @@ Use:
 - WebSocket for world presence, chat, room travel, menus, ready-room state, combat input, combat snapshots, and match events.
 
 Keep ARIES in `mpbt-server` as the compatibility protocol for `MPBTWIN.EXE`.
+
+### Porting Workflow
+
+Port recovered retail behavior in bounded slices rather than as a repo-wide audit.
+
+For each slice:
+
+1. Patch `mpbt-server` first if the recovered behavior changes canonical state, protocol semantics, ordering, validation, or timing.
+2. Patch `mpbt-client` for the corresponding shell/UI/input/presentation expectations.
+3. Use the original retail extracted assets locally whenever that slice depends on retail chrome, map art, HUD art, sounds, or music cues.
 
 ### Shared Logic
 
@@ -270,6 +285,8 @@ Milestones **M0-M7** are now substantially represented in the client. Current fo
 - Implement or improve Godot importers for original binary assets.
 - Compare side-by-side with retail v1.29 captures.
 - Tune camera, movement, weapon effects, fall/recovery timing, and HUD behavior.
+- Use the complete retail function/command/helper/subsystem catalogs to remove remaining behavior ambiguity before introducing custom ports or native helpers.
+- Progress one bounded parity slice at a time, with `mpbt-server` audited first when the slice changes canonical retail behavior.
 
 ### M9: Packaging and Distribution
 
@@ -298,7 +315,7 @@ Milestones **M0-M7** are now substantially represented in the client. Current fo
 
 - How much of `3dobj.bin` and `keyframe.bin` is required for authentic combat visuals?
 - Are terrain `.BIN/.DAT/.PAL` files only visual, or do they encode gameplay-relevant collision/height/visibility behavior?
-- What is the minimum acceptable placeholder 3D combat renderer for an MVP?
-- Should the first client release prioritize world/social/mech selection before full combat?
+- Which recovered combat/world data layouts should be formalized next to tighten server and client accuracy?
+- Which subsystems, if any, justify targeted C#/GDExtension or source-like reconstruction for accuracy or performance?
 - Which v1.29 UI surfaces should be faithfully reproduced, and which can be redesigned?
 - What asset enhancement policy preserves the retail look while making modern resolutions attractive?
