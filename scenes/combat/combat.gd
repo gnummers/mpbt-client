@@ -68,6 +68,7 @@ const READOUT_TARGET_DETAIL := "target_detail"
 const READOUT_SELF_DETAIL := "self_detail"
 const COMBAT_CHAT_ALL := "all"
 const COMBAT_CHAT_TEAM := "team"
+const M6Parity := preload("res://scripts/combat/m6_parity.gd")
 
 # ─── Node references (filled by @onready) ─────────────────────────────────────
 
@@ -186,6 +187,7 @@ var _remote_targets: Dictionary = {}  # username: String -> { position, heading,
 var _remote_actor_info: Dictionary = {}  # username: String -> latest actor dictionary
 var _radar_range_index: int = 2
 var _selected_target_username: String = ""
+var _target_color_state: String = "off"
 var _readout_mode: String = READOUT_TARGET_BRIEF
 var _tic_groups: Array = [[], [], []]
 var _selected_tic_index: int = -1
@@ -1543,11 +1545,21 @@ func _play_remote_hit_event_audio(resolved: Dictionary) -> void:
 	var damage := int(resolved.get("damage", 0))
 	var origin: Vector3 = resolved.get("origin", Vector3.ZERO)
 	var impact: Vector3 = resolved.get("impact", origin)
+	var play_impact := bool(resolved.get("playImpact", true))
+	var impact_delay_ms := int(resolved.get("impactDelayMs", 0))
 
 	if attacker != _username:
 		_play_remote_sfx_stream(AudioManager.load_weapon_fire_sfx_stream(weapon_type_id), origin, REMOTE_FIRE_VOLUME_DB)
-	if target != _username:
+	if target == _username or not play_impact:
+		return
+	if impact_delay_ms <= 0:
 		_play_remote_sfx_stream(AudioManager.load_weapon_hit_sfx_stream(weapon_type_id, damage), impact, REMOTE_IMPACT_VOLUME_DB)
+		return
+	var delay_seconds := float(impact_delay_ms) / 1000.0
+	var timer := get_tree().create_timer(delay_seconds)
+	timer.timeout.connect(func() -> void:
+		_play_remote_sfx_stream(AudioManager.load_weapon_hit_sfx_stream(weapon_type_id, damage), impact, REMOTE_IMPACT_VOLUME_DB)
+	)
 
 
 func _actor_node_for_username(username: String) -> Node3D:
@@ -1558,6 +1570,20 @@ func _actor_node_for_username(username: String) -> Node3D:
 		if node_v is Node3D:
 			return node_v as Node3D
 	return null
+
+
+func _mech_id_for_username(username: String) -> int:
+	if username == _username:
+		return _mech_id
+	if not _remote_actor_info.has(username):
+		return -1
+	var actor_info_v: Variant = _remote_actor_info.get(username, {})
+	if typeof(actor_info_v) != TYPE_DICTIONARY:
+		return -1
+	var actor_info := actor_info_v as Dictionary
+	if not actor_info.has("mechId"):
+		return -1
+	return int(actor_info.get("mechId", -1))
 
 
 func _resolve_weapon_effect_path(source: Node3D, weapon_type_id: int, weapon_slot: int, source_attach_hint: Variant = -1) -> Dictionary:
@@ -1743,17 +1769,35 @@ func _effect_impact_position(target_node: Node3D, data: Dictionary, source_posit
 			float(data.get("impactY", fallback_y)),
 			float(data.get("impactZ"))
 		)
-	var attach_hint: Variant = _impact_attach_hint(data)
-	if _attachment_hint_to_internal_index(attach_hint) < 0:
-		attach_hint = _best_target_attach_for_node(target_node, source_position)
-	return _attachment_world_position(target_node, attach_hint, -1, true)
+	var attach_index := _resolve_impact_attach_index(data, target_node, source_position)
+	return _attachment_world_position(target_node, attach_index, -1, true)
 
 
-func _impact_section_label(data: Dictionary) -> String:
-	var attach_index: int = _attachment_hint_to_internal_index(_impact_attach_hint(data))
+func _impact_section_label(data: Dictionary, target_node: Node3D, source_position: Vector3) -> String:
+	var attach_index := _resolve_impact_attach_index(data, target_node, source_position)
 	if attach_index < 0 or attach_index >= INTERNAL_SECTION_LABELS.size():
 		return ""
 	return str(INTERNAL_SECTION_LABELS[attach_index])
+
+
+func _resolve_impact_attach_index(data: Dictionary, target_node: Node3D, source_position: Vector3) -> int:
+	var attach_hint: Variant = _impact_attach_hint(data)
+	if attach_hint is int or attach_hint is float:
+		var target_mech_id := int(data.get("targetMechId", _mech_id_for_username(str(data.get("target", "")))))
+		var impact_z := float(data.get("impactZ", target_node.global_position.y))
+		var resolved_attach := M6Parity.resolve_attachment_internal_index(target_mech_id, int(attach_hint), impact_z)
+		if resolved_attach >= 0:
+			return resolved_attach
+	var attach_index := _attachment_hint_to_internal_index(attach_hint)
+	if attach_index >= 0:
+		return attach_index
+	if data.has("damageCode"):
+		var detail_row := int(data.get("damageCode", -1))
+		if detail_row >= 0 and detail_row <= 0x14:
+			var mapped := M6Parity.detail_row_to_internal_section_index(detail_row)
+			if mapped >= 0:
+				return mapped
+	return _best_target_attach_for_node(target_node, source_position)
 
 
 func _spawn_weapon_effect(origin: Vector3, impact: Vector3, weapon_type_id: int) -> void:
@@ -1952,11 +1996,12 @@ func _update_target_hud() -> void:
 	var target := _current_target_actor(actors)
 	if target.is_empty():
 		_selected_target_username = ""
+		_target_color_state = "off"
 		_target_name.text = "NO TARGET"
 		_target_name.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 		_target_range.text = "RNG --"
 		_target_status.text = "RADAR %dm" % _current_radar_range()
-		_target_status.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
+		_target_status.add_theme_color_override("font_color", _target_color_for_state(_target_color_state))
 		_update_target_range_window_art(-1)
 		_update_readout_panel({})
 		return
@@ -1967,11 +2012,15 @@ func _update_target_hud() -> void:
 	var health := int(target.get("health", -1))
 	var posture_state := int(target.get("posture", POSTURE_NORMAL))
 	var is_selected_target := target_name == _selected_target_username
+	var range_validity := M6Parity.build_weapon_range_validity(_weapon_type_ids, _selected_weapon_slot, distance)
+	var selected_within := range_validity.get("selectedWithinMaxRange", null)
+	var any_within := range_validity.get("anyWeaponWithinMaxRange", null)
+	_target_color_state = M6Parity.target_color_state(true, selected_within, any_within)
 	_target_name.text = target_name
 	_target_name.add_theme_color_override("font_color", Color(1.0, 0.95, 0.35) if is_selected_target else Color(1.0, 1.0, 1.0))
 	_target_range.text = "RNG %dm  BRG %+d" % [int(round(distance)), int(round(rad_to_deg(bearing)))]
 	var status := _target_range_band(distance)
-	var range_band_index := _target_range_band_index(distance)
+	var range_band_index := int(range_validity.get("selectedRangeBandIndex", _target_range_band_index(distance)))
 	if posture_state != POSTURE_NORMAL:
 		status = "%s  %s" % [status, _posture_tag(posture_state)]
 	if health >= 0:
@@ -1980,10 +2029,7 @@ func _update_target_hud() -> void:
 		status = "%s  LOCK" % status
 	_target_status.text = status
 	_update_target_range_window_art(range_band_index)
-	var status_color := _posture_color(posture_state)
-	if posture_state == POSTURE_NORMAL:
-		status_color = Color(1.0, 0.35, 0.2) if status.begins_with("OUT") else Color(0.35, 1.0, 0.45)
-	_target_status.add_theme_color_override("font_color", status_color)
+	_target_status.add_theme_color_override("font_color", _target_color_for_state(_target_color_state))
 	_update_readout_panel(target)
 
 
@@ -2126,15 +2172,19 @@ func _target_range_band(distance: float) -> String:
 func _target_range_band_index(distance: float) -> int:
 	var type_id := _selected_weapon_type_id()
 	var long_range := float(MecParser.weapon_long_range_meters(type_id))
-	if long_range <= 0.0:
-		return -1
-	if distance <= long_range / 3.0:
-		return 0
-	if distance <= long_range * 2.0 / 3.0:
-		return 1
-	if distance <= long_range:
-		return 2
-	return 3
+	return M6Parity.classify_weapon_range_band_index(distance, long_range)
+
+
+func _target_color_for_state(color_state: String) -> Color:
+	match color_state:
+		"green":
+			return Color(0.35, 1.0, 0.45)
+		"yellow":
+			return Color(1.0, 0.92, 0.35)
+		"red":
+			return Color(1.0, 0.35, 0.2)
+		_:
+			return Color(0.7, 0.9, 1.0)
 
 
 func _update_target_range_window_art(range_band_index: int) -> void:
@@ -2675,10 +2725,17 @@ func _on_combat_hit(data: Dictionary) -> void:
 
 	var target := str(data.get("target", ""))
 	var attacker := str(data.get("source", data.get("attacker", "")))
+	_latch_target_selection_from_effect(attacker, target)
 	var damage := int(data.get("damage", 0))
 	var health := int(data.get("health", 0))
 	var weapon_type_id := int(data.get("weaponTypeId", -1))
-	var section_label: String = _impact_section_label(data)
+	var target_node := _actor_node_for_username(target)
+	var source_position := _local_mech.global_position
+	if attacker == _username:
+		source_position = _muzzle_position(_local_mech, int(data.get("weaponSlot", _selected_weapon_slot)), data.get("sourceAttach", _selected_weapon_mount_internal_index()))
+	elif target_node != null:
+		source_position = target_node.global_position
+	var section_label: String = _impact_section_label(data, target_node if target_node != null else _local_mech, source_position)
 	var remote_audio_event: Dictionary = _resolve_hit_event_audio_positions(data)
 
 	if target == _username:
@@ -2696,7 +2753,6 @@ func _on_combat_hit(data: Dictionary) -> void:
 			_status_timer = 2.5
 	elif attacker == _username:
 		if not data.has("impactX"):
-			var target_node := _actor_node_for_username(target)
 			if target_node != null:
 				var origin: Vector3 = _muzzle_position(_local_mech, int(data.get("weaponSlot", _selected_weapon_slot)), data.get("sourceAttach", _selected_weapon_mount_internal_index()))
 				var impact: Vector3 = _effect_impact_position(target_node, data, origin)
@@ -2709,7 +2765,24 @@ func _on_combat_hit(data: Dictionary) -> void:
 		_status_label.add_theme_color_override("font_color", Color(0.25, 1.0, 0.3))
 		_status_timer = 1.5
 
+	if not remote_audio_event.is_empty():
+		var impact_audio_gate := M6Parity.cmd69_impact_audio_gate(
+			data,
+			source_position.distance_to(remote_audio_event.get("impact", source_position))
+		)
+		remote_audio_event["playImpact"] = impact_audio_gate.get("playImpact", true)
+		remote_audio_event["impactDelayMs"] = impact_audio_gate.get("delayMs", 0)
+
 	_play_remote_hit_event_audio(remote_audio_event)
+
+
+func _latch_target_selection_from_effect(attacker: String, target: String) -> void:
+	if attacker != _username:
+		return
+	if target.is_empty() or target == _username:
+		return
+	if _remote_nodes.has(target) or _remote_actor_info.has(target):
+		_selected_target_username = target
 
 
 func _apply_damage_updates_from_event(data: Dictionary) -> void:
