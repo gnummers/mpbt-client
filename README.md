@@ -89,6 +89,15 @@ Minimal connection fields:
 
 See [docs/CONFIG.md](docs/CONFIG.md) for the full current format.
 
+## Headless smoke checks
+
+Run targeted parity/probe smoke scripts from repo root:
+
+```powershell
+godot --headless --script tests\m6_parity_slice_smoke.gd
+godot --headless --script tests\m8_binary_probe_smoke.gd
+```
+
 ## Fidelity Strategy
 
 The target is not a literal Win32/DirectDraw clone. The target is a modern 3D client that feels close to the retail v1.29 experience while being practical to maintain.
